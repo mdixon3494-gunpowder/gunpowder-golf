@@ -192,11 +192,13 @@
             const [playerSkill, setPlayerSkill] = useState('5');
 
             useEffect(() => {
-                const savedLeagueId = localStorage.getItem('leagueId');
-                if (savedLeagueId) {
-                    loadLeague(savedLeagueId);
-                }
-            }, []);
+    const savedLeagueId = localStorage.getItem('leagueId');
+    if (savedLeagueId) {
+        setLeagueId(savedLeagueId);
+        setIsSetup(true);
+        loadLeague(savedLeagueId);
+    }
+}, []);
 
             useEffect(() => {
                 if (leagueId && players.length >= 0) {
