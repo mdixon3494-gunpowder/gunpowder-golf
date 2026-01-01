@@ -725,10 +725,10 @@
             };
 
             const generateTeams = () => {
-                if (selectedPlayers.length < 12) {
-                    alert('Please select at least 12 players');
-                    return;
-                }
+               if (selectedPlayers.length < 6) {
+                alert('Please select at least 6 players');
+                return;
+            }
                 
                 const activePlayers = players.filter(p => selectedPlayers.includes(p.id));
                 const numPlayersInt = activePlayers.length;
