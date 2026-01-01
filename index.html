@@ -505,17 +505,39 @@
             getLeagueId: () => localStorage.getItem('leagueId'),
             setLeagueId: (id) => localStorage.setItem('leagueId', id),
             generateLeagueId: () => Math.random().toString(36).substring(2, 8).toUpperCase(),
-            saveData: (leagueId, data) => {
-                const key = `league_${leagueId}`;
-                localStorage.setItem(key, JSON.stringify(data));
-                window.dispatchEvent(new CustomEvent('leagueDataUpdated', { 
-                    detail: { leagueId, data } 
-                }));
+            
+            saveData: async (leagueId, data) => {
+                try {
+                    const { error } = await supabase
+                        .from('leagues')
+                        .upsert({
+                            id: leagueId,
+                            data: data,
+                            updated_at: new Date()
+                        });
+                    if (error) console.error('Supabase save error:', error);
+                } catch (err) {
+                    console.error('Save error:', err);
+                }
             },
-            loadData: (leagueId) => {
-                const key = `league_${leagueId}`;
-                const data = localStorage.getItem(key);
-                return data ? JSON.parse(data) : null;
+            
+            loadData: async (leagueId) => {
+                try {
+                    const { data, error } = await supabase
+                        .from('leagues')
+                        .select('data')
+                        .eq('id', leagueId)
+                        .single();
+                    
+                    if (error) {
+                        console.error('Supabase load error:', error);
+                        return null;
+                    }
+                    return data?.data || null;
+                } catch (err) {
+                    console.error('Load error:', err);
+                    return null;
+                }
             }
         };
 
