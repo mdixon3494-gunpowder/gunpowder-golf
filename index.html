@@ -469,6 +469,11 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
+        const supabase = window.supabase.createClient(
+            'https://nhfakcipeawbtfqxfgzk.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oZmFrY2lwZWF3YnRmcXhmZ3prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMTQ5ODQsImV4cCI6MjA4Mjc5MDk4NH0.fpCdGjnY5294ob3BGqDPQRUDnqCj4NZxZlhaX63e61Y'
+        );
+
         // Gunpowder Golf Course Scorecard
         const GUNPOWDER_SCORECARD = {
             front9: [
