@@ -285,5 +285,50 @@
                             <p>Cloud-Synced League Management</p>
                         </div>
                         <div className="setup-screen">
-                            <h2 style={{marginBottom: '20px'}}>Welcome!</h2>
-                            <button className="btn btn-primary" onClick={cr
+                           <h2 style={{marginBottom: '20px'}}>League Settings</h2>
+                                
+                                <div style={{
+                                    background: '#f8f9fa',
+                                    padding: '20px',
+                                    borderRadius: '10px',
+                                    border: '2px dashed #27ae60'
+                                }}>
+                                    <h3 style={{marginBottom: '10px'}}>Share Your League</h3>
+                                    <p style={{marginBottom: '15px'}}>Share this code with your league members:</p>
+                                    <div className="share-code">{leagueId}</div>
+                                    <button 
+                                        className="btn btn-secondary"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(leagueId);
+                                            alert('Code copied!');
+                                        }}
+                                    >
+                                        📋 Copy Code
+                                    </button>
+                                </div>
+                                
+                                <button 
+                                    className="btn btn-danger"
+                                    onClick={() => {
+                                        if (confirm('Leave this league?')) {
+                                            localStorage.removeItem('leagueId');
+                                            setIsSetup(false);
+                                            setLeagueId(null);
+                                            setPlayers([]);
+                                        }
+                                    }}
+                                    style={{marginTop: '20px'}}
+                                >
+                                    Leave League
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<GunpowderApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
