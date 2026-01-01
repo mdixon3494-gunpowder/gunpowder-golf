@@ -565,20 +565,23 @@
             const [player1, setPlayer1] = useState('');
             const [player2, setPlayer2] = useState('');
             
-            // Check for existing league
+           // Check for existing league
             useEffect(() => {
-                const existingLeagueId = CloudStorage.getLeagueId();
-                if (existingLeagueId) {
-                    const data = CloudStorage.loadData(existingLeagueId);
-                    if (data) {
-                        setLeagueId(existingLeagueId);
-                        setPlayers(data.players || []);
-                        setHistory(data.history || []);
-                        setPairingRequests(data.pairingRequests || []);
-                        setLiveRound(data.liveRound || null);
-                        setIsSetup(true);
+                const loadExistingLeague = async () => {
+                    const existingLeagueId = CloudStorage.getLeagueId();
+                    if (existingLeagueId) {
+                        const data = await CloudStorage.loadData(existingLeagueId);
+                        if (data) {
+                            setLeagueId(existingLeagueId);
+                            setPlayers(data.players || []);
+                            setHistory(data.history || []);
+                            setPairingRequests(data.pairingRequests || []);
+                            setLiveRound(data.liveRound || null);
+                            setIsSetup(true);
+                        }
                     }
-                }
+                };
+                loadExistingLeague();
             }, []);
             
             // Listen for updates
