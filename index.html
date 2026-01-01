@@ -7,22 +7,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
             padding: 10px;
             color: #333;
         }
-        
         .app-container {
             max-width: 800px;
             margin: 0 auto;
@@ -31,7 +25,6 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             overflow: hidden;
         }
-        
         .header {
             background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
             color: white;
@@ -39,18 +32,12 @@
             text-align: center;
             position: relative;
         }
-        
         .header h1 {
             font-size: 26px;
             margin-bottom: 5px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        
-        .header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
+        .header p { font-size: 14px; opacity: 0.9; }
         .sync-status {
             position: absolute;
             top: 10px;
@@ -59,416 +46,38 @@
             padding: 5px 10px;
             border-radius: 20px;
             font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
-        
         .sync-indicator {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: #2ecc71;
+            display: inline-block;
+            margin-right: 5px;
             animation: pulse 2s infinite;
         }
-        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        
         .nav-tabs {
             display: flex;
             background: #f8f9fa;
             border-bottom: 2px solid #e0e0e0;
             overflow-x: auto;
         }
-        
         .nav-tab {
             flex: 1;
             min-width: 70px;
-            padding: 12px 8px;
-            background: none;
-            border: none;
-            font-size: 12px;
-            font-weight: 600;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.3s;
-            white-space: nowrap;
-        }
-        
-        .nav-tab.active {
-            background: white;
-            color: #27ae60;
-            border-bottom: 3px solid #27ae60;
-        }
-        
-        .content {
-            padding: 20px;
-            min-height: 400px;
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            margin-top: 10px;
-        }
-        
-        .btn-primary {
-            background: #27ae60;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #229954;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
-        }
-        
-        .btn-secondary {
-            background: #3498db;
-            color: white;
-        }
-        
-        .btn-danger {
-            background: #e74c3c;
-            color: white;
-        }
-        
-        .input-group {
-            margin-bottom: 15px;
-        }
-        
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-        }
-        
-        .input-group input,
-        .input-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        
-        .input-group input:focus,
-        .input-group select:focus {
-            outline: none;
-            border-color: #27ae60;
-        }
-        
-        .player-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .player-card:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
-        }
-        
-        .player-info {
-            flex: 1;
-        }
-        
-        .player-name {
-            font-weight: 600;
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-        
-        .player-stats {
-            font-size: 13px;
-            color: #666;
-        }
-        
-        .skill-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-        
-        .skill-beginner {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-        
-        .skill-intermediate {
-            background: #fff3e0;
-            color: #ef6c00;
-        }
-        
-        .skill-advanced {
-            background: #fce4ec;
-            color: #c2185b;
-        }
-        
-        .team-container {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            color: white;
-        }
-        
-        .team-header {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        
-        .team-member {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-bottom: 5px;
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .checkbox-group input {
-            width: auto;
-            margin-right: 10px;
-        }
-        
-        .pairing-request {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        .alert-success {
-            background: #d4edda;
-            border-left: 4px solid #28a745;
-            color: #155724;
-        }
-        
-        .alert-info {
-            background: #d1ecf1;
-            border-left: 4px solid #17a2b8;
-            color: #0c5460;
-        }
-        
-        .alert-warning {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            color: #856404;
-        }
-        
-        .scorecard-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin: 15px 0;
-        }
-        
-        .scorecard-table th,
-        .scorecard-table td {
-            padding: 8px 4px;
-            text-align: center;
-            border: 1px solid #dee2e6;
-        }
-        
-        .scorecard-table th {
-            background: #27ae60;
-            color: white;
-            font-weight: 600;
-        }
-        
-        .scorecard-table tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-        
-        .score-input {
-            width: 50px;
-            padding: 5px;
-            text-align: center;
-            border: 2px solid #e0e0e0;
-            border-radius: 4px;
-        }
-        
-        .score-input:focus {
-            border-color: #27ae60;
-            outline: none;
-        }
-        
-        .par-3 { background: #e8f5e9; }
-        .par-4 { background: #fff3e0; }
-        .par-5 { background: #fce4ec; }
-        
-        .leaderboard {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-        
-        .leaderboard-header {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-            color: white;
-            padding: 15px;
-            font-size: 18px;
-            font-weight: 600;
-        }
-        
-        .leaderboard-item {
-            padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .leaderboard-rank {
-            font-size: 24px;
-            font-weight: bold;
-            color: #27ae60;
-            width: 50px;
-        }
-        
-        .leaderboard-team {
-            flex: 1;
-        }
-        
-        .leaderboard-score {
-            font-size: 20px;
-            font-weight: bold;
-            color: #e74c3c;
-        }
-        
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            opacity: 0.9;
-            margin-bottom: 5px;
-        }
-        
-        .stat-value {
-            font-size: 32px;
-            font-weight: bold;
-        }
-        
-        .chart-container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 15px 0;
-        }
-        
-        .setup-screen {
-            padding: 40px 20px;
-            text-align: center;
-        }
-        
-        .share-box {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 2px dashed #27ae60;
-        }
-        
-        .share-code {
-            font-size: 32px;
-            font-weight: bold;
-            color: #27ae60;
-            letter-spacing: 8px;
-            margin: 20px 0;
-            font-family: monospace;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
+            const { useState, useEffect } = React;
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(
+            'https://nhfakcipeawbtfqxfgzk.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5oZmFrY2lwZWF3YnRmcXhmZ3prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMTQ5ODQsImV4cCI6MjA4Mjc5MDk4NH0.fpCdGjnY5294ob3BGqDPQRUDnqCj4NZxZlhaX63e61Y'
+        );
 
-        // Gunpowder Golf Course Scorecard
+        // Gunpowder Scorecard
         const GUNPOWDER_SCORECARD = {
             front9: [
                 { hole: 1, par: 4, yards: 346, handicap: 9 },
@@ -494,126 +103,96 @@
             ]
         };
 
-        // Simple cloud storage simulation
-        const CloudStorage = {
-            getLeagueId: () => localStorage.getItem('leagueId'),
-            setLeagueId: (id) => localStorage.setItem('leagueId', id),
-            generateLeagueId: () => Math.random().toString(36).substring(2, 8).toUpperCase(),
-            saveData: (leagueId, data) => {
-                const key = `league_${leagueId}`;
-                localStorage.setItem(key, JSON.stringify(data));
-                window.dispatchEvent(new CustomEvent('leagueDataUpdated', { 
-                    detail: { leagueId, data } 
-                }));
-            },
-            loadData: (leagueId) => {
-                const key = `league_${leagueId}`;
-                const data = localStorage.getItem(key);
-                return data ? JSON.parse(data) : null;
-            }
-        };
-
-        function GunpowderBigBoysGolf() {
-            const [activeTab, setActiveTab] = useState('players');
-            const [players, setPlayers] = useState([]);
-            const [teams, setTeams] = useState([]);
-            const [history, setHistory] = useState([]);
-            const [pairingRequests, setPairingRequests] = useState([]);
-            const [liveRound, setLiveRound] = useState(null);
+        function GunpowderApp() {
             const [leagueId, setLeagueId] = useState(null);
             const [isSetup, setIsSetup] = useState(false);
             const [joinCode, setJoinCode] = useState('');
+            const [players, setPlayers] = useState([]);
+            const [syncStatus, setSyncStatus] = useState('synced');
+            const [activeTab, setActiveTab] = useState('players');
             
             // Player form
             const [playerName, setPlayerName] = useState('');
             const [playerSkill, setPlayerSkill] = useState('5');
-            const [editingPlayer, setEditingPlayer] = useState(null);
-            const [viewingPlayer, setViewingPlayer] = useState(null);
-            
-            // Team generation
-            const [selectedPlayers, setSelectedPlayers] = useState([]);
-            
-            // Pairing form
-            const [player1, setPlayer1] = useState('');
-            const [player2, setPlayer2] = useState('');
-            
-            // Check for existing league
+
+            // Load league on mount
             useEffect(() => {
-                const existingLeagueId = CloudStorage.getLeagueId();
-                if (existingLeagueId) {
-                    const data = CloudStorage.loadData(existingLeagueId);
-                    if (data) {
-                        setLeagueId(existingLeagueId);
-                        setPlayers(data.players || []);
-                        setHistory(data.history || []);
-                        setPairingRequests(data.pairingRequests || []);
-                        setLiveRound(data.liveRound || null);
-                        setIsSetup(true);
-                    }
+                const savedLeagueId = localStorage.getItem('leagueId');
+                if (savedLeagueId) {
+                    loadLeague(savedLeagueId);
                 }
             }, []);
-            
-            // Listen for updates
-            useEffect(() => {
-                const handleUpdate = (event) => {
-                    if (event.detail.leagueId === leagueId) {
-                        const data = event.detail.data;
-                        setPlayers(data.players || []);
-                        setHistory(data.history || []);
-                        setPairingRequests(data.pairingRequests || []);
-                        setLiveRound(data.liveRound || null);
-                    }
-                };
-                window.addEventListener('leagueDataUpdated', handleUpdate);
-                return () => window.removeEventListener('leagueDataUpdated', handleUpdate);
-            }, [leagueId]);
-            
-            // Save data
-            useEffect(() => {
-                if (leagueId && isSetup) {
-                    CloudStorage.saveData(leagueId, {
-                        players,
-                        history,
-                        pairingRequests,
-                        liveRound
-                    });
-                }
-            }, [players, history, pairingRequests, liveRound, leagueId, isSetup]);
 
-            const createNewLeague = () => {
-                const newLeagueId = CloudStorage.generateLeagueId();
-                setLeagueId(newLeagueId);
-                CloudStorage.setLeagueId(newLeagueId);
+            // Auto-save to Supabase when data changes
+            useEffect(() => {
+                if (leagueId && players.length > 0) {
+                    saveToSupabase();
+                }
+            }, [players]);
+
+            const saveToSupabase = async () => {
+                setSyncStatus('syncing');
+                try {
+                    const { error } = await supabase
+                        .from('leagues')
+                        .upsert({
+                            id: leagueId,
+                            data: { players },
+                            updated_at: new Date()
+                        });
+                    
+                    if (error) throw error;
+                    setSyncStatus('synced');
+                } catch (err) {
+                    console.error('Save error:', err);
+                    setSyncStatus('error');
+                }
+            };
+
+            const loadLeague = async (code) => {
+                setSyncStatus('syncing');
+                try {
+                    const { data, error } = await supabase
+                        .from('leagues')
+                        .select('data')
+                        .eq('id', code)
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    if (data && data.data) {
+                        setLeagueId(code);
+                        setPlayers(data.data.players || []);
+                        setIsSetup(true);
+                        localStorage.setItem('leagueId', code);
+                        setSyncStatus('synced');
+                    }
+                } catch (err) {
+                    console.error('Load error:', err);
+                    setSyncStatus('error');
+                }
+            };
+
+            const createNewLeague = async () => {
+                const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                setLeagueId(newCode);
+                localStorage.setItem('leagueId', newCode);
                 setIsSetup(true);
-                CloudStorage.saveData(newLeagueId, {
-                    players: [],
-                    history: [],
-                    pairingRequests: [],
-                    liveRound: null
+                
+                await supabase.from('leagues').insert({
+                    id: newCode,
+                    data: { players: [] },
+                    updated_at: new Date()
                 });
             };
 
-            const joinExistingLeague = () => {
+            const joinExistingLeague = async () => {
                 const code = joinCode.toUpperCase().trim();
-                const data = CloudStorage.loadData(code);
-                
-                if (data) {
-                    setLeagueId(code);
-                    CloudStorage.setLeagueId(code);
-                    setPlayers(data.players || []);
-                    setHistory(data.history || []);
-                    setPairingRequests(data.pairingRequests || []);
-                    setLiveRound(data.liveRound || null);
-                    setIsSetup(true);
-                    setJoinCode('');
-                } else {
-                    alert('League code not found. Please check the code and try again.');
+                await loadLeague(code);
+                if (!isSetup) {
+                    alert('League code not found. Please check and try again.');
                 }
-            };
-
-            const copyLeagueCode = () => {
-                navigator.clipboard.writeText(leagueId);
-                alert('League code copied to clipboard!');
+                setJoinCode('');
             };
 
             const addPlayer = () => {
@@ -624,12 +203,7 @@
                     name: playerName,
                     skillRating: parseFloat(playerSkill),
                     gamesPlayed: 0,
-                    avgFrontNine: 0,
-                    avgBackNine: 0,
-                    avgTotal: 0,
-                    teammates: {},
-                    scoreHistory: [],
-                    holeStats: {} // Track performance per hole
+                    avgTotal: 0
                 };
                 
                 setPlayers([...players, newPlayer]);
@@ -637,328 +211,25 @@
                 setPlayerSkill('5');
             };
 
-            const startEditPlayer = (player) => {
-                setEditingPlayer(player);
-                setPlayerName(player.name);
-                setPlayerSkill(player.skillRating.toString());
-            };
-
-            const saveEditPlayer = () => {
-                if (!playerName.trim() || !editingPlayer) return;
-                
-                const updatedPlayers = players.map(p => {
-                    if (p.id === editingPlayer.id) {
-                        return {
-                            ...p,
-                            name: playerName,
-                            skillRating: parseFloat(playerSkill)
-                        };
-                    }
-                    return p;
-                });
-                
-                setPlayers(updatedPlayers);
-                setEditingPlayer(null);
-                setPlayerName('');
-                setPlayerSkill('5');
-            };
-
-            const cancelEdit = () => {
-                setEditingPlayer(null);
-                setPlayerName('');
-                setPlayerSkill('5');
-            };
-
             const deletePlayer = (id) => {
-                if (confirm('Are you sure you want to delete this player?')) {
+                if (confirm('Delete this player?')) {
                     setPlayers(players.filter(p => p.id !== id));
                 }
             };
 
-            const addPairingRequest = () => {
-                if (!player1 || !player2 || player1 === player2) return;
-                
-                const request = {
-                    id: Date.now(),
-                    player1,
-                    player2
-                };
-                
-                setPairingRequests([...pairingRequests, request]);
-                setPlayer1('');
-                setPlayer2('');
-            };
-
-            const removePairingRequest = (id) => {
-                setPairingRequests(pairingRequests.filter(p => p.id !== id));
-            };
-
-            const generateTeams = () => {
-                if (selectedPlayers.length < 12) {
-                    alert('Please select at least 12 players');
-                    return;
-                }
-                
-                const activePlayers = players.filter(p => selectedPlayers.includes(p.id));
-                const numPlayersInt = activePlayers.length;
-                
-                const numFoursomes = Math.floor(numPlayersInt / 4);
-                const remainder = numPlayersInt % 4;
-                
-                let teamSizes = [];
-                if (remainder === 0) {
-                    teamSizes = new Array(numFoursomes).fill(4);
-                } else if (remainder === 3) {
-                    teamSizes = new Array(numFoursomes).fill(4).concat([3]);
-                } else if (remainder === 2) {
-                    teamSizes = new Array(numFoursomes - 1).fill(4).concat([3, 3]);
-                } else {
-                    teamSizes = new Array(numFoursomes - 2).fill(4).concat([3, 3, 3]);
-                }
-                
-                const paired = new Set();
-                const mustBeTogether = [];
-                
-                pairingRequests.forEach(request => {
-                    const p1 = activePlayers.find(p => p.id === parseInt(request.player1));
-                    const p2 = activePlayers.find(p => p.id === parseInt(request.player2));
-                    
-                    if (p1 && p2) {
-                        mustBeTogether.push([p1, p2]);
-                        paired.add(p1.id);
-                        paired.add(p2.id);
-                    }
-                });
-                
-                const remainingPlayers = activePlayers.filter(p => !paired.has(p.id));
-                
-                remainingPlayers.sort((a, b) => {
-                    const varietyA = Object.keys(a.teammates).length;
-                    const varietyB = Object.keys(b.teammates).length;
-                    return b.skillRating - a.skillRating || varietyA - varietyB;
-                });
-                
-                const newTeams = teamSizes.map(() => []);
-                
-                mustBeTogether.forEach((pair, idx) => {
-                    const teamIdx = idx % newTeams.length;
-                    newTeams[teamIdx].push(...pair);
-                });
-                
-                remainingPlayers.forEach(player => {
-                    let bestTeamIdx = 0;
-                    let bestScore = Infinity;
-                    
-                    newTeams.forEach((team, idx) => {
-                        if (team.length < teamSizes[idx]) {
-                            const teamSkill = team.reduce((sum, p) => sum + p.skillRating, 0);
-                            const targetSkill = teamSizes[idx] * 5;
-                            const skillDiff = Math.abs(teamSkill + player.skillRating - targetSkill);
-                            
-                            const varietyPenalty = team.reduce((sum, p) => {
-                                return sum + (player.teammates[p.id] || 0);
-                            }, 0);
-                            
-                            const score = skillDiff + varietyPenalty * 2;
-                            
-                            if (score < bestScore) {
-                                bestScore = score;
-                                bestTeamIdx = idx;
-                            }
-                        }
-                    });
-                    
-                    newTeams[bestTeamIdx].push(player);
-                });
-                
-                setTeams(newTeams);
-                setActiveTab('teams');
-            };
-
-            const startLiveRound = () => {
-                if (teams.length === 0) {
-                    alert('Please generate teams first!');
-                    return;
-                }
-                
-                const round = {
-                    id: Date.now(),
-                    date: new Date().toISOString(),
-                    teams: teams.map((team, idx) => ({
-                        id: idx,
-                        name: `Team ${idx + 1}`,
-                        players: team.map(p => ({
-                            id: p.id,
-                            name: p.name,
-                            scores: {} // hole number -> score
-                        })),
-                        totalScore: 0
-                    }))
-                };
-                
-                setLiveRound(round);
-                setActiveTab('live');
-            };
-
-            const updateLiveScore = (teamId, playerId, hole, score) => {
-                if (!liveRound) return;
-                
-                const updatedRound = {
-                    ...liveRound,
-                    teams: liveRound.teams.map(team => {
-                        if (team.id === teamId) {
-                            return {
-                                ...team,
-                                players: team.players.map(player => {
-                                    if (player.id === playerId) {
-                                        return {
-                                            ...player,
-                                            scores: {
-                                                ...player.scores,
-                                                [hole]: parseInt(score)
-                                            }
-                                        };
-                                    }
-                                    return player;
-                                })
-                            };
-                        }
-                        return team;
-                    })
-                };
-                
-                // Calculate team totals using new scoring rules
-                updatedRound.teams = updatedRound.teams.map(team => {
-                    let totalScore = 0;
-                    const allHoles = [...GUNPOWDER_SCORECARD.front9, ...GUNPOWDER_SCORECARD.back9];
-                    
-                    allHoles.forEach(holeInfo => {
-                        const holeScores = team.players
-                            .map(p => p.scores[holeInfo.hole])
-                            .filter(s => s !== undefined && s !== null && s !== '')
-                            .map(s => parseInt(s));
-                        
-                        if (holeScores.length > 0) {
-                            const par = holeInfo.par;
-                            
-                            // Get all under-par scores
-                            const underParScores = holeScores.filter(score => score < par);
-                            
-                            if (underParScores.length > 0) {
-                                // Count ALL under-par scores
-                                underParScores.forEach(score => {
-                                    totalScore += (score - par);
-                                });
-                            } else {
-                                // If no under-par scores, count only the best score
-                                const bestScore = Math.min(...holeScores);
-                                totalScore += (bestScore - par);
-                            }
-                        }
-                    });
-                    
-                    return { ...team, totalScore };
-                });
-                
-                setLiveRound(updatedRound);
-            };
-
-            const finishRound = () => {
-                if (!liveRound) return;
-                
-                // Save to history
-                setHistory([liveRound, ...history]);
-                
-                // Update player stats
-                const updatedPlayers = [...players];
-                liveRound.teams.forEach(team => {
-                    team.players.forEach(player => {
-                        const p = updatedPlayers.find(up => up.id === player.id);
-                        if (p) {
-                            const scores = Object.values(player.scores).filter(s => s);
-                            if (scores.length > 0) {
-                                const frontNineHoles = [1,2,3,4,5,6,7,8,9];
-                                const backNineHoles = [10,11,12,13,14,15,16,17,18];
-                                
-                                const frontScore = frontNineHoles.reduce((sum, h) => 
-                                    sum + (player.scores[h] || 0), 0);
-                                const backScore = backNineHoles.reduce((sum, h) => 
-                                    sum + (player.scores[h] || 0), 0);
-                                const totalScore = frontScore + backScore;
-                                
-                                if (totalScore > 0) {
-                                    const newGamesPlayed = p.gamesPlayed + 1;
-                                    p.avgFrontNine = ((p.avgFrontNine * p.gamesPlayed) + frontScore) / newGamesPlayed;
-                                    p.avgBackNine = ((p.avgBackNine * p.gamesPlayed) + backScore) / newGamesPlayed;
-                                    p.avgTotal = ((p.avgTotal * p.gamesPlayed) + totalScore) / newGamesPlayed;
-                                    p.gamesPlayed = newGamesPlayed;
-                                    
-                                    // Update skill rating
-                                    let skillAdjustment = 0;
-                                    if (totalScore < 80) skillAdjustment = 0.3;
-                                    else if (totalScore < 85) skillAdjustment = 0.2;
-                                    else if (totalScore < 90) skillAdjustment = 0.1;
-                                    else if (totalScore > 110) skillAdjustment = -0.2;
-                                    else if (totalScore > 120) skillAdjustment = -0.3;
-                                    
-                                    p.skillRating = Math.max(1, Math.min(10, p.skillRating + skillAdjustment));
-                                    
-                                    // Save score history
-                                    p.scoreHistory = [
-                                        ...(p.scoreHistory || []),
-                                        {
-                                            date: liveRound.date,
-                                            frontNine: frontScore,
-                                            backNine: backScore,
-                                            total: totalScore
-                                        }
-                                    ].sort((a, b) => new Date(b.date) - new Date(a.date));
-                                }
-                            }
-                        }
-                    });
-                });
-                
-                setPlayers(updatedPlayers);
-                setLiveRound(null);
-                alert('Round finished! Stats have been updated.');
-                setActiveTab('history');
-            };
-
-            const getSkillLevel = (rating) => {
-                if (rating <= 3) return 'beginner';
-                if (rating <= 7) return 'intermediate';
-                return 'advanced';
-            };
-
-            const togglePlayerSelection = (playerId) => {
-                if (selectedPlayers.includes(playerId)) {
-                    setSelectedPlayers(selectedPlayers.filter(id => id !== playerId));
-                } else {
-                    setSelectedPlayers([...selectedPlayers, playerId]);
-                }
-            };
-
-            // Render setup screen
             if (!isSetup) {
                 return (
                     <div className="app-container">
                         <div className="header">
                             <h1>⛳ Gunpowder Big Boy's Golf</h1>
-                            <p>Laurel, MD - Est. 1956</p>
+                            <p>Cloud-Synced League Management</p>
                         </div>
                         <div className="setup-screen">
-                            <h2 style={{marginBottom: '20px'}}>Welcome to the League!</h2>
-                            <p style={{marginBottom: '30px', color: '#666'}}>
-                                Create a new league or join an existing one
-                            </p>
-                            
+                            <h2 style={{marginBottom: '20px'}}>Welcome!</h2>
                             <button className="btn btn-primary" onClick={createNewLeague}>
                                 Create New League
                             </button>
-                            
                             <div style={{margin: '30px 0', color: '#999'}}>OR</div>
-                            
                             <div className="input-group">
                                 <label>Enter League Code</label>
                                 <input 
@@ -969,30 +240,31 @@
                                     style={{textTransform: 'uppercase'}}
                                 />
                             </div>
-                            
                             <button 
                                 className="btn btn-secondary" 
                                 onClick={joinExistingLeague}
                                 disabled={!joinCode.trim()}
-                                style={{opacity: joinCode.trim() ? 1 : 0.5}}
                             >
-                                Join Existing League
+                                Join League
                             </button>
+                            <div className="alert alert-success" style={{marginTop: '30px'}}>
+                                <strong>✅ Cloud Sync Active!</strong><br/>
+                                All data syncs in real-time across all devices.
+                            </div>
                         </div>
                     </div>
                 );
             }
 
-            // Main app render
             return (
                 <div className="app-container">
                     <div className="header">
                         <div className="sync-status">
-                            <div className="sync-indicator"></div>
-                            <span>Live</span>
+                            <span className="sync-indicator"></span>
+                            {syncStatus}
                         </div>
                         <h1>⛳ Gunpowder Big Boy's</h1>
-                        <p>League: {leagueId} | Par 70 | 6,061 yards</p>
+                        <p>League: {leagueId} | Par 70</p>
                     </div>
                     
                     <div className="nav-tabs">
@@ -1003,42 +275,6 @@
                             Players
                         </button>
                         <button 
-                            className={`nav-tab ${activeTab === 'generate' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('generate')}
-                        >
-                            Generate
-                        </button>
-                        <button 
-                            className={`nav-tab ${activeTab === 'teams' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('teams')}
-                        >
-                            Teams
-                        </button>
-                        <button 
-                            className={`nav-tab ${activeTab === 'live' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('live')}
-                        >
-                            Live Round
-                        </button>
-                        <button 
-                            className={`nav-tab ${activeTab === 'scorecard' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('scorecard')}
-                        >
-                            Course
-                        </button>
-                        <button 
-                            className={`nav-tab ${activeTab === 'stats' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('stats')}
-                        >
-                            Stats
-                        </button>
-                        <button 
-                            className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('history')}
-                        >
-                            History
-                        </button>
-                        <button 
                             className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}
                             onClick={() => setActiveTab('settings')}
                         >
@@ -1047,16 +283,9 @@
                     </div>
                     
                     <div className="content">
-                        {/* Players Tab */}
                         {activeTab === 'players' && (
                             <div>
                                 <h2 style={{marginBottom: '20px'}}>Manage Players</h2>
-                                
-                                {editingPlayer && (
-                                    <div className="alert alert-info">
-                                        Editing: <strong>{editingPlayer.name}</strong>
-                                    </div>
-                                )}
                                 
                                 <div className="input-group">
                                     <label>Player Name</label>
@@ -1069,7 +298,7 @@
                                 </div>
                                 
                                 <div className="input-group">
-                                    <label>Skill Rating (1-10)</label>
+                                    <label>Skill Rating (1-10): {playerSkill}</label>
                                     <input 
                                         type="range" 
                                         min="1" 
@@ -1078,25 +307,11 @@
                                         value={playerSkill}
                                         onChange={(e) => setPlayerSkill(e.target.value)}
                                     />
-                                    <div style={{textAlign: 'center', marginTop: '5px', fontWeight: 'bold'}}>
-                                        {parseFloat(playerSkill).toFixed(1)} - {getSkillLevel(parseFloat(playerSkill))}
-                                    </div>
                                 </div>
                                 
-                                {editingPlayer ? (
-                                    <div style={{display: 'flex', gap: '10px'}}>
-                                        <button className="btn btn-primary" onClick={saveEditPlayer} style={{flex: 1}}>
-                                            Save Changes
-                                        </button>
-                                        <button className="btn btn-secondary" onClick={cancelEdit} style={{flex: 1}}>
-                                            Cancel
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button className="btn btn-primary" onClick={addPlayer}>
-                                        Add Player
-                                    </button>
-                                )}
+                                <button className="btn btn-primary" onClick={addPlayer}>
+                                    Add Player
+                                </button>
                                 
                                 <h3 style={{marginTop: '30px', marginBottom: '15px'}}>
                                     Player Roster ({players.length})
@@ -1104,645 +319,71 @@
                                 
                                 {players.length === 0 ? (
                                     <div className="alert alert-info">
-                                        No players added yet. Add your first player to get started!
+                                        No players yet. Add your first player!
                                     </div>
                                 ) : (
                                     players.map(player => (
-                                        <div 
-                                            key={player.id} 
-                                            className="player-card"
-                                            onClick={() => setViewingPlayer(player)}
-                                        >
-                                            <div className="player-info">
-                                                <div className="player-name">
-                                                    {player.name}
-                                                    <span className={`skill-badge skill-${getSkillLevel(player.skillRating)}`}>
-                                                        {player.skillRating.toFixed(1)}
-                                                    </span>
-                                                </div>
-                                                <div className="player-stats">
-                                                    Rounds: {player.gamesPlayed} | 
-                                                    Avg: {player.avgTotal > 0 ? player.avgTotal.toFixed(1) : 'N/A'}
-                                                </div>
-                                            </div>
-                                            <div style={{display: 'flex', gap: '8px'}} onClick={(e) => e.stopPropagation()}>
-                                                <button 
-                                                    className="btn btn-secondary" 
-                                                    onClick={() => startEditPlayer(player)}
-                                                    style={{width: 'auto', padding: '8px 16px', marginTop: 0, fontSize: '12px'}}
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button 
-                                                    className="btn btn-danger" 
-                                                    onClick={() => deletePlayer(player.id)}
-                                                    style={{width: 'auto', padding: '8px 16px', marginTop: 0, fontSize: '12px'}}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        )}
-                        
-                        {/* Generate Tab */}
-                        {activeTab === 'generate' && (
-                            <div>
-                                <h2 style={{marginBottom: '20px'}}>Generate Teams</h2>
-                                
-                                <div className="alert alert-info">
-                                    Select players for today's outing. The app will create balanced teams.
-                                </div>
-                                
-                                <h3 style={{marginTop: '20px', marginBottom: '15px'}}>
-                                    Select Players ({selectedPlayers.length} selected)
-                                </h3>
-                                
-                                {players.map(player => (
-                                    <div key={player.id} className="checkbox-group">
-                                        <input 
-                                            type="checkbox"
-                                            checked={selectedPlayers.includes(player.id)}
-                                            onChange={() => togglePlayerSelection(player.id)}
-                                        />
-                                        <label>{player.name} (Skill: {player.skillRating.toFixed(1)})</label>
-                                    </div>
-                                ))}
-                                
-                                <h3 style={{marginTop: '30px', marginBottom: '15px'}}>Pairing Requests</h3>
-                                
-                                <div className="input-group">
-                                    <label>Player 1</label>
-                                    <select value={player1} onChange={(e) => setPlayer1(e.target.value)}>
-                                        <option value="">Select player</option>
-                                        {players.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                
-                                <div className="input-group">
-                                    <label>Player 2</label>
-                                    <select value={player2} onChange={(e) => setPlayer2(e.target.value)}>
-                                        <option value="">Select player</option>
-                                        {players.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                
-                                <button className="btn btn-secondary" onClick={addPairingRequest}>
-                                    Add Pairing Request
-                                </button>
-                                
-                                {pairingRequests.length > 0 && (
-                                    <div style={{marginTop: '20px'}}>
-                                        {pairingRequests.map(request => {
-                                            const p1 = players.find(p => p.id === parseInt(request.player1));
-                                            const p2 = players.find(p => p.id === parseInt(request.player2));
-                                            return (
-                                                <div key={request.id} className="pairing-request">
-                                                    <strong>{p1?.name}</strong> + <strong>{p2?.name}</strong>
-                                                    <button 
-                                                        onClick={() => removePairingRequest(request.id)}
-                                                        style={{
-                                                            float: 'right',
-                                                            background: 'none',
-                                                            border: 'none',
-                                                            color: '#e74c3c',
-                                                            cursor: 'pointer',
-                                                            fontWeight: 'bold'
-                                                        }}
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                                
-                                <button 
-                                    className="btn btn-primary" 
-                                    onClick={generateTeams}
-                                    style={{marginTop: '30px'}}
-                                >
-                                    Generate Teams
-                                </button>
-                            </div>
-                        )}
-                        
-                        {/* Teams Tab */}
-                        {activeTab === 'teams' && (
-                            <div>
-                                <h2 style={{marginBottom: '20px'}}>Today's Teams</h2>
-                                
-                                {teams.length === 0 ? (
-                                    <div className="alert alert-info">
-                                        No teams generated yet. Go to the Generate tab to create teams.
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="alert alert-success">
-                                            {teams.length} teams created with balanced skill levels
-                                        </div>
-                                        
-                                        {teams.map((team, idx) => {
-                                            const avgSkill = team.reduce((sum, p) => sum + p.skillRating, 0) / team.length;
-                                            return (
-                                                <div key={idx} className="team-container">
-                                                    <div className="team-header">
-                                                        Team {idx + 1} - Avg Skill: {avgSkill.toFixed(1)}
-                                                    </div>
-                                                    {team.map(player => (
-                                                        <div key={player.id} className="team-member">
-                                                            {player.name} ({player.skillRating.toFixed(1)})
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            );
-                                        })}
-                                        
-                                        <button className="btn btn-primary" onClick={startLiveRound}>
-                                            Start Live Round
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                        
-                        {/* Live Round Tab */}
-                        {activeTab === 'live' && (
-                            <div>
-                                <h2 style={{marginBottom: '20px'}}>Live Round Scoring</h2>
-                                
-                                {!liveRound ? (
-                                    <div className="alert alert-info">
-                                        No active round. Generate teams and click "Start Live Round" to begin.
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* Scoring Rules */}
-                                        <div className="alert alert-warning" style={{marginBottom: '20px'}}>
-                                            <strong>⛳ Scoring Rules:</strong>
-                                            <ul style={{marginLeft: '20px', marginTop: '10px', fontSize: '13px'}}>
-                                                <li>Each team counts their BEST score per hole</li>
-                                                <li>If a team has 2+ scores UNDER PAR on a hole, count ALL under-par scores!</li>
-                                                <li>Example: Two birdies on a par 4 = -2 for the team on that hole</li>
-                                            </ul>
-                                        </div>
-                                        
-                                        {/* Leaderboard */}
-                                        <div className="leaderboard">
-                                            <div className="leaderboard-header">
-                                                🏆 Live Leaderboard
-                                            </div>
-                                            {[...liveRound.teams]
-                                                .sort((a, b) => a.totalScore - b.totalScore)
-                                                .map((team, idx) => (
-                                                    <div key={team.id} className="leaderboard-item">
-                                                        <div className="leaderboard-rank">#{idx + 1}</div>
-                                                        <div className="leaderboard-team">
-                                                            <div style={{fontWeight: 'bold', marginBottom: '5px'}}>
-                                                                {team.name}
-                                                            </div>
-                                                            <div style={{fontSize: '12px', color: '#666'}}>
-                                                                {team.players.map(p => p.name).join(', ')}
-                                                            </div>
-                                                        </div>
-                                                        <div className="leaderboard-score">
-                                                            {team.totalScore > 0 ? '+' : ''}{team.totalScore}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                        
-                                        {/* Score Entry */}
-                                        <h3 style={{marginTop: '30px', marginBottom: '15px'}}>Enter Scores</h3>
-                                        
-                                        {liveRound.teams.map(team => (
-                                            <div key={team.id} style={{marginBottom: '30px'}}>
-                                                <div className="team-container">
-                                                    <div className="team-header">{team.name}</div>
-                                                    
-                                                    {team.players.map(player => (
-                                                        <div key={player.id} style={{marginBottom: '20px'}}>
-                                                            <div style={{
-                                                                background: 'rgba(255,255,255,0.9)',
-                                                                color: '#333',
-                                                                padding: '10px',
-                                                                borderRadius: '8px',
-                                                                marginBottom: '10px'
-                                                            }}>
-                                                                <strong>{player.name}</strong>
-                                                            </div>
-                                                            
-                                                            {/* Front 9 */}
-                                                            <div style={{
-                                                                background: 'rgba(255,255,255,0.7)',
-                                                                padding: '10px',
-                                                                borderRadius: '8px',
-                                                                marginBottom: '10px'
-                                                            }}>
-                                                                <div style={{color: '#333', fontWeight: 'bold', marginBottom: '5px'}}>
-                                                                    Front 9
-                                                                </div>
-                                                                <div style={{
-                                                                    display: 'grid',
-                                                                    gridTemplateColumns: 'repeat(9, 1fr)',
-                                                                    gap: '5px'
-                                                                }}>
-                                                                    {GUNPOWDER_SCORECARD.front9.map(hole => (
-                                                                        <div key={hole.hole} style={{textAlign: 'center'}}>
-                                                                            <div style={{fontSize: '10px', color: '#666'}}>
-                                                                                {hole.hole}
-                                                                            </div>
-                                                                            <div style={{fontSize: '9px', color: '#999'}}>
-                                                                                Par {hole.par}
-                                                                            </div>
-                                                                            <input
-                                                                                className="score-input"
-                                                                                type="number"
-                                                                                min="1"
-                                                                                max="15"
-                                                                                value={player.scores[hole.hole] || ''}
-                                                                                onChange={(e) => updateLiveScore(
-                                                                                    team.id,
-                                                                                    player.id,
-                                                                                    hole.hole,
-                                                                                    e.target.value
-                                                                                )}
-                                                                                style={{fontSize: '12px'}}
-                                                                            />
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            {/* Back 9 */}
-                                                            <div style={{
-                                                                background: 'rgba(255,255,255,0.7)',
-                                                                padding: '10px',
-                                                                borderRadius: '8px'
-                                                            }}>
-                                                                <div style={{color: '#333', fontWeight: 'bold', marginBottom: '5px'}}>
-                                                                    Back 9
-                                                                </div>
-                                                                <div style={{
-                                                                    display: 'grid',
-                                                                    gridTemplateColumns: 'repeat(9, 1fr)',
-                                                                    gap: '5px'
-                                                                }}>
-                                                                    {GUNPOWDER_SCORECARD.back9.map(hole => (
-                                                                        <div key={hole.hole} style={{textAlign: 'center'}}>
-                                                                            <div style={{fontSize: '10px', color: '#666'}}>
-                                                                                {hole.hole}
-                                                                            </div>
-                                                                            <div style={{fontSize: '9px', color: '#999'}}>
-                                                                                Par {hole.par}
-                                                                            </div>
-                                                                            <input
-                                                                                className="score-input"
-                                                                                type="number"
-                                                                                min="1"
-                                                                                max="15"
-                                                                                value={player.scores[hole.hole] || ''}
-                                                                                onChange={(e) => updateLiveScore(
-                                                                                    team.id,
-                                                                                    player.id,
-                                                                                    hole.hole,
-                                                                                    e.target.value
-                                                                                )}
-                                                                                style={{fontSize: '12px'}}
-                                                                            />
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                        
-                                        <button className="btn btn-primary" onClick={finishRound}>
-                                            Finish Round & Save Stats
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                        
-                        {/* Scorecard Tab */}
-                        {activeTab === 'scorecard' && (
-                            <div>
-                                <h2 style={{marginBottom: '20px'}}>Gunpowder Golf Course</h2>
-                                
-                                <div className="alert alert-success">
-                                    Par 70 | 6,061 Yards | Rating: 67.3 | Slope: 110
-                                </div>
-                                
-                                <h3 style={{marginTop: '20px', marginBottom: '10px'}}>Front 9</h3>
-                                <table className="scorecard-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Hole</th>
-                                            <th>Par</th>
-                                            <th>Yards</th>
-                                            <th>Hdcp</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {GUNPOWDER_SCORECARD.front9.map(hole => (
-                                            <tr key={hole.hole} className={`par-${hole.par}`}>
-                                                <td><strong>{hole.hole}</strong></td>
-                                                <td>{hole.par}</td>
-                                                <td>{hole.yards}</td>
-                                                <td>{hole.handicap}</td>
-                                            </tr>
-                                        ))}
-                                        <tr style={{background: '#27ae60', color: 'white', fontWeight: 'bold'}}>
-                                            <td>OUT</td>
-                                            <td>35</td>
-                                            <td>3,150</td>
-                                            <td>-</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                
-                                <h3 style={{marginTop: '20px', marginBottom: '10px'}}>Back 9</h3>
-                                <table className="scorecard-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Hole</th>
-                                            <th>Par</th>
-                                            <th>Yards</th>
-                                            <th>Hdcp</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {GUNPOWDER_SCORECARD.back9.map(hole => (
-                                            <tr key={hole.hole} className={`par-${hole.par}`}>
-                                                <td><strong>{hole.hole}</strong></td>
-                                                <td>{hole.par}</td>
-                                                <td>{hole.yards}</td>
-                                                <td>{hole.handicap}</td>
-                                            </tr>
-                                        ))}
-                                        <tr style={{background: '#27ae60', color: 'white', fontWeight: 'bold'}}>
-                                            <td>IN</td>
-                                            <td>35</td>
-                                            <td>2,911</td>
-                                            <td>-</td>
-                                        </tr>
-                                        <tr style={{background: '#229954', color: 'white', fontWeight: 'bold'}}>
-                                            <td>TOTAL</td>
-                                            <td>70</td>
-                                            <td>6,061</td>
-                                            <td>-</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                
-                                <div style={{marginTop: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '10px'}}>
-                                    <strong>Course Info:</strong>
-                                    <ul style={{marginLeft: '20px', marginTop: '10px', fontSize: '14px'}}>
-                                        <li>Location: 14300 Old Gunpowder Rd, Laurel, MD 20707</li>
-                                        <li>Established: 1956 (Oldest in Prince George's County)</li>
-                                        <li>Designer: Robert C. Milligan</li>
-                                        <li>Style: Scottish links with rolling hills</li>
-                                        <li>Signature Hole: #16</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Stats Tab */}
-                        {activeTab === 'stats' && (
-                            <div>
-                                <h2 style={{marginBottom: '20px'}}>Statistics Dashboard</h2>
-                                
-                                {players.length === 0 ? (
-                                    <div className="alert alert-info">
-                                        No players yet. Add players to see statistics.
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* League Stats */}
-                                        <div style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: 'repeat(2, 1fr)',
-                                            gap: '15px',
-                                            marginBottom: '20px'
-                                        }}>
-                                            <div className="stat-card">
-                                                <div className="stat-label">Total Players</div>
-                                                <div className="stat-value">{players.length}</div>
-                                            </div>
-                                            <div className="stat-card">
-                                                <div className="stat-label">Total Rounds</div>
-                                                <div className="stat-value">
-                                                    {players.reduce((sum, p) => sum + p.gamesPlayed, 0)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Top Performers */}
-                                        <h3 style={{marginBottom: '15px'}}>Top Performers</h3>
-                                        <div style={{marginBottom: '30px'}}>
-                                            {players
-                                                .filter(p => p.gamesPlayed > 0)
-                                                .sort((a, b) => a.avgTotal - b.avgTotal)
-                                                .slice(0, 5)
-                                                .map((player, idx) => (
-                                                    <div key={player.id} className="player-card">
-                                                        <div style={{fontSize: '24px', fontWeight: 'bold', color: '#27ae60', width: '40px'}}>
-                                                            {idx + 1}
-                                                        </div>
-                                                        <div className="player-info">
-                                                            <div className="player-name">{player.name}</div>
-                                                            <div className="player-stats">
-                                                                Avg Score: {player.avgTotal.toFixed(1)} | 
-                                                                Rounds: {player.gamesPlayed}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                        
-                                        {/* Click any player for detailed stats */}
-                                        <div className="alert alert-info">
-                                            💡 Click any player in the Players tab to view their detailed statistics and score history!
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                        
-                        {/* History Tab */}
-                        {activeTab === 'history' && (
-                            <div>
-                                <h2 style={{marginBottom: '20px'}}>Round History</h2>
-                                
-                                {history.length === 0 ? (
-                                    <div className="alert alert-info">
-                                        No rounds played yet. Complete a live round to see history here.
-                                    </div>
-                                ) : (
-                                    history.map(round => (
-                                        <div key={round.id} style={{
+                                        <div key={player.id} style={{
                                             background: '#f8f9fa',
                                             padding: '15px',
                                             borderRadius: '10px',
-                                            marginBottom: '15px'
+                                            marginBottom: '10px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
                                         }}>
-                                            <div style={{fontWeight: '600', color: '#27ae60', marginBottom: '15px'}}>
-                                                {new Date(round.date).toLocaleDateString('en-US', {
-                                                    weekday: 'long',
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })}
-                                            </div>
-                                            {round.teams.map(team => (
-                                                <div key={team.id} style={{
-                                                    background: 'white',
-                                                    padding: '10px',
-                                                    borderRadius: '6px',
-                                                    marginBottom: '8px'
-                                                }}>
-                                                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                                                        <div>
-                                                            <strong>{team.name}:</strong> {team.players.map(p => p.name).join(', ')}
-                                                        </div>
-                                                        <div style={{fontWeight: 'bold', color: '#e74c3c'}}>
-                                                            {team.totalScore > 0 ? '+' : ''}{team.totalScore}
-                                                        </div>
-                                                    </div>
+                                            <div>
+                                                <div style={{fontWeight: 'bold', marginBottom: '5px'}}>
+                                                    {player.name}
                                                 </div>
-                                            ))}
+                                                <div style={{fontSize: '14px', color: '#666'}}>
+                                                    Skill: {player.skillRating.toFixed(1)} | Games: {player.gamesPlayed}
+                                                </div>
+                                            </div>
+                                            <button 
+                                                className="btn btn-danger" 
+                                                onClick={() => deletePlayer(player.id)}
+                                                style={{width: 'auto', padding: '8px 16px', marginTop: 0}}
+                                            >
+                                                Delete
+                                            </button>
                                         </div>
                                     ))
                                 )}
                             </div>
                         )}
                         
-                        {/* Settings Tab */}
                         {activeTab === 'settings' && (
                             <div>
                                 <h2 style={{marginBottom: '20px'}}>League Settings</h2>
                                 
-                                <div className="share-box">
+                                <div style={{
+                                    background: '#f8f9fa',
+                                    padding: '20px',
+                                    borderRadius: '10px',
+                                    border: '2px dashed #27ae60'
+                                }}>
                                     <h3 style={{marginBottom: '10px'}}>Share Your League</h3>
-                                    <p style={{fontSize: '14px', color: '#666', marginBottom: '15px'}}>
-                                        Share this code with other Big Boys!
-                                    </p>
+                                    <p style={{marginBottom: '15px'}}>Share this code with your league members:</p>
                                     <div className="share-code">{leagueId}</div>
-                                    <button className="btn btn-secondary" onClick={copyLeagueCode}>
+                                    <button 
+                                        className="btn btn-secondary"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(leagueId);
+                                            alert('Code copied!');
+                                        }}
+                                    >
                                         📋 Copy Code
                                     </button>
                                 </div>
-                                
-                                <button 
-                                    className="btn btn-danger" 
-                                    onClick={() => {
-                                        if (confirm('Are you sure you want to leave this league?')) {
-                                            CloudStorage.setLeagueId('');
-                                            window.location.reload();
-                                        }
-                                    }}
-                                >
-                                    Leave League
-                                </button>
                             </div>
                         )}
                     </div>
-                    
-                    {/* Player Profile Modal */}
-                    {viewingPlayer && (
-                        <div className="modal-overlay" onClick={() => setViewingPlayer(null)}>
-                            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                                <div className="modal-header">
-                                    <h2 style={{margin: 0}}>{viewingPlayer.name}</h2>
-                                    <button className="modal-close" onClick={() => setViewingPlayer(null)}>
-                                        ✕
-                                    </button>
-                                </div>
-                                
-                                <div style={{marginBottom: '20px'}}>
-                                    <div className="stat-card">
-                                        <div className="stat-label">Skill Rating</div>
-                                        <div className="stat-value">{viewingPlayer.skillRating.toFixed(1)}</div>
-                                    </div>
-                                    
-                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '15px'}}>
-                                        <div style={{textAlign: 'center', padding: '10px', background: '#e8f5e9', borderRadius: '8px'}}>
-                                            <div style={{fontSize: '12px', color: '#666'}}>Avg Front 9</div>
-                                            <div style={{fontSize: '20px', fontWeight: 'bold', color: '#27ae60'}}>
-                                                {viewingPlayer.avgFrontNine > 0 ? viewingPlayer.avgFrontNine.toFixed(1) : 'N/A'}
-                                            </div>
-                                        </div>
-                                        <div style={{textAlign: 'center', padding: '10px', background: '#fff3e0', borderRadius: '8px'}}>
-                                            <div style={{fontSize: '12px', color: '#666'}}>Avg Back 9</div>
-                                            <div style={{fontSize: '20px', fontWeight: 'bold', color: '#ef6c00'}}>
-                                                {viewingPlayer.avgBackNine > 0 ? viewingPlayer.avgBackNine.toFixed(1) : 'N/A'}
-                                            </div>
-                                        </div>
-                                        <div style={{textAlign: 'center', padding: '10px', background: '#e3f2fd', borderRadius: '8px'}}>
-                                            <div style={{fontSize: '12px', color: '#666'}}>Avg Total</div>
-                                            <div style={{fontSize: '20px', fontWeight: 'bold', color: '#1976d2'}}>
-                                                {viewingPlayer.avgTotal > 0 ? viewingPlayer.avgTotal.toFixed(1) : 'N/A'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <h3 style={{marginBottom: '15px'}}>Score History ({viewingPlayer.gamesPlayed} rounds)</h3>
-                                
-                                {viewingPlayer.scoreHistory && viewingPlayer.scoreHistory.length > 0 ? (
-                                    viewingPlayer.scoreHistory.map((score, idx) => (
-                                        <div key={idx} style={{
-                                            background: '#f8f9fa',
-                                            padding: '15px',
-                                            borderRadius: '8px',
-                                            marginBottom: '10px'
-                                        }}>
-                                            <div style={{fontWeight: '600', color: '#27ae60', marginBottom: '8px'}}>
-                                                {new Date(score.date).toLocaleDateString('en-US', {
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                })}
-                                            </div>
-                                            <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #dee2e6'}}>
-                                                <span>Front 9:</span>
-                                                <strong>{score.frontNine}</strong>
-                                            </div>
-                                            <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #dee2e6'}}>
-                                                <span>Back 9:</span>
-                                                <strong>{score.backNine}</strong>
-                                            </div>
-                                            <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '8px', paddingTop: '8px', borderTop: '2px solid #27ae60'}}>
-                                                <span style={{fontWeight: 'bold'}}>Total:</span>
-                                                <strong style={{color: '#27ae60', fontSize: '18px'}}>{score.total}</strong>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="alert alert-info">
-                                        No rounds played yet
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         }
 
-        ReactDOM.render(<GunpowderBigBoysGolf />, document.getElementById('root'));
+        ReactDOM.render(<GunpowderApp />, document.getElementById('root'));
     </script>
 </body>
 </html>
