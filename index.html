@@ -724,84 +724,77 @@
                 setPairingRequests(pairingRequests.filter(p => p.id !== id));
             };
 
-            const generateTeams = () => {
-               if (selectedPlayers.length < 6) {
-                alert('Please select at least 6 players');
-                return;
-            }
-                
-                const activePlayers = players.filter(p => selectedPlayers.includes(p.id));
-                const numPlayersInt = activePlayers.length;
-                
-                const numFoursomes = Math.floor(numPlayersInt / 4);
-                const remainder = numPlayersInt % 4;
-                
-                let teamSizes = [];
-                if (remainder === 0) {
-                    teamSizes = new Array(numFoursomes).fill(4);
-                } else if (remainder === 3) {
-                    teamSizes = new Array(numFoursomes).fill(4).concat([3]);
-                } else if (remainder === 2) {
-                    teamSizes = new Array(numFoursomes - 1).fill(4).concat([3, 3]);
-                } else {
-                    teamSizes = new Array(numFoursomes - 2).fill(4).concat([3, 3, 3]);
-                }
-                
-                const paired = new Set();
-                const mustBeTogether = [];
-                
-                pairingRequests.forEach(request => {
-                    const p1 = activePlayers.find(p => p.id === parseInt(request.player1));
-                    const p2 = activePlayers.find(p => p.id === parseInt(request.player2));
-                    
-                    if (p1 && p2) {
-                        mustBeTogether.push([p1, p2]);
-                        paired.add(p1.id);
-                        paired.add(p2.id);
-                    }
-                });
-                
-                const remainingPlayers = activePlayers.filter(p => !paired.has(p.id));
-                
-                remainingPlayers.sort((a, b) => {
-                    const varietyA = Object.keys(a.teammates).length;
-                    const varietyB = Object.keys(b.teammates).length;
-                    return b.skillRating - a.skillRating || varietyA - varietyB;
-                });
-                
-                const newTeams = teamSizes.map(() => []);
-                
-                mustBeTogether.forEach((pair, idx) => {
-                    const teamIdx = idx % newTeams.length;
-                    newTeams[teamIdx].push(...pair);
-                });
-                
-               
-                   // Snake draft distribution for better balance
-let assignmentRound = 0;
-let playerIndex = 0;
-
-while (playerIndex < remainingPlayers.length) {
-    const isForwardPass = assignmentRound % 2 === 0;
-    const teamOrder = isForwardPass 
-        ? Array.from({length: newTeams.length}, (_, i) => i)  // 0,1,2,3
-        : Array.from({length: newTeams.length}, (_, i) => newTeams.length - 1 - i);  // 3,2,1,0
-    
-    for (let teamIdx of teamOrder) {
-        if (playerIndex >= remainingPlayers.length) break;
-        if (newTeams[teamIdx].length < teamSizes[teamIdx]) {
-            newTeams[teamIdx].push(remainingPlayers[playerIndex]);
-            playerIndex++;
-        }
+           const generateTeams = () => {
+    if (selectedPlayers.length < 6) {
+        alert('Please select at least 6 players');
+        return;
     }
     
-    assignmentRound++;
-}
-                    
-                             
-                setTeams(newTeams);
-                setActiveTab('teams');
-            };
+    const activePlayers = players.filter(p => selectedPlayers.includes(p.id));
+    const numPlayersInt = activePlayers.length;
+    
+    const numFoursomes = Math.floor(numPlayersInt / 4);
+    const remainder = numPlayersInt % 4;
+    
+    let teamSizes = [];
+    if (remainder === 0) {
+        teamSizes = new Array(numFoursomes).fill(4);
+    } else if (remainder === 3) {
+        teamSizes = new Array(numFoursomes).fill(4).concat([3]);
+    } else if (remainder === 2) {
+        teamSizes = new Array(numFoursomes - 1).fill(4).concat([3, 3]);
+    } else {
+        teamSizes = new Array(numFoursomes - 2).fill(4).concat([3, 3, 3]);
+    }
+    
+    const paired = new Set();
+    const mustBeTogether = [];
+    
+    pairingRequests.forEach(request => {
+        const p1 = activePlayers.find(p => p.id === parseInt(request.player1));
+        const p2 = activePlayers.find(p => p.id === parseInt(request.player2));
+        
+        if (p1 && p2) {
+            mustBeTogether.push([p1, p2]);
+            paired.add(p1.id);
+            paired.add(p2.id);
+        }
+    });
+    
+    const remainingPlayers = activePlayers.filter(p => !paired.has(p.id));
+    remainingPlayers.sort((a, b) => b.skillRating - a.skillRating);
+    
+    const newTeams = teamSizes.map(() => []);
+    
+    mustBeTogether.forEach((pair, idx) => {
+        const teamIdx = idx % newTeams.length;
+        newTeams[teamIdx].push(...pair);
+    });
+    
+    // Snake draft distribution for better balance
+    let assignmentRound = 0;
+    let playerIndex = 0;
+    
+    while (playerIndex < remainingPlayers.length) {
+        const isForwardPass = assignmentRound % 2 === 0;
+        const teamOrder = isForwardPass 
+            ? Array.from({length: newTeams.length}, (_, i) => i)
+            : Array.from({length: newTeams.length}, (_, i) => newTeams.length - 1 - i);
+        
+        for (let teamIdx of teamOrder) {
+            if (playerIndex >= remainingPlayers.length) break;
+            if (newTeams[teamIdx].length < teamSizes[teamIdx]) {
+                newTeams[teamIdx].push(remainingPlayers[playerIndex]);
+                playerIndex++;
+            }
+        }
+        
+        assignmentRound++;
+    }
+    
+    setTeams(newTeams);
+    setActiveTab('teams');
+};
 
             const startLiveRound = () => {
                 if (teams.length === 0) {
