@@ -1287,7 +1287,80 @@ const deleteManualTeam = (id) => {
                                         })}
                                     </div>
                                 )}
-                                
+                                <h3 style={{marginTop: '30px', marginBottom: '15px'}}>Manual Teams</h3>
+<div className="alert alert-info" style={{fontSize: '14px'}}>
+    Create locked teams of 3-4 players. The algorithm will balance remaining players.
+</div>
+
+{manualTeams.length > 0 && (
+    <div style={{marginBottom: '20px'}}>
+        {manualTeams.map(team => (
+            <div key={team.id} style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                padding: '15px',
+                borderRadius: '10px',
+                marginBottom: '10px'
+            }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px'}}>
+                    <strong>Manual Team ({team.players.length} players)</strong>
+                    <button onClick={() => deleteManualTeam(team.id)} style={{
+                        background: 'rgba(255,255,255,0.2)',
+                        border: 'none',
+                        color: 'white',
+                        padding: '5px 10px',
+                        borderRadius: '5px',
+                        cursor: 'pointer'
+                    }}>Delete</button>
+                </div>
+                {team.players.map(p => (
+                    <div key={p.id} style={{
+                        background: 'rgba(255,255,255,0.2)',
+                        padding: '8px',
+                        borderRadius: '5px',
+                        marginBottom: '5px'
+                    }}>
+                        {p.name} ({p.skillRating.toFixed(1)})
+                    </div>
+                ))}
+            </div>
+        ))}
+    </div>
+)}
+
+{!creatingManualTeam ? (
+    <button className="btn btn-secondary" onClick={startCreatingManualTeam} style={{marginBottom: '15px'}}>
+        + Create Manual Team
+    </button>
+) : (
+    <div style={{background: '#f8f9fa', padding: '20px', borderRadius: '10px', marginBottom: '20px'}}>
+        <h4 style={{marginBottom: '15px'}}>Select 3-4 Players for Manual Team</h4>
+        <div style={{marginBottom: '15px', color: '#666', fontSize: '14px'}}>
+            Selected: {selectedForManualTeam.length} / 4
+        </div>
+        {players.map(player => (
+            <div key={player.id} className="checkbox-group">
+                <input 
+                    type="checkbox"
+                    checked={selectedForManualTeam.includes(player.id)}
+                    onChange={() => togglePlayerForManualTeam(player.id)}
+                    disabled={!selectedForManualTeam.includes(player.id) && selectedForManualTeam.length >= 4}
+                />
+                <label style={{opacity: (!selectedForManualTeam.includes(player.id) && selectedForManualTeam.length >= 4) ? 0.5 : 1}}>
+                    {player.name} (Skill: {player.skillRating.toFixed(1)})
+                </label>
+            </div>
+        ))}
+        <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
+            <button className="btn btn-primary" onClick={saveManualTeam} style={{flex: 1}}>
+                Save Manual Team
+            </button>
+            <button className="btn btn-secondary" onClick={cancelManualTeam} style={{flex: 1}}>
+                Cancel
+            </button>
+        </div>
+    </div>
+)}
                                 <button 
                                     className="btn btn-primary" 
                                     onClick={generateTeams}
