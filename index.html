@@ -564,6 +564,9 @@
             // Pairing form
             const [player1, setPlayer1] = useState('');
             const [player2, setPlayer2] = useState('');
+            const [manualTeams, setManualTeams] = useState([]);
+            const [creatingManualTeam, setCreatingManualTeam] = useState(false);
+            const [selectedForManualTeam, setSelectedForManualTeam] = useState([]);
             
            // Check for existing league
             useEffect(() => {
