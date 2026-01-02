@@ -767,29 +767,29 @@ const cancelManualTeam = () => {
 const deleteManualTeam = (id) => {
     setManualTeams(manualTeams.filter(t => t.id !== id));
 };
-            const generateTeams = () => {
+           const generateTeams = () => {
+    // Check if we have enough players
+    const totalManualPlayers = manualTeams.reduce((sum, team) => sum + team.players.length, 0);
+    const availableForSelection = selectedPlayers.length - totalManualPlayers;
+    
     if (selectedPlayers.length < 6) {
-        alert('Please select at least 6 players');
+        alert('Please select at least 6 players total');
         return;
     }
     
-    const activePlayers = players.filter(p => selectedPlayers.includes(p.id));
-    const numPlayersInt = activePlayers.length;
+    // Start with manual teams
+    const finalTeams = manualTeams.map(mt => [...mt.players]);
     
-    const numFoursomes = Math.floor(numPlayersInt / 4);
-    const remainder = numPlayersInt % 4;
+    // Get players not in manual teams
+    const manualTeamPlayerIds = new Set(
+        manualTeams.flatMap(team => team.players.map(p => p.id))
+    );
     
-    let teamSizes = [];
-    if (remainder === 0) {
-        teamSizes = new Array(numFoursomes).fill(4);
-    } else if (remainder === 3) {
-        teamSizes = new Array(numFoursomes).fill(4).concat([3]);
-    } else if (remainder === 2) {
-        teamSizes = new Array(numFoursomes - 1).fill(4).concat([3, 3]);
-    } else {
-        teamSizes = new Array(numFoursomes - 2).fill(4).concat([3, 3, 3]);
-    }
+    const activePlayers = players.filter(p => 
+        selectedPlayers.includes(p.id) && !manualTeamPlayerIds.has(p.id)
+    );
     
+    // Handle pairing requests for remaining players
     const paired = new Set();
     const mustBeTogether = [];
     
@@ -807,14 +807,60 @@ const deleteManualTeam = (id) => {
     const remainingPlayers = activePlayers.filter(p => !paired.has(p.id));
     remainingPlayers.sort((a, b) => b.skillRating - a.skillRating);
     
-    const newTeams = teamSizes.map(() => []);
+    // Calculate how many more teams we need
+    const numRemainingPlayers = activePlayers.length;
+    const numFoursomes = Math.floor(numRemainingPlayers / 4);
+    const remainder = numRemainingPlayers % 4;
     
+    let newTeamSizes = [];
+    if (remainder === 0) {
+        newTeamSizes = new Array(numFoursomes).fill(4);
+    } else if (remainder === 3) {
+        newTeamSizes = new Array(numFoursomes).fill(4).concat([3]);
+    } else if (remainder === 2) {
+        newTeamSizes = new Array(numFoursomes - 1).fill(4).concat([3, 3]);
+    } else if (remainder === 1) {
+        newTeamSizes = new Array(numFoursomes - 2).fill(4).concat([3, 3, 3]);
+    }
+    
+    // Check if any manual teams need a 4th player
+    const incompleteManualTeams = finalTeams.filter(team => team.length === 3);
+    
+    if (incompleteManualTeams.length > 0 && remainingPlayers.length > 0) {
+        // Fill incomplete manual teams first
+        incompleteManualTeams.forEach(team => {
+            if (remainingPlayers.length > 0) {
+                // Find best fit based on skill balance
+                const currentSkill = team.reduce((sum, p) => sum + p.skillRating, 0);
+                const targetSkill = 20; // 4 players * 5.0 average
+                
+                let bestIdx = 0;
+                let bestDiff = Math.abs(currentSkill + remainingPlayers[0].skillRating - targetSkill);
+                
+                for (let i = 1; i < remainingPlayers.length; i++) {
+                    const diff = Math.abs(currentSkill + remainingPlayers[i].skillRating - targetSkill);
+                    if (diff < bestDiff) {
+                        bestDiff = diff;
+                        bestIdx = i;
+                    }
+                }
+                
+                team.push(remainingPlayers[bestIdx]);
+                remainingPlayers.splice(bestIdx, 1);
+            }
+        });
+    }
+    
+    // Create new teams for remaining players
+    const newTeams = newTeamSizes.map(() => []);
+    
+    // Add pairing requests
     mustBeTogether.forEach((pair, idx) => {
         const teamIdx = idx % newTeams.length;
         newTeams[teamIdx].push(...pair);
     });
     
-    // Snake draft distribution for better balance
+    // Snake draft for remaining players
     let assignmentRound = 0;
     let playerIndex = 0;
     
@@ -826,7 +872,7 @@ const deleteManualTeam = (id) => {
         
         for (let teamIdx of teamOrder) {
             if (playerIndex >= remainingPlayers.length) break;
-            if (newTeams[teamIdx].length < teamSizes[teamIdx]) {
+            if (newTeams[teamIdx].length < newTeamSizes[teamIdx]) {
                 newTeams[teamIdx].push(remainingPlayers[playerIndex]);
                 playerIndex++;
             }
@@ -835,7 +881,10 @@ const deleteManualTeam = (id) => {
         assignmentRound++;
     }
     
-    setTeams(newTeams);
+    // Combine manual teams with generated teams
+    const allTeams = [...finalTeams, ...newTeams];
+    
+    setTeams(allTeams);
     setActiveTab('teams');
 };
 
