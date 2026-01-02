@@ -727,7 +727,47 @@
                 setPairingRequests(pairingRequests.filter(p => p.id !== id));
             };
 
-           const generateTeams = () => {
+           const startCreatingManualTeam = () => {
+    setCreatingManualTeam(true);
+    setSelectedForManualTeam([]);
+};
+
+const togglePlayerForManualTeam = (playerId) => {
+    if (selectedForManualTeam.includes(playerId)) {
+        setSelectedForManualTeam(selectedForManualTeam.filter(id => id !== playerId));
+    } else {
+        if (selectedForManualTeam.length < 4) {
+            setSelectedForManualTeam([...selectedForManualTeam, playerId]);
+        }
+    }
+};
+
+const saveManualTeam = () => {
+    if (selectedForManualTeam.length < 3) {
+        alert('Manual teams must have at least 3 players');
+        return;
+    }
+    
+    const teamPlayers = players.filter(p => selectedForManualTeam.includes(p.id));
+    const newManualTeam = {
+        id: Date.now(),
+        players: teamPlayers
+    };
+    
+    setManualTeams([...manualTeams, newManualTeam]);
+    setCreatingManualTeam(false);
+    setSelectedForManualTeam([]);
+};
+
+const cancelManualTeam = () => {
+    setCreatingManualTeam(false);
+    setSelectedForManualTeam([]);
+};
+
+const deleteManualTeam = (id) => {
+    setManualTeams(manualTeams.filter(t => t.id !== id));
+};
+            const generateTeams = () => {
     if (selectedPlayers.length < 6) {
         alert('Please select at least 6 players');
         return;
