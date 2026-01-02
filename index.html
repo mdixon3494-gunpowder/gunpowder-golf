@@ -777,27 +777,26 @@
                 });
                 
                 remainingPlayers.forEach(player => {
-                    let bestTeamIdx = 0;
-                    let bestScore = Infinity;
-                    
-                    newTeams.forEach((team, idx) => {
-                        if (team.length < teamSizes[idx]) {
-                            const teamSkill = team.reduce((sum, p) => sum + p.skillRating, 0);
-                            const targetSkill = teamSizes[idx] * 5;
-                            const skillDiff = Math.abs(teamSkill + player.skillRating - targetSkill);
-                            
-                            const varietyPenalty = team.reduce((sum, p) => {
-                                return sum + (player.teammates[p.id] || 0);
-                            }, 0);
-                            
-                            const score = skillDiff + varietyPenalty * 2;
-                            
-                            if (score < bestScore) {
-                                bestScore = score;
-                                bestTeamIdx = idx;
-                            }
-                        }
-                    });
+                   // Snake draft distribution for better balance
+let assignmentRound = 0;
+let playerIndex = 0;
+
+while (playerIndex < remainingPlayers.length) {
+    const isForwardPass = assignmentRound % 2 === 0;
+    const teamOrder = isForwardPass 
+        ? Array.from({length: newTeams.length}, (_, i) => i)  // 0,1,2,3
+        : Array.from({length: newTeams.length}, (_, i) => newTeams.length - 1 - i);  // 3,2,1,0
+    
+    for (let teamIdx of teamOrder) {
+        if (playerIndex >= remainingPlayers.length) break;
+        if (newTeams[teamIdx].length < teamSizes[teamIdx]) {
+            newTeams[teamIdx].push(remainingPlayers[playerIndex]);
+            playerIndex++;
+        }
+    }
+    
+    assignmentRound++;
+}
                     
                     newTeams[bestTeamIdx].push(player);
                 });
