@@ -1273,16 +1273,24 @@ const deleteManualTeam = (id) => {
                                     Select Players ({selectedPlayers.length} selected)
                                 </h3>
                                 
-                                {players.filter(p => selectedPlayers.includes(p.id)).map(player => (
-                                <div key={player.id} className="checkbox-group">
-                                <input 
-                                type="checkbox"
-                                checked={selectedForManualTeam.includes(player.id)}
-                                onChange={() => togglePlayerForManualTeam(player.id)}
-                                        />
-                                        <label>{player.name} (Skill: {player.skillRating.toFixed(1)})</label>
-                                    </div>
-                                ))}
+                               {players.map(player => {
+            const inManualTeam = manualTeams.some(team => team.players.some(p => p.id === player.id));
+            return (
+                <div key={player.id} className="checkbox-group">
+                    <input 
+                        type="checkbox"
+                        checked={selectedPlayers.includes(player.id) || inManualTeam}
+                        onChange={() => togglePlayerSelection(player.id)}
+                        disabled={inManualTeam}
+                    />
+                    <label style={{opacity: inManualTeam ? 0.6 : 1}}>
+                        {player.name} (Skill: {player.skillRating.toFixed(1)})
+                        {inManualTeam && <span style={{marginLeft: '10px', color: '#667eea', fontWeight: 'bold'}}>📌 In Manual Team</span>}
+                    </label>
+                </div>
+            );
+        })}
+                               
                                 
                                 <h3 style={{marginTop: '30px', marginBottom: '15px'}}>Pairing Requests</h3>
                                 
