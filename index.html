@@ -1301,21 +1301,27 @@ const deleteManualTeam = (id) => {
                                 <div className="input-group">
                                     <label>Player 1</label>
                                     <select value={player1} onChange={(e) => setPlayer1(e.target.value)}>
-                                        <option value="">Select player</option>
-                                        {players.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
+                                    <option value="">Select player</option>
+                                    {players.filter(p => {
+                                        const inManualTeam = manualTeams.some(team => team.players.some(tp => tp.id === p.id));
+                                        return selectedPlayers.includes(p.id) && !inManualTeam;
+                                    }).map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
                                 </div>
                                 
                                 <div className="input-group">
                                     <label>Player 2</label>
-                                    <select value={player2} onChange={(e) => setPlayer2(e.target.value)}>
-                                        <option value="">Select player</option>
-                                        {players.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
+                                   <select value={player2} onChange={(e) => setPlayer2(e.target.value)}>
+                                    <option value="">Select player</option>
+                                    {players.filter(p => {
+                                        const inManualTeam = manualTeams.some(team => team.players.some(tp => tp.id === p.id));
+                                        return selectedPlayers.includes(p.id) && !inManualTeam;
+                                    }).map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
                                 </div>
                                 
                                 <button className="btn btn-secondary" onClick={addPairingRequest}>
