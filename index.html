@@ -1503,167 +1503,201 @@ for (const player of remainingPlayers) {
                         
                         {/* Live Round Tab */}
                         {activeTab === 'live' && (
-                            <div>
-                                <h2 style={{marginBottom: '20px'}}>Live Round Scoring</h2>
-                                
-                                {!liveRound ? (
-                                    <div className="alert alert-info">
-                                        No active round. Generate teams and click "Start Live Round" to begin.
+    <div>
+        <h2 style={{marginBottom: '20px'}}>Live Round Scoring</h2>
+        
+        {!liveRound ? (
+            <div className="alert alert-info">
+                No active round. Generate teams and click "Start Live Round" to begin.
+            </div>
+        ) : (
+            <>
+                {/* Scoring Rules */}
+                <div className="alert alert-warning" style={{marginBottom: '20px'}}>
+                    <strong>⛳ Scoring Rules:</strong>
+                    <ul style={{marginLeft: '20px', marginTop: '10px', fontSize: '13px'}}>
+                        <li>Count ALL under-par scores per hole</li>
+                        <li>If no under-par scores, count only the BEST score</li>
+                        <li>Example: Two birdies on par 4 = -2 for team</li>
+                    </ul>
+                </div>
+                
+                {/* Leaderboard */}
+                <div className="leaderboard">
+                    <div className="leaderboard-header">🏆 Live Leaderboard</div>
+                    {[...liveRound.teams]
+                        .sort((a, b) => a.totalScore - b.totalScore)
+                        .map((team, idx) => (
+                            <div key={team.id} className="leaderboard-item">
+                                <div className="leaderboard-rank">#{idx + 1}</div>
+                                <div className="leaderboard-team">
+                                    <div style={{fontWeight: 'bold', marginBottom: '5px'}}>
+                                        {team.name}
                                     </div>
-                                ) : (
-                                    <>
-                                        {/* Scoring Rules */}
-                                        <div className="alert alert-warning" style={{marginBottom: '20px'}}>
-                                            <strong>⛳ Scoring Rules:</strong>
-                                            <ul style={{marginLeft: '20px', marginTop: '10px', fontSize: '13px'}}>
-                                                <li>Each team counts their BEST score per hole</li>
-                                                <li>If a team has 2+ scores UNDER PAR on a hole, count ALL under-par scores!</li>
-                                                <li>Example: Two birdies on a par 4 = -2 for the team on that hole</li>
-                                            </ul>
-                                        </div>
-                                        
-                                        {/* Leaderboard */}
-                                        <div className="leaderboard">
-                                            <div className="leaderboard-header">
-                                                🏆 Live Leaderboard
-                                            </div>
-                                            {[...liveRound.teams]
-                                                .sort((a, b) => a.totalScore - b.totalScore)
-                                                .map((team, idx) => (
-                                                    <div key={team.id} className="leaderboard-item">
-                                                        <div className="leaderboard-rank">#{idx + 1}</div>
-                                                        <div className="leaderboard-team">
-                                                            <div style={{fontWeight: 'bold', marginBottom: '5px'}}>
-                                                                {team.name}
-                                                            </div>
-                                                            <div style={{fontSize: '12px', color: '#666'}}>
-                                                                {team.players.map(p => p.name).join(', ')}
-                                                            </div>
-                                                        </div>
-                                                        <div className="leaderboard-score">
-                                                            {team.totalScore > 0 ? '+' : ''}{team.totalScore}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                        
-                                        {/* Score Entry */}
-                                        <h3 style={{marginTop: '30px', marginBottom: '15px'}}>Enter Scores</h3>
-                                        
-                                        {liveRound.teams.map(team => (
-                                            <div key={team.id} style={{marginBottom: '30px'}}>
-                                                <div className="team-container">
-                                                    <div className="team-header">{team.name}</div>
-                                                    
-                                                    {team.players.map(player => (
-                                                        <div key={player.id} style={{marginBottom: '20px'}}>
-                                                            <div style={{
-                                                                background: 'rgba(255,255,255,0.9)',
-                                                                color: '#333',
-                                                                padding: '10px',
-                                                                borderRadius: '8px',
-                                                                marginBottom: '10px'
-                                                            }}>
-                                                                <strong>{player.name}</strong>
-                                                            </div>
-                                                            
-                                                            {/* Front 9 */}
-                                                            <div style={{
-                                                                background: 'rgba(255,255,255,0.7)',
-                                                                padding: '10px',
-                                                                borderRadius: '8px',
-                                                                marginBottom: '10px'
-                                                            }}>
-                                                                <div style={{color: '#333', fontWeight: 'bold', marginBottom: '5px'}}>
-                                                                    Front 9
-                                                                </div>
-                                                                <div style={{
-                                                                    display: 'grid',
-                                                                    gridTemplateColumns: 'repeat(9, 1fr)',
-                                                                    gap: '5px'
-                                                                }}>
-                                                                    {GUNPOWDER_SCORECARD.front9.map(hole => (
-                                                                        <div key={hole.hole} style={{textAlign: 'center'}}>
-                                                                            <div style={{fontSize: '10px', color: '#666'}}>
-                                                                                {hole.hole}
-                                                                            </div>
-                                                                            <div style={{fontSize: '9px', color: '#999'}}>
-                                                                                Par {hole.par}
-                                                                            </div>
-                                                                            <input
-                                                                                className="score-input"
-                                                                                type="number"
-                                                                                min="1"
-                                                                                max="15"
-                                                                                value={player.scores[hole.hole] || ''}
-                                                                                onChange={(e) => updateLiveScore(
-                                                                                    team.id,
-                                                                                    player.id,
-                                                                                    hole.hole,
-                                                                                    e.target.value
-                                                                                )}
-                                                                                style={{fontSize: '12px'}}
-                                                                            />
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            {/* Back 9 */}
-                                                            <div style={{
-                                                                background: 'rgba(255,255,255,0.7)',
-                                                                padding: '10px',
-                                                                borderRadius: '8px'
-                                                            }}>
-                                                                <div style={{color: '#333', fontWeight: 'bold', marginBottom: '5px'}}>
-                                                                    Back 9
-                                                                </div>
-                                                                <div style={{
-                                                                    display: 'grid',
-                                                                    gridTemplateColumns: 'repeat(9, 1fr)',
-                                                                    gap: '5px'
-                                                                }}>
-                                                                    {GUNPOWDER_SCORECARD.back9.map(hole => (
-                                                                        <div key={hole.hole} style={{textAlign: 'center'}}>
-                                                                            <div style={{fontSize: '10px', color: '#666'}}>
-                                                                                {hole.hole}
-                                                                            </div>
-                                                                            <div style={{fontSize: '9px', color: '#999'}}>
-                                                                                Par {hole.par}
-                                                                            </div>
-                                                                            <input
-                                                                                className="score-input"
-                                                                                type="number"
-                                                                                min="1"
-                                                                                max="15"
-                                                                                value={player.scores[hole.hole] || ''}
-                                                                                onChange={(e) => updateLiveScore(
-                                                                                    team.id,
-                                                                                    player.id,
-                                                                                    hole.hole,
-                                                                                    e.target.value
-                                                                                )}
-                                                                                style={{fontSize: '12px'}}
-                                                                            />
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                        
-                                        <button className="btn btn-primary" onClick={finishRound}>
-                                            Finish Round & Save Stats
-                                        </button>
-                                    </>
-                                )}
+                                    <div style={{fontSize: '12px', color: '#666'}}>
+                                        {team.players.map(p => p.name).join(', ')}
+                                    </div>
+                                </div>
+                                <div className="leaderboard-score">
+                                    {team.totalScore > 0 ? '+' : ''}{team.totalScore}
+                                </div>
                             </div>
-                        )}
-                        
-                        {/* Scorecard Tab */}
+                        ))}
+                </div>
+                
+                {/* Team Selection Dropdown */}
+                <h3 style={{marginTop: '30px', marginBottom: '15px'}}>Enter Scores</h3>
+                <div className="input-group">
+                    <label>Select Team to Score</label>
+                    <select 
+                        value={selectedTeamForScoring || ''} 
+                        onChange={(e) => setSelectedTeamForScoring(e.target.value ? parseInt(e.target.value) : null)}
+                        style={{fontSize: '16px', padding: '12px'}}
+                    >
+                        <option value="">-- Select a team --</option>
+                        {liveRound.teams.map(team => (
+                            <option key={team.id} value={team.id}>
+                                {team.name} ({team.players.map(p => p.name).join(', ')})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                
+                {/* Score Entry for Selected Team */}
+                {selectedTeamForScoring !== null && (() => {
+                    const team = liveRound.teams.find(t => t.id === selectedTeamForScoring);
+                    if (!team) return null;
+                    
+                    return (
+                        <div style={{marginTop: '20px'}}>
+                            <div className="team-container">
+                                <div className="team-header">{team.name}</div>
+                                
+                                {team.players.map(player => (
+                                    <div key={player.id} style={{marginBottom: '25px'}}>
+                                        <div style={{
+                                            background: 'rgba(255,255,255,0.9)',
+                                            color: '#333',
+                                            padding: '12px',
+                                            borderRadius: '8px',
+                                            marginBottom: '15px',
+                                            fontWeight: 'bold',
+                                            fontSize: '16px'
+                                        }}>
+                                            {player.name}
+                                        </div>
+                                        
+                                        {/* Front 9 - Vertical Layout */}
+                                        <div style={{
+                                            background: 'rgba(255,255,255,0.8)',
+                                            padding: '15px',
+                                            borderRadius: '8px',
+                                            marginBottom: '15px'
+                                        }}>
+                                            <div style={{
+                                                color: '#333',
+                                                fontWeight: 'bold',
+                                                marginBottom: '12px',
+                                                fontSize: '15px'
+                                            }}>
+                                                Front 9
+                                            </div>
+                                            
+                                            {GUNPOWDER_SCORECARD.front9.map(hole => (
+                                                <div key={hole.hole} style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    marginBottom: '10px',
+                                                    padding: '10px',
+                                                    background: 'rgba(255,255,255,0.5)',
+                                                    borderRadius: '6px'
+                                                }}>
+                                                    <div style={{flex: '0 0 60px', fontWeight: 'bold', color: '#333'}}>
+                                                        Hole {hole.hole}
+                                                    </div>
+                                                    <div style={{flex: '0 0 50px', fontSize: '13px', color: '#666'}}>
+                                                        Par {hole.par}
+                                                    </div>
+                                                    <div style={{flex: 1, textAlign: 'right'}}>
+                                                        <input 
+                                                            className="score-input"
+                                                            type="number"
+                                                            min="1"
+                                                            max="15"
+                                                            value={player.scores[hole.hole] || ''}
+                                                            onChange={(e) => updateLiveScore(team.id, player.id, hole.hole, e.target.value)}
+                                                            placeholder="-"
+                                                            style={{width: '70px', fontSize: '18px', textAlign: 'center'}}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        
+                                        {/* Back 9 - Vertical Layout */}
+                                        <div style={{
+                                            background: 'rgba(255,255,255,0.8)',
+                                            padding: '15px',
+                                            borderRadius: '8px'
+                                        }}>
+                                            <div style={{
+                                                color: '#333',
+                                                fontWeight: 'bold',
+                                                marginBottom: '12px',
+                                                fontSize: '15px'
+                                            }}>
+                                                Back 9
+                                            </div>
+                                            
+                                            {GUNPOWDER_SCORECARD.back9.map(hole => (
+                                                <div key={hole.hole} style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    marginBottom: '10px',
+                                                    padding: '10px',
+                                                    background: 'rgba(255,255,255,0.5)',
+                                                    borderRadius: '6px'
+                                                }}>
+                                                    <div style={{flex: '0 0 60px', fontWeight: 'bold', color: '#333'}}>
+                                                        Hole {hole.hole}
+                                                    </div>
+                                                    <div style={{flex: '0 0 50px', fontSize: '13px', color: '#666'}}>
+                                                        Par {hole.par}
+                                                    </div>
+                                                    <div style={{flex: 1, textAlign: 'right'}}>
+                                                        <input 
+                                                            className="score-input"
+                                                            type="number"
+                                                            min="1"
+                                                            max="15"
+                                                            value={player.scores[hole.hole] || ''}
+                                                            onChange={(e) => updateLiveScore(team.id, player.id, hole.hole, e.target.value)}
+                                                            placeholder="-"
+                                                            style={{width: '70px', fontSize: '18px', textAlign: 'center'}}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
+                
+                {/* Finish Round Button */}
+                <button 
+                    className="btn btn-primary" 
+                    onClick={finishRound}
+                    style={{marginTop: '30px'}}
+                >
+                    Finish Round & Save Stats
+                </button>
+            </>
+        )}
+    </div>
+)}
                         {activeTab === 'scorecard' && (
                             <div>
                                 <h2 style={{marginBottom: '20px'}}>Gunpowder Golf Course</h2>
