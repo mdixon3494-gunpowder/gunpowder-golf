@@ -1514,7 +1514,7 @@ for (const player of remainingPlayers) {
                         )}
                         
                         {/* Live Round Tab */}
-                        {activeTab === 'live' && (
+                       {activeTab === 'live' && (
     <div>
         <h2 style={{marginBottom: '20px'}}>Live Round Scoring</h2>
         
@@ -1557,142 +1557,145 @@ for (const player of remainingPlayers) {
                         ))}
                 </div>
                 
-                {/* Team Selection Dropdown */}
+                {/* Team Selection */}
                 <h3 style={{marginTop: '30px', marginBottom: '15px'}}>Enter Scores</h3>
                 <div className="input-group">
-                    <label>Select Team to Score</label>
+                    <label>Select Team</label>
                     <select 
                         value={selectedTeamForScoring || ''} 
                         onChange={(e) => setSelectedTeamForScoring(e.target.value ? parseInt(e.target.value) : null)}
-                        style={{fontSize: '16px', padding: '12px'}}
                     >
                         <option value="">-- Select a team --</option>
                         {liveRound.teams.map(team => (
                             <option key={team.id} value={team.id}>
-                                {team.name} ({team.players.map(p => p.name).join(', ')})
+                                {team.name}
                             </option>
                         ))}
                     </select>
                 </div>
                 
-                {/* Score Entry for Selected Team */}
+                {/* Scorecard for Selected Team */}
                 {selectedTeamForScoring !== null && (() => {
                     const team = liveRound.teams.find(t => t.id === selectedTeamForScoring);
                     if (!team) return null;
                     
+                    const holes = showingNine === 'front' ? GUNPOWDER_SCORECARD.front9 : GUNPOWDER_SCORECARD.back9;
+                    const nineLabel = showingNine === 'front' ? 'OUT' : 'IN';
+                    
                     return (
                         <div style={{marginTop: '20px'}}>
-                            <div className="team-container">
-                                <div className="team-header">{team.name}</div>
-                                
-                                {team.players.map(player => (
-                                    <div key={player.id} style={{marginBottom: '25px'}}>
-                                        <div style={{
-                                            background: 'rgba(255,255,255,0.9)',
-                                            color: '#333',
-                                            padding: '12px',
-                                            borderRadius: '8px',
-                                            marginBottom: '15px',
-                                            fontWeight: 'bold',
-                                            fontSize: '16px'
-                                        }}>
-                                            {player.name}
-                                        </div>
-                                        
-                                        {/* Front 9 - Vertical Layout */}
-                                        <div style={{
-                                            background: 'rgba(255,255,255,0.8)',
-                                            padding: '15px',
-                                            borderRadius: '8px',
-                                            marginBottom: '15px'
-                                        }}>
-                                            <div style={{
-                                                color: '#333',
-                                                fontWeight: 'bold',
-                                                marginBottom: '12px',
-                                                fontSize: '15px'
-                                            }}>
-                                                Front 9
-                                            </div>
-                                            
-                                            {GUNPOWDER_SCORECARD.front9.map(hole => (
-                                                <div key={hole.hole} style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    marginBottom: '10px',
-                                                    padding: '10px',
-                                                    background: 'rgba(255,255,255,0.5)',
-                                                    borderRadius: '6px'
-                                                }}>
-                                                    <div style={{flex: '0 0 60px', fontWeight: 'bold', color: '#333'}}>
-                                                        Hole {hole.hole}
-                                                    </div>
-                                                    <div style={{flex: '0 0 50px', fontSize: '13px', color: '#666'}}>
-                                                        Par {hole.par}
-                                                    </div>
-                                                    <div style={{flex: 1, textAlign: 'right'}}>
-                                                        <input 
-                                                            className="score-input"
-                                                            type="number"
-                                                            min="1"
-                                                            max="15"
-                                                            value={player.scores[hole.hole] || ''}
-                                                            onChange={(e) => updateLiveScore(team.id, player.id, hole.hole, e.target.value)}
-                                                            placeholder="-"
-                                                            style={{width: '70px', fontSize: '18px', textAlign: 'center'}}
-                                                        />
-                                                    </div>
-                                                </div>
+                            {/* Front/Back Toggle */}
+                            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+                                <button 
+                                    className={showingNine === 'front' ? 'btn btn-primary' : 'btn btn-secondary'}
+                                    onClick={() => setShowingNine('front')}
+                                    style={{flex: 1, marginTop: 0}}
+                                >
+                                    Front 9
+                                </button>
+                                <button 
+                                    className={showingNine === 'back' ? 'btn btn-primary' : 'btn btn-secondary'}
+                                    onClick={() => setShowingNine('back')}
+                                    style={{flex: 1, marginTop: 0}}
+                                >
+                                    Back 9
+                                </button>
+                            </div>
+                            
+                            {/* Scorecard Table */}
+                            <div style={{overflowX: 'auto'}}>
+                                <table style={{
+                                    width: '100%',
+                                    borderCollapse: 'collapse',
+                                    background: 'white',
+                                    borderRadius: '10px',
+                                    overflow: 'hidden',
+                                    fontSize: '14px'
+                                }}>
+                                    <thead>
+                                        <tr style={{background: '#27ae60', color: 'white'}}>
+                                            <th style={{padding: '12px 8px', textAlign: 'left', minWidth: '120px', position: 'sticky', left: 0, background: '#27ae60'}}>
+                                                {team.name}
+                                            </th>
+                                            {holes.map(hole => (
+                                                <th key={hole.hole} style={{padding: '12px 8px', textAlign: 'center', minWidth: '50px'}}>
+                                                    {hole.hole}
+                                                </th>
                                             ))}
-                                        </div>
-                                        
-                                        {/* Back 9 - Vertical Layout */}
-                                        <div style={{
-                                            background: 'rgba(255,255,255,0.8)',
-                                            padding: '15px',
-                                            borderRadius: '8px'
-                                        }}>
-                                            <div style={{
-                                                color: '#333',
-                                                fontWeight: 'bold',
-                                                marginBottom: '12px',
-                                                fontSize: '15px'
-                                            }}>
-                                                Back 9
-                                            </div>
-                                            
-                                            {GUNPOWDER_SCORECARD.back9.map(hole => (
-                                                <div key={hole.hole} style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    marginBottom: '10px',
-                                                    padding: '10px',
-                                                    background: 'rgba(255,255,255,0.5)',
-                                                    borderRadius: '6px'
-                                                }}>
-                                                    <div style={{flex: '0 0 60px', fontWeight: 'bold', color: '#333'}}>
-                                                        Hole {hole.hole}
-                                                    </div>
-                                                    <div style={{flex: '0 0 50px', fontSize: '13px', color: '#666'}}>
-                                                        Par {hole.par}
-                                                    </div>
-                                                    <div style={{flex: 1, textAlign: 'right'}}>
-                                                        <input 
-                                                            className="score-input"
-                                                            type="number"
-                                                            min="1"
-                                                            max="15"
-                                                            value={player.scores[hole.hole] || ''}
-                                                            onChange={(e) => updateLiveScore(team.id, player.id, hole.hole, e.target.value)}
-                                                            placeholder="-"
-                                                            style={{width: '70px', fontSize: '18px', textAlign: 'center'}}
-                                                        />
-                                                    </div>
-                                                </div>
+                                            <th style={{padding: '12px 8px', textAlign: 'center', minWidth: '60px', fontWeight: 'bold'}}>
+                                                {nineLabel}
+                                            </th>
+                                        </tr>
+                                        <tr style={{background: '#f8f9fa'}}>
+                                            <td style={{padding: '10px 8px', fontWeight: 'bold', position: 'sticky', left: 0, background: '#f8f9fa'}}>
+                                                Par
+                                            </td>
+                                            {holes.map(hole => (
+                                                <td key={hole.hole} style={{padding: '10px 8px', textAlign: 'center', fontWeight: 'bold'}}>
+                                                    {hole.par}
+                                                </td>
                                             ))}
-                                        </div>
-                                    </div>
-                                ))}
+                                            <td style={{padding: '10px 8px', textAlign: 'center', fontWeight: 'bold'}}>
+                                                {holes.reduce((sum, h) => sum + h.par, 0)}
+                                            </td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {team.players.map((player, idx) => {
+                                            const playerTotal = holes.reduce((sum, hole) => 
+                                                sum + (parseInt(player.scores[hole.hole]) || 0), 0
+                                            );
+                                            
+                                            return (
+                                                <tr key={player.id} style={{
+                                                    background: idx % 2 === 0 ? 'white' : '#f8f9fa',
+                                                    borderTop: '1px solid #e0e0e0'
+                                                }}>
+                                                    <td style={{
+                                                        padding: '10px 8px',
+                                                        fontWeight: '600',
+                                                        position: 'sticky',
+                                                        left: 0,
+                                                        background: idx % 2 === 0 ? 'white' : '#f8f9fa'
+                                                    }}>
+                                                        {player.name}
+                                                    </td>
+                                                    {holes.map(hole => (
+                                                        <td key={hole.hole} style={{padding: '8px 4px', textAlign: 'center'}}>
+                                                            <input 
+                                                                type="number"
+                                                                inputMode="numeric"
+                                                                pattern="[0-9]*"
+                                                                min="1"
+                                                                max="15"
+                                                                value={player.scores[hole.hole] || ''}
+                                                                onChange={(e) => updateLiveScore(team.id, player.id, hole.hole, e.target.value)}
+                                                                placeholder="-"
+                                                                style={{
+                                                                    width: '45px',
+                                                                    padding: '8px 4px',
+                                                                    textAlign: 'center',
+                                                                    border: '2px solid #e0e0e0',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '16px'
+                                                                }}
+                                                                className="score-input"
+                                                            />
+                                                        </td>
+                                                    ))}
+                                                    <td style={{
+                                                        padding: '10px 8px',
+                                                        textAlign: 'center',
+                                                        fontWeight: 'bold',
+                                                        fontSize: '16px'
+                                                    }}>
+                                                        {playerTotal > 0 ? playerTotal : '-'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     );
