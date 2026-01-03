@@ -622,12 +622,13 @@
             // Save data
             useEffect(() => {
                 if (leagueId && isSetup) {
-                    CloudStorage.saveData(leagueId, {
-                        players,
-                        history,
-                        pairingRequests,
-                        liveRound
-                    });
+                   CloudStorage.saveData(leagueId, {
+                    players,
+                    history,
+                    pairingRequests,
+                    liveRound,
+                    leaguePin
+                });
                 }
             }, [players, history, pairingRequests, liveRound, leagueId, isSetup]);
 
