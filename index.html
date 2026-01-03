@@ -619,16 +619,24 @@
             }, [leagueId]);
             
             // Save data
-            useEffect(() => {
-                if (leagueId && isSetup) {
-                   CloudStorage.saveData(leagueId, {
-                    players,
-                    history,
-                    pairingRequests,
-                    liveRound,
-                   });
-                }
-           }, [players, history, pairingRequests, liveRound, leagueId, isSetup]);
+           const hasLoadedData = React.useRef(false);
+
+useEffect(() => {
+    if (leagueId && isSetup && hasLoadedData.current) {
+        CloudStorage.saveData(leagueId, {
+            players,
+            history,
+            pairingRequests,
+            liveRound
+        });
+    }
+}, [players, history, pairingRequests, liveRound, leagueId, isSetup]);
+
+useEffect(() => {
+    if (players.length > 0 || history.length > 0) {
+        hasLoadedData.current = true;
+    }
+}, [players, history]);
 
             const createNewLeague = () => {
                 const newLeagueId = CloudStorage.generateLeagueId();
