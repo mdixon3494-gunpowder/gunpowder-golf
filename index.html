@@ -580,6 +580,9 @@
             const [selectedForManualTeam, setSelectedForManualTeam] = useState([]);
             const [selectedTeamForScoring, setSelectedTeamForScoring] = useState(null);
             const [showingNine, setShowingNine] = useState('front');
+            const [leaguePin, setLeaguePin] = useState('');
+            const [pinInput, setPinInput] = useState('');
+            const [showPinPrompt, setShowPinPrompt] = useState(false);
             
            // Check for existing league
             useEffect(() => {
