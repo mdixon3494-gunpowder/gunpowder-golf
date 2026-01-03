@@ -906,8 +906,9 @@ for (const player of remainingPlayers) {
     const allTeams = [...finalTeams, ...newTeams];
     
     setTeams(allTeams);
+    setPairingRequests([]); // Clear pairing requests
     setActiveTab('teams');
-};
+    };
 
             const startLiveRound = () => {
                 if (teams.length === 0) {
