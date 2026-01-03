@@ -596,7 +596,6 @@
                             setHistory(data.history || []);
                             setPairingRequests(data.pairingRequests || []);
                             setLiveRound(data.liveRound || null);
-                            setLeaguePin(data.leaguePin || '');
                             setIsSetup(true);
                         }
                     }
@@ -629,7 +628,7 @@
                     liveRound,
                    });
                 }
-           }, [players, history, pairingRequests, liveRound, leaguePin, leagueId, isSetup]);
+           }, [players, history, pairingRequests, liveRound, leagueId, isSetup]);
 
             const createNewLeague = () => {
                 const newLeagueId = CloudStorage.generateLeagueId();
@@ -1020,6 +1019,25 @@ for (const player of remainingPlayers) {
                 setLiveRound(updatedRound);
             };
 
+           const promptForPinAndFinish = () => {
+    setShowPinPrompt(true);
+};
+
+            const validatePinAndFinish = () => {
+                if (pinInput === '1234') {
+                    setPinInput('');
+                    setShowPinPrompt(false);
+                    finishRound();
+                } else {
+                    alert('Incorrect PIN. Please try again.');
+                    setPinInput('');
+                }
+            };
+            
+            const cancelPinPrompt = () => {
+                setShowPinPrompt(false);
+                setPinInput('');
+            };
             const finishRound = () => {
                 if (!liveRound) return;
                 
@@ -1707,16 +1725,69 @@ for (const player of remainingPlayers) {
                 
                 {/* Finish Round Button */}
                 <button 
-                    className="btn btn-primary" 
-                    onClick={finishRound}
-                    style={{marginTop: '30px'}}
-                >
-                    Finish Round & Save Stats
-                </button>
+                className="btn btn-primary" 
+                onClick={promptForPinAndFinish}
+                style={{marginTop: '30px'}}
+            >
+                Finish Round & Save Stats
+            </button>
             </>
         )}
     </div>
 )}
+                        {/* PIN Prompt Modal */}
+                {showPinPrompt && (
+                    <div className="modal-overlay" onClick={cancelPinPrompt}>
+                        <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '400px'}}>
+                            <div className="modal-header">
+                                <h2 style={{margin: 0}}>🔒 Enter PIN to Finish Round</h2>
+                                <button className="modal-close" onClick={cancelPinPrompt}>✕</button>
+                            </div>
+                            <div style={{padding: '20px 0'}}>
+                                <div className="input-group">
+                                    <label>Enter 4-Digit PIN</label>
+                                    <input 
+                                        type="password"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        maxLength="4"
+                                        value={pinInput}
+                                        onChange={(e) => setPinInput(e.target.value)}
+                                        placeholder="****"
+                                        autoFocus
+                                        style={{
+                                            fontSize: '24px',
+                                            textAlign: 'center',
+                                            letterSpacing: '8px'
+                                        }}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter' && pinInput.length === 4) {
+                                                validatePinAndFinish();
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div style={{display: 'flex', gap: '10px', marginTop: '20px'}}>
+                                    <button 
+                                        className="btn btn-primary" 
+                                        onClick={validatePinAndFinish}
+                                        disabled={pinInput.length !== 4}
+                                        style={{flex: 1, opacity: pinInput.length === 4 ? 1 : 0.5}}
+                                    >
+                                        Confirm
+                                    </button>
+                                    <button 
+                                        className="btn btn-secondary" 
+                                        onClick={cancelPinPrompt}
+                                        style={{flex: 1}}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
                         {activeTab === 'scorecard' && (
                             <div>
                                 <h2 style={{marginBottom: '20px'}}>Gunpowder Golf Course</h2>
