@@ -881,26 +881,26 @@ mustBeTogether.forEach(pair => {
     newTeams[lowestSkillTeamIdx].push(...pair);
 });
     
-    // Snake draft for remaining players
-    let assignmentRound = 0;
-    let playerIndex = 0;
+  // Skill-aware draft for remaining players
+for (const player of remainingPlayers) {
+    // Find team with lowest skill that still has room
+    let bestTeamIdx = -1;
+    let lowestSkill = Infinity;
     
-    while (playerIndex < remainingPlayers.length) {
-        const isForwardPass = assignmentRound % 2 === 0;
-        const teamOrder = isForwardPass 
-            ? Array.from({length: newTeams.length}, (_, i) => i)
-            : Array.from({length: newTeams.length}, (_, i) => newTeams.length - 1 - i);
-        
-        for (let teamIdx of teamOrder) {
-            if (playerIndex >= remainingPlayers.length) break;
-            if (newTeams[teamIdx].length < newTeamSizes[teamIdx]) {
-                newTeams[teamIdx].push(remainingPlayers[playerIndex]);
-                playerIndex++;
+    for (let i = 0; i < newTeams.length; i++) {
+        if (newTeams[i].length < newTeamSizes[i]) {
+            const teamSkill = newTeams[i].reduce((sum, p) => sum + p.skillRating, 0);
+            if (teamSkill < lowestSkill) {
+                lowestSkill = teamSkill;
+                bestTeamIdx = i;
             }
         }
-        
-        assignmentRound++;
     }
+    
+    if (bestTeamIdx !== -1) {
+        newTeams[bestTeamIdx].push(player);
+    }
+}
     
     // Combine manual teams with generated teams
     const allTeams = [...finalTeams, ...newTeams];
