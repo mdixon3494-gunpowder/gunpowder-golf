@@ -881,7 +881,10 @@ mustBeTogether.forEach(pair => {
     newTeams[lowestSkillTeamIdx].push(...pair);
 });
     
-  // Skill-aware draft for remaining players
+// Skill-aware draft for remaining players
+console.log('Starting skill-aware draft with', remainingPlayers.length, 'players');
+console.log('Team sizes before draft:', newTeams.map(t => t.length));
+
 for (const player of remainingPlayers) {
     // Find team with lowest skill that still has room
     let bestTeamIdx = -1;
@@ -896,6 +899,8 @@ for (const player of remainingPlayers) {
             }
         }
     }
+    
+    console.log(`Placing ${player.name} (${player.skillRating}) on Team ${bestTeamIdx + 1}`);
     
     if (bestTeamIdx !== -1) {
         newTeams[bestTeamIdx].push(player);
