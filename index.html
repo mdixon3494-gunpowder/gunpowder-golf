@@ -1273,12 +1273,12 @@ const deleteManualTeam = (id) => {
                                     Select Players ({selectedPlayers.length} selected)
                                 </h3>
                                 
-                                {players.map(player => (
-                                    <div key={player.id} className="checkbox-group">
-                                        <input 
-                                            type="checkbox"
-                                            checked={selectedPlayers.includes(player.id)}
-                                            onChange={() => togglePlayerSelection(player.id)}
+                                {players.filter(p => selectedPlayers.includes(p.id)).map(player => (
+                                <div key={player.id} className="checkbox-group">
+                                <input 
+                                type="checkbox"
+                                checked={selectedForManualTeam.includes(player.id)}
+                                onChange={() => togglePlayerForManualTeam(player.id)}
                                         />
                                         <label>{player.name} (Skill: {player.skillRating.toFixed(1)})</label>
                                     </div>
