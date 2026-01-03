@@ -754,6 +754,10 @@ const saveManualTeam = () => {
         players: teamPlayers
     };
     
+    // Automatically add manual team players to selected players
+    const newSelectedPlayers = [...new Set([...selectedPlayers, ...selectedForManualTeam])];
+    setSelectedPlayers(newSelectedPlayers);
+    
     setManualTeams([...manualTeams, newManualTeam]);
     setCreatingManualTeam(false);
     setSelectedForManualTeam([]);
