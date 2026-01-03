@@ -858,11 +858,28 @@ const deleteManualTeam = (id) => {
     // Create new teams for remaining players
     const newTeams = newTeamSizes.map(() => []);
     
-    // Add pairing requests
-    mustBeTogether.forEach((pair, idx) => {
-        const teamIdx = idx % newTeams.length;
-        newTeams[teamIdx].push(...pair);
-    });
+  // Add pairing requests - distribute based on skill balance
+mustBeTogether.sort((a, b) => {
+    const skillA = a.reduce((sum, p) => sum + p.skillRating, 0);
+    const skillB = b.reduce((sum, p) => sum + p.skillRating, 0);
+    return skillB - skillA; // High skill pairs first
+});
+
+mustBeTogether.forEach(pair => {
+    // Find team with lowest current skill total
+    let lowestSkillTeamIdx = 0;
+    let lowestSkill = newTeams[0].reduce((sum, p) => sum + p.skillRating, 0);
+    
+    for (let i = 1; i < newTeams.length; i++) {
+        const teamSkill = newTeams[i].reduce((sum, p) => sum + p.skillRating, 0);
+        if (teamSkill < lowestSkill) {
+            lowestSkill = teamSkill;
+            lowestSkillTeamIdx = i;
+        }
+    }
+    
+    newTeams[lowestSkillTeamIdx].push(...pair);
+});
     
     // Snake draft for remaining players
     let assignmentRound = 0;
