@@ -1657,8 +1657,10 @@ for (const player of remainingPlayers) {
                                         frontScore += (score - par);
                                     });
                                 } else {
+                                    if (holeScores.length > 0) {
                                     const bestScore = Math.min(...holeScores);
                                     frontScore += (bestScore - par);
+                                }
                                 }
                             }
                         });
@@ -1678,8 +1680,10 @@ for (const player of remainingPlayers) {
                                         backScore += (score - par);
                                     });
                                 } else {
+                                    if (holeScores.length > 0) {
                                     const bestScore = Math.min(...holeScores);
                                     backScore += (bestScore - par);
+                                }
                                 }
                             }
                         });
