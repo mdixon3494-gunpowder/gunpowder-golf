@@ -1729,8 +1729,13 @@ for (const player of remainingPlayers) {
                                 </button>
                             </div>
                             
-                            {/* Scorecard Table */}
-                            <div style={{overflowX: 'auto'}}>
+                           {/* Scorecard Table */}
+                            <div style={{
+                                overflowX: 'auto',
+                                overflowY: 'visible',
+                                WebkitOverflowScrolling: 'touch',
+                                position: 'relative'
+                            }}>
                                 <table style={{
                                     width: '100%',
                                     borderCollapse: 'collapse',
@@ -1741,7 +1746,7 @@ for (const player of remainingPlayers) {
                                 }}>
                                     <thead>
                                         <tr style={{background: '#27ae60', color: 'white'}}>
-                                          <th style={{padding: '12px 8px', textAlign: 'left', minWidth: '120px', maxWidth: '120px', position: 'sticky', left: 0, background: '#27ae60', zIndex: 20}}>
+                                          <th style={{padding: '12px 8px', textAlign: 'left', minWidth: '120px', maxWidth: '120px', position: '-webkit-sticky', position: 'sticky', left: 0, background: '#27ae60', zIndex: 20}}>
                                                 {team.name}
                                             </th>
                                             {holes.map(hole => (
@@ -1754,7 +1759,7 @@ for (const player of remainingPlayers) {
                                             </th>
                                         </tr>
                                         <tr style={{background: '#f8f9fa'}}>
-                                          <td style={{padding: '10px 8px', fontWeight: 'bold', position: 'sticky', left: 0, background: '#f8f9fa', zIndex: 10, boxShadow: '2px 0 5px rgba(0,0,0,0.1)', minWidth: '120px', maxWidth: '120px'}}>
+                                          <td style={{padding: '10px 8px', fontWeight: 'bold', position: '-webkit-sticky', position: 'sticky', left: 0, background: '#f8f9fa', zIndex: 10, boxShadow: '2px 0 5px rgba(0,0,0,0.1)', minWidth: '120px', maxWidth: '120px'}}>
                                                 Par
                                             </td>
                                             {holes.map(hole => (
@@ -1781,6 +1786,7 @@ for (const player of remainingPlayers) {
                                                    <td style={{
                                                     padding: '10px 8px',
                                                     fontWeight: '600',
+                                                    position: '-webkit-sticky',
                                                     position: 'sticky',
                                                     left: 0,
                                                     background: idx % 2 === 0 ? 'white' : '#f8f9fa',
