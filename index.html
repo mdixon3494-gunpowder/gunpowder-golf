@@ -993,6 +993,11 @@ for (const player of remainingPlayers) {
     };
 
             const startLiveRound = () => {
+            console.log('startLiveRound called! Teams:', teams);
+            if (teams.length === 0) {
+                alert('Please generate teams first!');
+                return;
+            }
                 if (teams.length === 0) {
                     alert('Please generate teams first!');
                     return;
