@@ -1068,42 +1068,7 @@ for (const player of remainingPlayers) {
                         });
                     }
                 };
-                // Calculate team totals using new scoring rules
-                updatedRound.teams = updatedRound.teams.map(team => {
-                    let totalScore = 0;
-                    const allHoles = [...GUNPOWDER_SCORECARD.front9, ...GUNPOWDER_SCORECARD.back9];
-                    
-                    allHoles.forEach(holeInfo => {
-                        const holeScores = team.players
-                            .map(p => p.scores[holeInfo.hole])
-                            .filter(s => s !== undefined && s !== null && s !== '')
-                            .map(s => parseInt(s));
-                        
-                        if (holeScores.length > 0) {
-                            const par = holeInfo.par;
-                            
-                            // Get all under-par scores
-                            const underParScores = holeScores.filter(score => score < par);
-                            
-                            if (underParScores.length > 0) {
-                                // Count ALL under-par scores
-                                underParScores.forEach(score => {
-                                    totalScore += (score - par);
-                                });
-                            } else {
-                                // If no under-par scores, count only the best score
-                                const bestScore = Math.min(...holeScores);
-                                totalScore += (bestScore - par);
-                            }
-                        }
-                    });
-                    
-                    return { ...team, totalScore };
-                });
                 
-                setLiveRound(updatedRound);
-            };
-
            const promptForPinAndFinish = () => {
     setShowPinPrompt(true);
 };
