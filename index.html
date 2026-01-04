@@ -680,7 +680,7 @@ useEffect(() => {
         console.log('Cleaning up real-time subscription');
         supabase.removeChannel(channel);
     };
-}, [leagueId, liveRound]);
+}, [leagueId]);
 useEffect(() => {
     if (players.length > 0 || history.length > 0) {
         hasLoadedData.current = true;
