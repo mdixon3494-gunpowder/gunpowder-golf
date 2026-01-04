@@ -666,16 +666,23 @@ useEffect(() => {
                 table: 'leagues',
                 filter: `id=eq.${leagueId}`
             },
-            (payload) => {
-                console.log('Real-time update received:', payload);
-                const newData = payload.new.data;
-                const parsedNewData = typeof newData === 'string' ? JSON.parse(newData) : newData;
-                
-                if (parsedNewData && parsedNewData.liveRound) {
-                    console.log('Updating live round with new data');
-                    setLiveRound(parsedNewData.liveRound);
-                }
+           (payload) => {
+        console.log('Real-time update received:', payload);
+        const newData = payload.new.data;
+        const parsedNewData = typeof newData === 'string' ? JSON.parse(newData) : newData;
+        
+        if (parsedNewData && parsedNewData.liveRound) {
+            const currentRoundStr = JSON.stringify(liveRound);
+            const newRoundStr = JSON.stringify(parsedNewData.liveRound);
+            
+            if (currentRoundStr !== newRoundStr) {
+                console.log('Updating live round with new data');
+                setLiveRound(parsedNewData.liveRound);
+            } else {
+                console.log('Data unchanged, skipping update');
             }
+        }
+}
         )
         .subscribe();
     
