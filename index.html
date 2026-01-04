@@ -643,7 +643,11 @@ useEffect(() => {
 }, [players, history, pairingRequests, liveRound, leagueId, isSetup]);
 // Real-time subscription for live round updates
 useEffect(() => {
-    if (!leagueId || !liveRound) return;
+    console.log('Real-time useEffect triggered. leagueId:', leagueId, 'liveRound exists:', !!liveRound);
+    if (!leagueId || !liveRound) {
+        console.log('Exiting early - missing leagueId or liveRound');
+        return;
+    }
     
     console.log('Setting up real-time subscription for league:', leagueId);
     
