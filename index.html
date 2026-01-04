@@ -513,18 +513,46 @@
 
         // Simple cloud storage simulation
             const CloudStorage = {
-        getLeagueId: () => localStorage.getItem('leagueId'),
-        setLeagueId: (id) => localStorage.setItem('leagueId', id),
-        generateLeagueId: () => Math.random().toString(36).substring(2, 8).toUpperCase(),
-        
-        saveData: async (leagueId, data) => {
-            ...
-        },
-        
-        loadData: async (leagueId) => {
-            ...
-        }
-    };
+                getLeagueId: () => localStorage.getItem('leagueId'),
+                setLeagueId: (id) => localStorage.setItem('leagueId', id),
+                generateLeagueId: () => Math.random().toString(36).substring(2, 8).toUpperCase(),
+                
+                saveData: async (leagueId, data) => {
+                    try {
+                        const { error } = await supabase
+                            .from('leagues')
+                            .upsert({
+                                id: leagueId,
+                                data: data,
+                                updated_at: new Date()
+                            });
+                        if (error) console.error('Supabase save error:', error);
+                    } catch (err) {
+                        console.error('Save error:', err);
+                    }
+                },
+                
+                loadData: async (leagueId) => {
+                    try {
+                        const { data, error } = await supabase
+                            .from('leagues')
+                            .select('data')
+                            .eq('id', leagueId)
+                            .single();
+                        
+                        if (error) {
+                            console.error('Supabase load error:', error);
+                            return null;
+                        }
+                        
+                        const parsedData = typeof data?.data === 'string' ? JSON.parse(data.data) : data?.data;
+                        return parsedData || null;
+                    } catch (err) {
+                        console.error('Load error:', err);
+                        return null;
+                    }
+                }
+            };
 
         function GunpowderBigBoysGolf() {
             const [activeTab, setActiveTab] = useState('players');
