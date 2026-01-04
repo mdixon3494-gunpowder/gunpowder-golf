@@ -645,7 +645,7 @@ useEffect(() => {
             liveRound
         });
     }
-}, [players, history, pairingRequests, liveRound, leagueId, isSetup]);
+}, [players, history, pairingRequests, leagueId, isSetup]);
 // Real-time subscription for live round updates
 useEffect(() => {
     console.log('Real-time useEffect triggered. leagueId:', leagueId, 'liveRound exists:', !!liveRound);
