@@ -584,6 +584,15 @@
             const [leaguePin, setLeaguePin] = useState('');
             const [pinInput, setPinInput] = useState('');
             const [showPinPrompt, setShowPinPrompt] = useState(false);
+            // Auto-select all players when team is selected
+            useEffect(() => {
+                if (selectedTeamForScoring !== null && liveRound) {
+                    const team = liveRound.teams.find(t => t.id === selectedTeamForScoring);
+                    if (team) {
+                        setSelectedPlayersForScoring(team.players.map(p => p.id));
+                    }
+                }
+            }, [selectedTeamForScoring, liveRound]);
             
            // Check for existing league
             useEffect(() => {
@@ -1709,13 +1718,7 @@ for (const player of remainingPlayers) {
                     
                     const holes = showingNine === 'front' ? GUNPOWDER_SCORECARD.front9 : GUNPOWDER_SCORECARD.back9;
                     const nineLabel = showingNine === 'front' ? 'OUT' : 'IN';
-                // Auto-select all players when team first selected
-            React.useEffect(() => {
-                if (team && selectedPlayersForScoring.length === 0) {
-                    setSelectedPlayersForScoring(team.players.map(p => p.id));
-                }
-            }, [selectedTeamForScoring]);
-            
+                           
             // Filter players based on selection
             const playersToShow = team.players.filter(p => selectedPlayersForScoring.includes(p.id));
                     
