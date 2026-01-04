@@ -580,6 +580,7 @@
             const [selectedForManualTeam, setSelectedForManualTeam] = useState([]);
             const [selectedTeamForScoring, setSelectedTeamForScoring] = useState(null);
             const [showingNine, setShowingNine] = useState('front');
+            const [selectedPlayersForScoring, setSelectedPlayersForScoring] = useState([]);
             const [leaguePin, setLeaguePin] = useState('');
             const [pinInput, setPinInput] = useState('');
             const [showPinPrompt, setShowPinPrompt] = useState(false);
@@ -1708,9 +1709,56 @@ for (const player of remainingPlayers) {
                     
                     const holes = showingNine === 'front' ? GUNPOWDER_SCORECARD.front9 : GUNPOWDER_SCORECARD.back9;
                     const nineLabel = showingNine === 'front' ? 'OUT' : 'IN';
+                // Auto-select all players when team first selected
+            React.useEffect(() => {
+                if (team && selectedPlayersForScoring.length === 0) {
+                    setSelectedPlayersForScoring(team.players.map(p => p.id));
+                }
+            }, [selectedTeamForScoring]);
+            
+            // Filter players based on selection
+            const playersToShow = team.players.filter(p => selectedPlayersForScoring.includes(p.id));
                     
                     return (
                         <div style={{marginTop: '20px'}}>
+                           {/* Player Selection */}
+                        <div style={{
+                            background: '#f8f9fa',
+                            padding: '15px',
+                            borderRadius: '10px',
+                            marginBottom: '15px'
+                        }}>
+                            <div style={{fontWeight: '600', marginBottom: '10px', color: '#333'}}>
+                                Select Players to Score:
+                            </div>
+                            <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px'}}>
+                                {team.players.map(player => (
+                                    <label key={player.id} style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        background: 'white',
+                                        padding: '8px 12px',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        border: selectedPlayersForScoring.includes(player.id) ? '2px solid #27ae60' : '2px solid #e0e0e0'
+                                    }}>
+                                        <input 
+                                            type="checkbox"
+                                            checked={selectedPlayersForScoring.includes(player.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedPlayersForScoring([...selectedPlayersForScoring, player.id]);
+                                                } else {
+                                                    setSelectedPlayersForScoring(selectedPlayersForScoring.filter(id => id !== player.id));
+                                                }
+                                            }}
+                                            style={{marginRight: '8px'}}
+                                        />
+                                        <span style={{fontWeight: '500'}}>{player.name}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
                             {/* Front/Back Toggle */}
                             <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
                                 <button 
@@ -1773,7 +1821,7 @@ for (const player of remainingPlayers) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {team.players.map((player, idx) => {
+                                        {playersToShow.map((player, idx) => {
                                             const playerTotal = holes.reduce((sum, hole) => 
                                                 sum + (parseInt(player.scores[hole.hole]) || 0), 0
                                             );
