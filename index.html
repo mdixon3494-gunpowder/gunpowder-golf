@@ -657,7 +657,7 @@ useEffect(() => {
     console.log('Setting up real-time subscription for league:', leagueId);
     
     const channel = supabase
-        .channel('league-changes')
+        .channel(`league-changes-${leagueId}`)
         .on(
             'postgres_changes',
             {
@@ -669,27 +669,21 @@ useEffect(() => {
             (payload) => {
                 console.log('Real-time update received:', payload);
                 const newData = payload.new.data;
+                const parsedNewData = typeof newData === 'string' ? JSON.parse(newData) : newData;
                 
-                if (newData && newData.liveRound) {
-                    // Only update if the live round data actually changed
-                    const currentRoundStr = JSON.stringify(liveRound);
-                    const newRoundStr = JSON.stringify(newData.liveRound);
-                    
-                    if (currentRoundStr !== newRoundStr) {
-                        console.log('Updating live round with new data');
-                        setLiveRound(newData.liveRound);
-                    }
+                if (parsedNewData && parsedNewData.liveRound) {
+                    console.log('Updating live round with new data');
+                    setLiveRound(parsedNewData.liveRound);
                 }
             }
         )
         .subscribe();
     
-    // Cleanup subscription
     return () => {
         console.log('Cleaning up real-time subscription');
         supabase.removeChannel(channel);
     };
-}, [leagueId]);
+}, [leagueId, liveRound?.id]);
 useEffect(() => {
     if (players.length > 0 || history.length > 0) {
         hasLoadedData.current = true;
