@@ -1564,28 +1564,125 @@ for (const player of remainingPlayers) {
                     </ul>
                 </div>
                 
-                {/* Leaderboard */}
-                <div className="leaderboard">
-                    <div className="leaderboard-header">🏆 Live Leaderboard</div>
-                    {[...liveRound.teams]
-                        .sort((a, b) => a.totalScore - b.totalScore)
-                        .map((team, idx) => (
-                            <div key={team.id} className="leaderboard-item">
-                                <div className="leaderboard-rank">#{idx + 1}</div>
-                                <div className="leaderboard-team">
-                                    <div style={{fontWeight: 'bold', marginBottom: '5px'}}>
-                                        {team.name}
-                                    </div>
-                                    <div style={{fontSize: '12px', color: '#666'}}>
-                                        {team.players.map(p => p.name).join(', ')}
-                                    </div>
+               {/* Leaderboard - Front/Back/Total */}
+<div style={{background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px'}}>
+    <div style={{
+        background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+        color: 'white',
+        padding: '15px',
+        fontSize: '18px',
+        fontWeight: '600'
+    }}>
+        🏆 Live Leaderboard
+    </div>
+    <div style={{overflowX: 'auto'}}>
+        <table style={{width: '100%', borderCollapse: 'collapse'}}>
+            <thead>
+                <tr style={{background: '#f8f9fa', borderBottom: '2px solid #e0e0e0'}}>
+                    <th style={{padding: '12px 15px', textAlign: 'left', fontWeight: '600'}}>Rank</th>
+                    <th style={{padding: '12px 15px', textAlign: 'left', fontWeight: '600'}}>Team</th>
+                    <th style={{padding: '12px 15px', textAlign: 'center', fontWeight: '600'}}>Front 9</th>
+                    <th style={{padding: '12px 15px', textAlign: 'center', fontWeight: '600'}}>Back 9</th>
+                    <th style={{padding: '12px 15px', textAlign: 'center', fontWeight: '600', background: '#fff3cd'}}>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {(() => {
+                    // Calculate front/back scores for each team
+                    const teamsWithScores = liveRound.teams.map(team => {
+                        let frontScore = 0;
+                        let backScore = 0;
+                        
+                        GUNPOWDER_SCORECARD.front9.forEach(holeInfo => {
+                            const holeScores = team.players
+                                .map(p => p.scores[holeInfo.hole])
+                                .filter(s => s !== undefined && s !== null && s !== '')
+                                .map(s => parseInt(s));
+                            
+                            if (holeScores.length > 0) {
+                                const par = holeInfo.par;
+                                const underParScores = holeScores.filter(score => score < par);
+                                
+                                if (underParScores.length > 0) {
+                                    underParScores.forEach(score => {
+                                        frontScore += (score - par);
+                                    });
+                                } else {
+                                    const bestScore = Math.min(...holeScores);
+                                    frontScore += (bestScore - par);
+                                }
+                            }
+                        });
+                        
+                        GUNPOWDER_SCORECARD.back9.forEach(holeInfo => {
+                            const holeScores = team.players
+                                .map(p => p.scores[holeInfo.hole])
+                                .filter(s => s !== undefined && s !== null && s !== '')
+                                .map(s => parseInt(s));
+                            
+                            if (holeScores.length > 0) {
+                                const par = holeInfo.par;
+                                const underParScores = holeScores.filter(score => score < par);
+                                
+                                if (underParScores.length > 0) {
+                                    underParScores.forEach(score => {
+                                        backScore += (score - par);
+                                    });
+                                } else {
+                                    const bestScore = Math.min(...holeScores);
+                                    backScore += (bestScore - par);
+                                }
+                            }
+                        });
+                        
+                        return {
+                            ...team,
+                            frontScore,
+                            backScore,
+                            totalScore: frontScore + backScore
+                        };
+                    });
+                    
+                    // Sort by total score
+                    const sortedTeams = [...teamsWithScores].sort((a, b) => a.totalScore - b.totalScore);
+                    
+                    return sortedTeams.map((team, idx) => (
+                        <tr key={team.id} style={{
+                            borderBottom: '1px solid #e0e0e0',
+                            background: idx % 2 === 0 ? 'white' : '#f8f9fa'
+                        }}>
+                            <td style={{padding: '15px', fontWeight: 'bold', fontSize: '20px', color: '#27ae60'}}>
+                                #{idx + 1}
+                            </td>
+                            <td style={{padding: '15px'}}>
+                                <div style={{fontWeight: 'bold', marginBottom: '3px'}}>{team.name}</div>
+                                <div style={{fontSize: '12px', color: '#666'}}>
+                                    {team.players.map(p => p.name).join(', ')}
                                 </div>
-                                <div className="leaderboard-score">
-                                    {team.totalScore > 0 ? '+' : ''}{team.totalScore}
-                                </div>
-                            </div>
-                        ))}
-                </div>
+                            </td>
+                            <td style={{padding: '15px', textAlign: 'center', fontSize: '18px', fontWeight: '600'}}>
+                                {team.frontScore > 0 ? '+' : ''}{team.frontScore}
+                            </td>
+                            <td style={{padding: '15px', textAlign: 'center', fontSize: '18px', fontWeight: '600'}}>
+                                {team.backScore > 0 ? '+' : ''}{team.backScore}
+                            </td>
+                            <td style={{
+                                padding: '15px',
+                                textAlign: 'center',
+                                fontSize: '20px',
+                                fontWeight: 'bold',
+                                color: '#e74c3c',
+                                background: idx % 2 === 0 ? '#fffbf0' : '#fff9e6'
+                            }}>
+                                {team.totalScore > 0 ? '+' : ''}{team.totalScore}
+                            </td>
+                        </tr>
+                    ));
+                })()}
+            </tbody>
+        </table>
+    </div>
+</div>
                 
                 {/* Team Selection */}
                 <h3 style={{marginTop: '30px', marginBottom: '15px'}}>Enter Scores</h3>
