@@ -1028,33 +1028,46 @@ for (const player of remainingPlayers) {
                 setActiveTab('live');
             };
 
-            const updateLiveScore = (teamId, playerId, hole, score) => {
-                if (!liveRound) return;
-                
-                const updatedRound = {
-                    ...liveRound,
-                    teams: liveRound.teams.map(team => {
-                        if (team.id === teamId) {
-                            return {
-                                ...team,
-                                players: team.players.map(player => {
-                                    if (player.id === playerId) {
-                                        return {
-                                            ...player,
-                                            scores: {
-                                                ...player.scores,
-                                                [hole]: parseInt(score)
-                                            }
-                                        };
-                                    }
-                                    return player;
-                                })
-                            };
-                        }
-                        return team;
-                    })
+                           const updateLiveScore = (teamId, playerId, hole, score) => {
+                    if (!liveRound) return;
+                    
+                    const updatedRound = {
+                        ...liveRound,
+                        teams: liveRound.teams.map(team => {
+                            if (team.id === teamId) {
+                                return {
+                                    ...team,
+                                    players: team.players.map(player => {
+                                        if (player.id === playerId) {
+                                            return {
+                                                ...player,
+                                                scores: {
+                                                    ...player.scores,
+                                                    [hole]: parseInt(score) || ''
+                                                }
+                                            };
+                                        }
+                                        return player;
+                                    })
+                                };
+                            }
+                            return team;
+                        })
+                    };
+                    
+                    // Update state
+                    setLiveRound(updatedRound);
+                    
+                    // Save to Supabase manually
+                    if (leagueId) {
+                        CloudStorage.saveData(leagueId, {
+                            players,
+                            history,
+                            pairingRequests,
+                            liveRound: updatedRound
+                        });
+                    }
                 };
-                
                 // Calculate team totals using new scoring rules
                 updatedRound.teams = updatedRound.teams.map(team => {
                     let totalScore = 0;
