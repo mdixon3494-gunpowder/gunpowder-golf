@@ -597,10 +597,13 @@
            // Check for existing league
             useEffect(() => {
                 const loadExistingLeague = async () => {
-                    const existingLeagueId = CloudStorage.getLeagueId();
-                    if (existingLeagueId) {
-                        const data = await CloudStorage.loadData(existingLeagueId);
-                        if (data) {
+                const existingLeagueId = CloudStorage.getLeagueId();
+                console.log('Loading league:', existingLeagueId);
+                if (existingLeagueId) {
+                    const data = await CloudStorage.loadData(existingLeagueId);
+                    console.log('Loaded data:', data);
+                    console.log('LiveRound in data:', data?.liveRound);
+                    if (data) {
                             setLeagueId(existingLeagueId);
                             setPlayers(data.players || []);
                             setHistory(data.history || []);
