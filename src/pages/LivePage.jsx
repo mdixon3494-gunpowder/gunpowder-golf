@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
+import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
 
 // Calculate team score for a 9-hole range
 function calculateTeamScore(team, startHole, endHole) {
@@ -1003,6 +1004,186 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
   )
 }
 
+// Money Tracker Component
+function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
+  const settlement = calculateRoundSettlement(liveRound, payoutFormats, holeInOnePot, skinsMatch)
+
+  if (!settlement) {
+    return (
+      <div className="alert alert-warning">
+        Unable to calculate settlement. Make sure teams have scores entered.
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* Format Info */}
+      <div style={{
+        background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+        color: 'white',
+        padding: '15px',
+        borderRadius: '10px',
+        marginBottom: '20px'
+      }}>
+        <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{settlement.formatName}</div>
+        <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '5px' }}>
+          {settlement.totalPlayers} players |
+          Front 9: ${settlement.pools.front9} |
+          Back 9: ${settlement.pools.back9}
+          {settlement.pools.overall > 0 && ` | Overall: $${settlement.pools.overall}`}
+        </div>
+        <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '5px' }}>
+          Greenies: ${settlement.pools.greeniePerHole}/hole
+          {settlement.hio.enabled && ` | HIO Pot: $${settlement.hio.contribution}`}
+        </div>
+      </div>
+
+      {/* Completion Status */}
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        marginBottom: '20px'
+      }}>
+        <div style={{
+          flex: 1,
+          padding: '10px',
+          background: settlement.completion.front9 ? '#d4edda' : '#fff3cd',
+          borderRadius: '8px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontWeight: 'bold' }}>Front 9</div>
+          <div style={{ fontSize: '13px' }}>{settlement.completion.front9 ? 'Complete' : 'In Progress'}</div>
+        </div>
+        <div style={{
+          flex: 1,
+          padding: '10px',
+          background: settlement.completion.back9 ? '#d4edda' : '#fff3cd',
+          borderRadius: '8px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontWeight: 'bold' }}>Back 9</div>
+          <div style={{ fontSize: '13px' }}>{settlement.completion.back9 ? 'Complete' : 'In Progress'}</div>
+        </div>
+      </div>
+
+      {/* Team Results */}
+      <h4 style={{ marginBottom: '10px' }}>Team Results</h4>
+      {settlement.teamSettlements.map(team => (
+        <div key={team.teamId} style={{
+          background: team.net > 0 ? '#d4edda' : team.net < 0 ? '#f8f9fa' : '#fff',
+          padding: '15px',
+          borderRadius: '8px',
+          marginBottom: '10px',
+          border: team.net > 0 ? '2px solid #27ae60' : '1px solid #e0e0e0'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 'bold' }}>{team.teamName}</div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                {team.wins.length > 0 ? `Won: ${team.wins.join(', ')}` : 'No wins yet'}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{
+                fontWeight: 'bold',
+                fontSize: '18px',
+                color: team.net > 0 ? '#27ae60' : team.net < 0 ? '#e74c3c' : '#333'
+              }}>
+                {formatMoney(team.net)}
+              </div>
+              <div style={{ fontSize: '11px', color: '#666' }}>
+                per player: {formatMoney(team.perPlayerNet)}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Greenie Results */}
+      <h4 style={{ marginTop: '20px', marginBottom: '10px' }}>Greenies</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+        {[4, 8, 12, 17].map(hole => {
+          const result = settlement.greenieResults[hole]
+          return (
+            <div key={hole} style={{
+              background: result?.winner ? '#d4edda' : '#f8f9fa',
+              padding: '12px',
+              borderRadius: '8px',
+              textAlign: 'center',
+              border: result?.winner ? '2px solid #27ae60' : '1px solid #e0e0e0'
+            }}>
+              <div style={{ fontWeight: 'bold' }}>Hole {hole}</div>
+              <div style={{ fontSize: '12px', color: '#666' }}>Pot: ${result?.pot || 0}</div>
+              {result?.winnerName ? (
+                <div style={{ fontSize: '13px', color: '#27ae60', marginTop: '5px', fontWeight: '500' }}>
+                  {result.winnerName}
+                </div>
+              ) : (
+                <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>No winner</div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      {settlement.carryoverRemaining > 0 && (
+        <div style={{ marginTop: '10px', fontSize: '13px', color: '#f39c12' }}>
+          Carryover: ${settlement.carryoverRemaining}
+        </div>
+      )}
+
+      {/* Player Breakdown */}
+      <h4 style={{ marginTop: '20px', marginBottom: '10px' }}>Player Breakdown</h4>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <thead>
+            <tr style={{ background: '#f8f9fa' }}>
+              <th style={{ padding: '10px', textAlign: 'left' }}>Player</th>
+              <th style={{ padding: '10px', textAlign: 'right' }}>Team</th>
+              <th style={{ padding: '10px', textAlign: 'right' }}>Greenies</th>
+              <th style={{ padding: '10px', textAlign: 'right' }}>Net</th>
+            </tr>
+          </thead>
+          <tbody>
+            {settlement.playerSettlements
+              .sort((a, b) => b.leagueNet - a.leagueNet)
+              .map(player => (
+                <tr key={player.playerId} style={{ borderBottom: '1px solid #e0e0e0' }}>
+                  <td style={{ padding: '10px' }}>
+                    {player.playerName}
+                    {player.isDNF && <span style={{ color: '#e74c3c', marginLeft: '5px' }}>(DNF)</span>}
+                  </td>
+                  <td style={{
+                    padding: '10px',
+                    textAlign: 'right',
+                    color: player.team.net >= 0 ? '#27ae60' : '#e74c3c'
+                  }}>
+                    {formatMoney(player.team.net)}
+                  </td>
+                  <td style={{
+                    padding: '10px',
+                    textAlign: 'right',
+                    color: player.greenies.net >= 0 ? '#27ae60' : '#e74c3c'
+                  }}>
+                    {formatMoney(player.greenies.net)}
+                  </td>
+                  <td style={{
+                    padding: '10px',
+                    textAlign: 'right',
+                    fontWeight: 'bold',
+                    color: player.leagueNet > 0 ? '#27ae60' : player.leagueNet < 0 ? '#e74c3c' : '#333'
+                  }}>
+                    {formatMoney(player.leagueNet)}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 // Main LivePage Component
 function LivePage() {
   const navigate = useNavigate()
@@ -1017,7 +1198,9 @@ function LivePage() {
     setTeams,
     skinsMatch,
     setSkinsMatch,
-    isAdmin
+    isAdmin,
+    payoutFormats,
+    holeInOnePot
   } = useLeague()
 
   const [subTab, setSubTab] = useState('leaderboard')
@@ -1250,6 +1433,7 @@ function LivePage() {
     { id: 'scoring', label: 'Scores' },
     { id: 'greenies', label: 'Greenies' },
     { id: 'skins', label: 'Skins' },
+    { id: 'money', label: 'Money' },
     { id: 'manage', label: 'Manage' }
   ]
 
@@ -1307,6 +1491,14 @@ function LivePage() {
           skinsMatch={skinsMatch}
           setSkinsMatch={setSkinsMatch}
           isAdmin={isAdmin}
+        />
+      )}
+      {subTab === 'money' && (
+        <MoneyTracker
+          liveRound={liveRound}
+          payoutFormats={payoutFormats}
+          holeInOnePot={holeInOnePot}
+          skinsMatch={skinsMatch}
         />
       )}
       {subTab === 'manage' && (

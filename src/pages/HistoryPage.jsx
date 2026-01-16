@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLeague } from '../context/LeagueContext'
+import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
 
 function formatRelativeToPar(score) {
   if (score === 0) return 'E'
@@ -130,7 +131,9 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
   )
 }
 
-function RoundDetailModal({ round, onClose }) {
+function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot }) {
+  const [showMoney, setShowMoney] = useState(false)
+
   if (!round) return null
 
   const date = new Date(round.date)
@@ -140,6 +143,8 @@ function RoundDetailModal({ round, onClose }) {
     day: 'numeric',
     year: 'numeric'
   })
+
+  const settlement = calculateRoundSettlement(round, payoutFormats, holeInOnePot, null)
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -254,6 +259,97 @@ function RoundDetailModal({ round, onClose }) {
               </div>
             </div>
           )}
+
+          {/* Money Breakdown Toggle */}
+          <div style={{ marginTop: '20px' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowMoney(!showMoney)}
+              style={{ width: '100%' }}
+            >
+              {showMoney ? 'Hide Money Breakdown' : 'Show Money Breakdown'}
+            </button>
+
+            {showMoney && settlement && (
+              <div style={{ marginTop: '15px' }}>
+                {/* Team Results */}
+                <h4 style={{ marginBottom: '10px' }}>Team Money</h4>
+                {settlement.teamSettlements.map(team => (
+                  <div key={team.teamId} style={{
+                    background: team.net > 0 ? '#d4edda' : team.net < 0 ? '#f8f9fa' : '#fff',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    marginBottom: '8px',
+                    border: team.net > 0 ? '2px solid #27ae60' : '1px solid #e0e0e0'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold' }}>{team.teamName}</div>
+                        <div style={{ fontSize: '11px', color: '#666' }}>
+                          {team.wins.length > 0 ? `Won: ${team.wins.join(', ')}` : 'No wins'}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontWeight: 'bold',
+                        color: team.net > 0 ? '#27ae60' : team.net < 0 ? '#e74c3c' : '#333'
+                      }}>
+                        {formatMoney(team.net)}
+                        <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>
+                          (${Math.abs(team.perPlayerNet).toFixed(0)}/player)
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Player Breakdown */}
+                <h4 style={{ marginTop: '15px', marginBottom: '10px' }}>Player Breakdown</h4>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead>
+                      <tr style={{ background: '#f8f9fa' }}>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Player</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Team</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Greenies</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Net</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {settlement.playerSettlements
+                        .sort((a, b) => b.leagueNet - a.leagueNet)
+                        .map(player => (
+                          <tr key={player.playerId} style={{ borderBottom: '1px solid #e0e0e0' }}>
+                            <td style={{ padding: '8px' }}>{player.playerName}</td>
+                            <td style={{
+                              padding: '8px',
+                              textAlign: 'right',
+                              color: player.team.net >= 0 ? '#27ae60' : '#e74c3c'
+                            }}>
+                              {formatMoney(player.team.net)}
+                            </td>
+                            <td style={{
+                              padding: '8px',
+                              textAlign: 'right',
+                              color: player.greenies.net >= 0 ? '#27ae60' : '#e74c3c'
+                            }}>
+                              {formatMoney(player.greenies.net)}
+                            </td>
+                            <td style={{
+                              padding: '8px',
+                              textAlign: 'right',
+                              fontWeight: 'bold',
+                              color: player.leagueNet > 0 ? '#27ae60' : player.leagueNet < 0 ? '#e74c3c' : '#333'
+                            }}>
+                              {formatMoney(player.leagueNet)}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -306,7 +402,7 @@ function DeleteConfirmModal({ round, onConfirm, onCancel }) {
 }
 
 function HistoryPage() {
-  const { history, setHistory, isAdmin } = useLeague()
+  const { history, setHistory, isAdmin, payoutFormats, holeInOnePot } = useLeague()
   const [viewingRound, setViewingRound] = useState(null)
   const [deletingRound, setDeletingRound] = useState(null)
 
@@ -347,6 +443,8 @@ function HistoryPage() {
         <RoundDetailModal
           round={viewingRound}
           onClose={() => setViewingRound(null)}
+          payoutFormats={payoutFormats}
+          holeInOnePot={holeInOnePot}
         />
       )}
 
