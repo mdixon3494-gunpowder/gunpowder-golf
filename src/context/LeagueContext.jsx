@@ -121,6 +121,7 @@ export function LeagueProvider({ children }) {
 
   // Skins
   const [skinsMatch, setSkinsMatch] = useState(null)
+  const [quickSkinsMode, setQuickSkinsMode] = useState(false)
 
   // Admin state
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -413,6 +414,8 @@ export function LeagueProvider({ children }) {
     // Skins
     skinsMatch,
     setSkinsMatch,
+    quickSkinsMode,
+    setQuickSkinsMode,
 
     // Utilities
     normalizeRound

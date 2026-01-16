@@ -320,12 +320,13 @@ function PlayerStatsModal({ player, onClose }) {
   const calculateStats = () => {
     if (history.length === 0) return null
 
-    const validRounds = history.filter(r => r.totalScore > 0)
+    // Support both legacy property names (total/frontNine/backNine) and new names
+    const validRounds = history.filter(r => (r.total || r.totalScore) > 0)
     if (validRounds.length === 0) return null
 
-    const totalScores = validRounds.map(r => r.totalScore)
-    const frontScores = validRounds.map(r => r.frontNineScore).filter(s => s > 0)
-    const backScores = validRounds.map(r => r.backNineScore).filter(s => s > 0)
+    const totalScores = validRounds.map(r => r.total || r.totalScore)
+    const frontScores = validRounds.map(r => r.frontNine || r.frontNineScore).filter(s => s > 0)
+    const backScores = validRounds.map(r => r.backNine || r.backNineScore).filter(s => s > 0)
 
     return {
       rounds: validRounds.length,
@@ -385,23 +386,28 @@ function PlayerStatsModal({ player, onClose }) {
 
               <h4 style={{ marginBottom: '10px' }}>Recent Rounds</h4>
               <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                {history.slice().reverse().slice(0, 10).map((round, idx) => (
-                  <div key={idx} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '10px',
-                    background: idx % 2 === 0 ? '#f8f9fa' : 'white',
-                    borderRadius: '4px'
-                  }}>
-                    <span>{new Date(round.date).toLocaleDateString()}</span>
-                    <span>
-                      <strong>{round.totalScore}</strong>
-                      <span style={{ color: '#666', marginLeft: '10px' }}>
-                        ({round.frontNineScore} + {round.backNineScore})
+                {history.slice().reverse().slice(0, 10).map((round, idx) => {
+                  const total = round.total || round.totalScore
+                  const front = round.frontNine || round.frontNineScore
+                  const back = round.backNine || round.backNineScore
+                  return (
+                    <div key={idx} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '10px',
+                      background: idx % 2 === 0 ? '#f8f9fa' : 'white',
+                      borderRadius: '4px'
+                    }}>
+                      <span>{new Date(round.date).toLocaleDateString()}</span>
+                      <span>
+                        <strong>{total}</strong>
+                        <span style={{ color: '#666', marginLeft: '10px' }}>
+                          ({front} + {back})
+                        </span>
                       </span>
-                    </span>
-                  </div>
-                ))}
+                    </div>
+                  )
+                })}
               </div>
             </>
           ) : (

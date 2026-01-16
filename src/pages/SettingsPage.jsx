@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 
 function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
@@ -450,7 +451,572 @@ function HoleInOnePotSection({ holeInOnePot, onUpdate, isAdmin }) {
   )
 }
 
+function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
+  const [showSetup, setShowSetup] = useState(false)
+  const [step, setStep] = useState(1)
+  const [selectedPlayers, setSelectedPlayers] = useState([])
+  const [teams, setTeams] = useState([])
+  const [selectedForTeam, setSelectedForTeam] = useState([])
+  const [guestName, setGuestName] = useState('')
+  const [skinsSettings, setSkinsSettings] = useState({
+    costPerSkin: '',
+    carryovers: true,
+    wrapUnwonSkins: true,
+    wrapTo: 'front',
+    payoutStyle: 'perSkin',
+    parOrBetterRequired: false,
+    birdieDoubleEagleTriple: false
+  })
+  const [greenieSettings, setGreenieSettings] = useState({
+    enabled: false,
+    costPerGreenie: '',
+    carryovers: true,
+    wrapUnwonGreenies: true,
+    wrapTo: 'front'
+  })
+
+  const resetSetup = () => {
+    setStep(1)
+    setSelectedPlayers([])
+    setTeams([])
+    setSelectedForTeam([])
+    setGuestName('')
+    setSkinsSettings({
+      costPerSkin: '',
+      carryovers: true,
+      wrapUnwonSkins: true,
+      wrapTo: 'front',
+      payoutStyle: 'perSkin',
+      parOrBetterRequired: false,
+      birdieDoubleEagleTriple: false
+    })
+    setGreenieSettings({
+      enabled: false,
+      costPerGreenie: '',
+      carryovers: true,
+      wrapUnwonGreenies: true,
+      wrapTo: 'front'
+    })
+  }
+
+  const addGuest = () => {
+    if (guestName.trim()) {
+      setSelectedPlayers([...selectedPlayers, {
+        id: `guest_${Date.now()}`,
+        name: guestName.trim(),
+        isGuest: true,
+        skillRating: 5
+      }])
+      setGuestName('')
+    }
+  }
+
+  const togglePlayer = (player) => {
+    const exists = selectedPlayers.some(p => p.id === player.id)
+    if (exists) {
+      setSelectedPlayers(selectedPlayers.filter(p => p.id !== player.id))
+    } else {
+      setSelectedPlayers([...selectedPlayers, {
+        id: player.id,
+        name: player.name,
+        isGuest: false,
+        skillRating: player.skillRating || 5
+      }])
+    }
+  }
+
+  const createTeam = () => {
+    if (selectedForTeam.length > 0) {
+      const newTeam = selectedForTeam.map(id => selectedPlayers.find(p => p.id === id))
+      setTeams([...teams, newTeam])
+      setSelectedForTeam([])
+    }
+  }
+
+  const unassignedPlayers = selectedPlayers.filter(
+    p => !teams.flat().some(tp => tp.id === p.id)
+  )
+
+  const handleStartGame = () => {
+    onStartQuickSkins({
+      players: selectedPlayers,
+      teams,
+      skinsSettings,
+      greenieSettings
+    })
+    setShowSetup(false)
+    resetSetup()
+  }
+
+  const isStartDisabled = !skinsSettings.costPerSkin ||
+    (greenieSettings.enabled && !greenieSettings.costPerGreenie)
+
+  return (
+    <>
+      <div style={{
+        background: liveRound ? '#f5f5f5' : 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+        padding: '20px',
+        borderRadius: '10px',
+        marginBottom: '20px',
+        opacity: liveRound ? 0.6 : 1
+      }}>
+        <h3 style={{ marginBottom: '10px', color: liveRound ? '#666' : 'white' }}>
+          Quick Skins Game
+        </h3>
+        <p style={{ color: liveRound ? '#999' : 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>
+          Start an informal skins match without the full league format.
+          Add players, form teams, and track skins - no stats saved.
+        </p>
+        <button
+          className="btn"
+          onClick={() => {
+            resetSetup()
+            setShowSetup(true)
+          }}
+          disabled={!!liveRound}
+          style={{
+            background: liveRound ? '#ccc' : 'white',
+            color: liveRound ? '#666' : '#e67e22',
+            fontWeight: '600',
+            cursor: liveRound ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {liveRound ? 'League Round in Progress' : 'Start Quick Skins'}
+        </button>
+      </div>
+
+      {/* Quick Skins Setup Modal */}
+      {showSetup && (
+        <div className="modal-overlay" onClick={() => setShowSetup(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)' }}>
+              <h2 style={{ margin: 0, color: 'white' }}>Quick Skins Setup</h2>
+              <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'white' }}>&times;</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              {/* Step indicator */}
+              <div style={{ display: 'flex', marginBottom: '20px', justifyContent: 'center', gap: '10px' }}>
+                {[1, 2, 3].map(s => (
+                  <div key={s} style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    background: step >= s ? '#f39c12' : '#e0e0e0',
+                    color: step >= s ? 'white' : '#999',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '600',
+                    fontSize: '14px'
+                  }}>
+                    {s}
+                  </div>
+                ))}
+              </div>
+
+              {/* Step 1: Add Players */}
+              {step === 1 && (
+                <>
+                  <h3 style={{ marginBottom: '15px' }}>Step 1: Add Players</h3>
+
+                  {/* Add from league */}
+                  {players.filter(p => p.isActive !== false).length > 0 && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                        Add from League:
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+                        {players.filter(p => p.isActive !== false).map(player => {
+                          const isAdded = selectedPlayers.some(sp => sp.id === player.id)
+                          return (
+                            <button
+                              key={player.id}
+                              onClick={() => togglePlayer(player)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '15px',
+                                border: isAdded ? '2px solid #27ae60' : '1px solid #ddd',
+                                background: isAdded ? '#e8f8f5' : 'white',
+                                color: isAdded ? '#27ae60' : '#666',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {isAdded ? '✓ ' : ''}{player.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add guest player */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                      Add Guest Player:
+                    </label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <input
+                        type="text"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Enter name..."
+                        style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '2px solid #ddd' }}
+                        onKeyPress={(e) => e.key === 'Enter' && addGuest()}
+                      />
+                      <button className="btn btn-secondary" onClick={addGuest} disabled={!guestName.trim()}>
+                        Add
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Current players list */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                      Players in Game ({selectedPlayers.length}):
+                    </label>
+                    {selectedPlayers.length === 0 ? (
+                      <p style={{ color: '#999', fontSize: '13px' }}>No players added yet</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {selectedPlayers.map(player => (
+                          <div key={player.id} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 10px',
+                            background: player.isGuest ? '#fff3e0' : '#e3f2fd',
+                            borderRadius: '15px',
+                            fontSize: '12px'
+                          }}>
+                            <span>{player.name}</span>
+                            {player.isGuest && <span style={{ color: '#e67e22' }}>(Guest)</span>}
+                            <button
+                              onClick={() => setSelectedPlayers(selectedPlayers.filter(p => p.id !== player.id))}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#e74c3c',
+                                cursor: 'pointer',
+                                padding: '0 2px',
+                                fontSize: '14px'
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn btn-secondary" onClick={() => setShowSetup(false)} style={{ flex: 1 }}>
+                      Cancel
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setStep(2)}
+                      style={{ flex: 1 }}
+                      disabled={selectedPlayers.length < 2}
+                    >
+                      Next: Form Teams
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Step 2: Form Teams */}
+              {step === 2 && (
+                <>
+                  <h3 style={{ marginBottom: '15px' }}>Step 2: Form Teams</h3>
+                  <p style={{ color: '#666', fontSize: '13px', marginBottom: '15px' }}>
+                    Create teams for the scoring interface. Select players and tap "Create Team".
+                  </p>
+
+                  {/* Available players */}
+                  {unassignedPlayers.length > 0 && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                        Available Players:
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {unassignedPlayers.map(player => {
+                          const isSelected = selectedForTeam.includes(player.id)
+                          return (
+                            <button
+                              key={player.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedForTeam(selectedForTeam.filter(id => id !== player.id))
+                                } else {
+                                  setSelectedForTeam([...selectedForTeam, player.id])
+                                }
+                              }}
+                              style={{
+                                padding: '8px 14px',
+                                borderRadius: '20px',
+                                border: isSelected ? '2px solid #3498db' : '2px solid #ddd',
+                                background: isSelected ? '#e3f2fd' : 'white',
+                                color: isSelected ? '#3498db' : '#666',
+                                fontSize: '13px',
+                                fontWeight: isSelected ? '600' : 'normal',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {isSelected ? '✓ ' : ''}{player.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      {selectedForTeam.length >= 1 && (
+                        <button className="btn btn-primary" onClick={createTeam} style={{ marginTop: '10px' }}>
+                          Create Team ({selectedForTeam.length} players)
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Created teams */}
+                  {teams.length > 0 && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                        Teams Created:
+                      </label>
+                      {teams.map((team, idx) => (
+                        <div key={idx} style={{
+                          background: '#f0f7ff',
+                          padding: '10px 15px',
+                          borderRadius: '8px',
+                          marginBottom: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <span>
+                            <strong>Team {idx + 1}:</strong> {team.map(p => p.name).join(', ')}
+                          </span>
+                          <button
+                            onClick={() => setTeams(teams.filter((_, i) => i !== idx))}
+                            style={{
+                              background: '#e74c3c',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              cursor: 'pointer',
+                              fontSize: '11px'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn btn-secondary" onClick={() => setStep(1)} style={{ flex: 1 }}>
+                      Back
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setStep(3)}
+                      style={{ flex: 1 }}
+                      disabled={teams.length === 0 || unassignedPlayers.length > 0}
+                    >
+                      Next: Skins Rules
+                    </button>
+                  </div>
+                  {unassignedPlayers.length > 0 && teams.length > 0 && (
+                    <p style={{ color: '#e67e22', fontSize: '12px', marginTop: '10px', textAlign: 'center' }}>
+                      All players must be assigned to a team
+                    </p>
+                  )}
+                </>
+              )}
+
+              {/* Step 3: Skins Settings */}
+              {step === 3 && (
+                <>
+                  <h3 style={{ marginBottom: '15px' }}>Step 3: Skins Rules</h3>
+
+                  {/* Cost per skin */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+                      Cost per Skin ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={skinsSettings.costPerSkin}
+                      onChange={(e) => setSkinsSettings({ ...skinsSettings, costPerSkin: e.target.value })}
+                      placeholder="1.00"
+                      style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '16px' }}
+                    />
+                  </div>
+
+                  {/* Carryovers */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Carryovers</label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        onClick={() => setSkinsSettings({ ...skinsSettings, carryovers: true })}
+                        style={{
+                          flex: 1, padding: '12px', borderRadius: '6px',
+                          border: skinsSettings.carryovers ? '2px solid #f39c12' : '2px solid #ddd',
+                          background: skinsSettings.carryovers ? '#fff8e1' : 'white',
+                          fontWeight: skinsSettings.carryovers ? '600' : 'normal',
+                          cursor: 'pointer'
+                        }}
+                      >Yes</button>
+                      <button
+                        onClick={() => setSkinsSettings({ ...skinsSettings, carryovers: false })}
+                        style={{
+                          flex: 1, padding: '12px', borderRadius: '6px',
+                          border: !skinsSettings.carryovers ? '2px solid #f39c12' : '2px solid #ddd',
+                          background: !skinsSettings.carryovers ? '#fff8e1' : 'white',
+                          fontWeight: !skinsSettings.carryovers ? '600' : 'normal',
+                          cursor: 'pointer'
+                        }}
+                      >No</button>
+                    </div>
+                  </div>
+
+                  {/* Wrap options (if carryovers ON) */}
+                  {skinsSettings.carryovers && (
+                    <>
+                      <div style={{ marginBottom: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap Unwon Skins</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button onClick={() => setSkinsSettings({ ...skinsSettings, wrapUnwonSkins: true })}
+                            style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: skinsSettings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: skinsSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                          <button onClick={() => setSkinsSettings({ ...skinsSettings, wrapUnwonSkins: false })}
+                            style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !skinsSettings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: !skinsSettings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: !skinsSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                        </div>
+                      </div>
+                      {skinsSettings.wrapUnwonSkins && (
+                        <div style={{ marginBottom: '20px' }}>
+                          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap To</label>
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <button onClick={() => setSkinsSettings({ ...skinsSettings, wrapTo: 'front' })}
+                              style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapTo === 'front' ? '2px solid #f39c12' : '2px solid #ddd', background: skinsSettings.wrapTo === 'front' ? '#fff8e1' : 'white', fontWeight: skinsSettings.wrapTo === 'front' ? '600' : 'normal', cursor: 'pointer' }}>Front 9</button>
+                            <button onClick={() => setSkinsSettings({ ...skinsSettings, wrapTo: 'back' })}
+                              style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapTo === 'back' ? '2px solid #f39c12' : '2px solid #ddd', background: skinsSettings.wrapTo === 'back' ? '#fff8e1' : 'white', fontWeight: skinsSettings.wrapTo === 'back' ? '600' : 'normal', cursor: 'pointer' }}>Back 9</button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Greenies Section */}
+                  <div style={{ marginBottom: '20px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+                      <label style={{ fontWeight: '600', fontSize: '15px' }}>Greenies (Par 3s)</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => setGreenieSettings({ ...greenieSettings, enabled: true })}
+                          style={{
+                            padding: '6px 16px', borderRadius: '6px',
+                            border: greenieSettings.enabled ? '2px solid #27ae60' : '2px solid #ddd',
+                            background: greenieSettings.enabled ? '#e8f8f5' : 'white',
+                            fontWeight: greenieSettings.enabled ? '600' : 'normal',
+                            color: greenieSettings.enabled ? '#27ae60' : '#666',
+                            cursor: 'pointer', fontSize: '13px'
+                          }}
+                        >Yes</button>
+                        <button
+                          onClick={() => setGreenieSettings({ ...greenieSettings, enabled: false })}
+                          style={{
+                            padding: '6px 16px', borderRadius: '6px',
+                            border: !greenieSettings.enabled ? '2px solid #27ae60' : '2px solid #ddd',
+                            background: !greenieSettings.enabled ? '#e8f8f5' : 'white',
+                            fontWeight: !greenieSettings.enabled ? '600' : 'normal',
+                            color: !greenieSettings.enabled ? '#27ae60' : '#666',
+                            cursor: 'pointer', fontSize: '13px'
+                          }}
+                        >No</button>
+                      </div>
+                    </div>
+
+                    {greenieSettings.enabled && (
+                      <div style={{ background: '#f0fff4', padding: '15px', borderRadius: '8px' }}>
+                        <div style={{ marginBottom: '15px' }}>
+                          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>
+                            Cost per Greenie ($)
+                          </label>
+                          <input
+                            type="number"
+                            value={greenieSettings.costPerGreenie}
+                            onChange={(e) => setGreenieSettings({ ...greenieSettings, costPerGreenie: e.target.value })}
+                            placeholder="1.00"
+                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '14px' }}
+                          />
+                        </div>
+                        <div style={{ marginBottom: '15px' }}>
+                          <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>Carryovers</label>
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                              onClick={() => setGreenieSettings({ ...greenieSettings, carryovers: true })}
+                              style={{
+                                flex: 1, padding: '10px', borderRadius: '6px',
+                                border: greenieSettings.carryovers ? '2px solid #27ae60' : '2px solid #ddd',
+                                background: greenieSettings.carryovers ? '#e8f8f5' : 'white',
+                                fontWeight: greenieSettings.carryovers ? '600' : 'normal',
+                                cursor: 'pointer', fontSize: '13px'
+                              }}
+                            >Yes</button>
+                            <button
+                              onClick={() => setGreenieSettings({ ...greenieSettings, carryovers: false })}
+                              style={{
+                                flex: 1, padding: '10px', borderRadius: '6px',
+                                border: !greenieSettings.carryovers ? '2px solid #27ae60' : '2px solid #ddd',
+                                background: !greenieSettings.carryovers ? '#e8f8f5' : 'white',
+                                fontWeight: !greenieSettings.carryovers ? '600' : 'normal',
+                                cursor: 'pointer', fontSize: '13px'
+                              }}
+                            >No</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Optional rules */}
+                  <div style={{ marginBottom: '20px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={skinsSettings.parOrBetterRequired} onChange={(e) => setSkinsSettings({ ...skinsSettings, parOrBetterRequired: e.target.checked })} style={{ width: '18px', height: '18px' }} />
+                      <span>Par or better required to win</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={skinsSettings.birdieDoubleEagleTriple} onChange={(e) => setSkinsSettings({ ...skinsSettings, birdieDoubleEagleTriple: e.target.checked })} style={{ width: '18px', height: '18px' }} />
+                      <span>Birdie = 2x, Eagle = 3x value</span>
+                    </label>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="btn btn-secondary" onClick={() => setStep(2)} style={{ flex: 1 }}>Back</button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleStartGame}
+                      style={{ flex: 1 }}
+                      disabled={isStartDisabled}
+                    >
+                      Start Quick Skins!
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 function SettingsPage() {
+  const navigate = useNavigate()
   const {
     leagueId,
     isAdmin,
@@ -460,8 +1026,47 @@ function SettingsPage() {
     payoutFormats,
     setPayoutFormats,
     holeInOnePot,
-    setHoleInOnePot
+    setHoleInOnePot,
+    players,
+    liveRound,
+    setLiveRound,
+    setSkinsMatch,
+    setQuickSkinsMode
   } = useLeague()
+
+  const handleStartQuickSkins = ({ players: qsPlayers, teams, skinsSettings, greenieSettings }) => {
+    // Create the quick skins round
+    const quickRound = {
+      date: new Date().toISOString().split('T')[0],
+      teams: teams.map((team, idx) => ({
+        id: idx + 1,
+        name: `Team ${idx + 1}`,
+        players: team.map(p => ({
+          ...p,
+          scores: {},
+          isDNF: false,
+          includeInTeamScore: true
+        })),
+        isFinished: false
+      })),
+      greenies: {},
+      quickSkinsGreenieSettings: greenieSettings.enabled ? greenieSettings : null
+    }
+
+    const quickSkinsMatchData = {
+      settings: { ...skinsSettings, playerHandicaps: {} },
+      participants: qsPlayers.map(p => String(p.id)),
+      results: {}
+    }
+
+    // Set the state to start the game
+    setLiveRound(quickRound)
+    setSkinsMatch(quickSkinsMatchData)
+    setQuickSkinsMode(true)
+
+    // Navigate to the live page with skins tab
+    navigate('/live')
+  }
 
   return (
     <div>
@@ -471,6 +1076,13 @@ function SettingsPage() {
         isAdmin={isAdmin}
         onLogin={adminLogin}
         onLogout={adminLogout}
+      />
+
+      {/* Quick Skins Section */}
+      <QuickSkinsSection
+        players={players}
+        liveRound={liveRound}
+        onStartQuickSkins={handleStartQuickSkins}
       />
 
       <LeagueInfoSection

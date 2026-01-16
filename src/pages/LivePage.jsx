@@ -1200,10 +1200,12 @@ function LivePage() {
     setSkinsMatch,
     isAdmin,
     payoutFormats,
-    holeInOnePot
+    holeInOnePot,
+    quickSkinsMode,
+    setQuickSkinsMode
   } = useLeague()
 
-  const [subTab, setSubTab] = useState('leaderboard')
+  const [subTab, setSubTab] = useState(quickSkinsMode ? 'skins' : 'leaderboard')
   const [selectedTeamId, setSelectedTeamId] = useState(liveRound?.teams[0]?.id || 0)
   const [showFinishConfirm, setShowFinishConfirm] = useState(false)
   const [finishPin, setFinishPin] = useState('')
@@ -1428,18 +1430,70 @@ function LivePage() {
     navigate('/history')
   }
 
-  const subTabs = [
-    { id: 'leaderboard', label: 'Board' },
-    { id: 'scoring', label: 'Scores' },
-    { id: 'greenies', label: 'Greenies' },
-    { id: 'skins', label: 'Skins' },
-    { id: 'money', label: 'Money' },
-    { id: 'manage', label: 'Manage' }
-  ]
+  // End Quick Skins game
+  const endQuickSkins = () => {
+    if (confirm('End Quick Skins game? All data will be lost.')) {
+      setLiveRound(null)
+      setSkinsMatch(null)
+      setQuickSkinsMode(false)
+      navigate('/settings')
+    }
+  }
+
+  // Define tabs based on mode
+  const subTabs = quickSkinsMode
+    ? [
+        { id: 'scoring', label: 'Scores' },
+        { id: 'skins', label: 'Skins' },
+        ...(liveRound?.quickSkinsGreenieSettings ? [{ id: 'greenies', label: 'Greenies' }] : [])
+      ]
+    : [
+        { id: 'leaderboard', label: 'Board' },
+        { id: 'scoring', label: 'Scores' },
+        { id: 'greenies', label: 'Greenies' },
+        { id: 'skins', label: 'Skins' },
+        { id: 'money', label: 'Money' },
+        { id: 'manage', label: 'Manage' }
+      ]
 
   return (
     <div>
-      <h2 style={{ marginBottom: '20px' }}>Live Round Scoring</h2>
+      {/* Quick Skins Mode Banner */}
+      {quickSkinsMode && (
+        <div style={{
+          background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+          color: 'white',
+          padding: '15px',
+          borderRadius: '10px',
+          marginBottom: '15px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>Quick Skins Game</div>
+            <div style={{ fontSize: '12px', opacity: 0.9 }}>
+              Informal skins match - no stats saved
+            </div>
+          </div>
+          <button
+            onClick={endQuickSkins}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            End Game
+          </button>
+        </div>
+      )}
+
+      <h2 style={{ marginBottom: '20px' }}>{quickSkinsMode ? 'Quick Skins Game' : 'Live Round Scoring'}</h2>
 
       <div style={{
         display: 'flex',
@@ -1518,7 +1572,8 @@ function LivePage() {
         </div>
       )}
 
-      {isAdmin && (
+      {/* Finish Round - only show for regular league rounds, not Quick Skins */}
+      {isAdmin && !quickSkinsMode && (
         <div style={{ marginTop: '30px' }}>
           {showFinishConfirm ? (
             <div style={{
