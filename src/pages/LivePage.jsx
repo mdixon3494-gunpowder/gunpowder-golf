@@ -1016,169 +1016,192 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
     )
   }
 
+  const format = settlement.format === 'matchPlay' ? payoutFormats.matchPlay : payoutFormats.standard
+
   return (
-    <div>
-      {/* Format Info */}
-      <div style={{
-        background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
-        color: 'white',
-        padding: '15px',
-        borderRadius: '10px',
-        marginBottom: '20px'
-      }}>
-        <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{settlement.formatName}</div>
-        <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '5px' }}>
-          {settlement.totalPlayers} players |
-          Front 9: ${settlement.pools.front9} |
-          Back 9: ${settlement.pools.back9}
-          {settlement.pools.overall > 0 && ` | Overall: $${settlement.pools.overall}`}
-        </div>
-        <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '5px' }}>
-          Greenies: ${settlement.pools.greeniePerHole}/hole
-          {settlement.hio.enabled && ` | HIO Pot: $${settlement.hio.contribution}`}
-        </div>
-      </div>
+    <div style={{ background: 'white', borderRadius: '10px', padding: '15px' }}>
+      <h3 style={{ marginBottom: '10px', color: '#27ae60' }}>Round Settlement</h3>
 
-      {/* Completion Status */}
-      <div style={{
-        display: 'flex',
-        gap: '10px',
-        marginBottom: '20px'
-      }}>
-        <div style={{
-          flex: 1,
-          padding: '10px',
-          background: settlement.completion.front9 ? '#d4edda' : '#fff3cd',
-          borderRadius: '8px',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontWeight: 'bold' }}>Front 9</div>
-          <div style={{ fontSize: '13px' }}>{settlement.completion.front9 ? 'Complete' : 'In Progress'}</div>
+      {/* Summary */}
+      <div style={{ background: '#f0f7ff', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
+        <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
+          Format: <strong>{settlement.formatName}</strong> | Players: <strong>{settlement.totalPlayers}</strong>
         </div>
-        <div style={{
-          flex: 1,
-          padding: '10px',
-          background: settlement.completion.back9 ? '#d4edda' : '#fff3cd',
-          borderRadius: '8px',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontWeight: 'bold' }}>Back 9</div>
-          <div style={{ fontSize: '13px' }}>{settlement.completion.back9 ? 'Complete' : 'In Progress'}</div>
-        </div>
-      </div>
-
-      {/* Team Results */}
-      <h4 style={{ marginBottom: '10px' }}>Team Results</h4>
-      {settlement.teamSettlements.map(team => (
-        <div key={team.teamId} style={{
-          background: team.net > 0 ? '#d4edda' : team.net < 0 ? '#f8f9fa' : '#fff',
-          padding: '15px',
-          borderRadius: '8px',
-          marginBottom: '10px',
-          border: team.net > 0 ? '2px solid #27ae60' : '1px solid #e0e0e0'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontWeight: 'bold' }}>{team.teamName}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>
-                {team.wins.length > 0 ? `Won: ${team.wins.join(', ')}` : 'No wins yet'}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{
-                fontWeight: 'bold',
-                fontSize: '18px',
-                color: team.net > 0 ? '#27ae60' : team.net < 0 ? '#e74c3c' : '#333'
-              }}>
-                {formatMoney(team.net)}
-              </div>
-              <div style={{ fontSize: '11px', color: '#666' }}>
-                per player: {formatMoney(team.perPlayerNet)}
-              </div>
-            </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '11px' }}>
+          <div>
+            Front 9 Pool: <strong>${settlement.pools.front9.toFixed(2)}</strong>
+            {!settlement.completion?.front9 && <span style={{ color: '#e67e22', marginLeft: '4px' }}>⏳</span>}
           </div>
+          <div>
+            Back 9 Pool: <strong>${settlement.pools.back9.toFixed(2)}</strong>
+            {!settlement.completion?.back9 && <span style={{ color: '#e67e22', marginLeft: '4px' }}>⏳</span>}
+          </div>
+          {settlement.pools.overall > 0 && (
+            <div>
+              Overall Pool: <strong>${settlement.pools.overall.toFixed(2)}</strong>
+              {!settlement.completion?.all && <span style={{ color: '#e67e22', marginLeft: '4px' }}>⏳</span>}
+            </div>
+          )}
         </div>
-      ))}
+        {(!settlement.completion?.front9 || !settlement.completion?.back9) && (
+          <div style={{ marginTop: '8px', fontSize: '10px', color: '#e67e22', fontStyle: 'italic' }}>
+            ⏳ = Waiting for all players to complete this 9
+          </div>
+        )}
+        {settlement.hio.enabled && (
+          <div style={{ marginTop: '8px', fontSize: '11px', color: '#27ae60' }}>
+            HIO Pot: +${settlement.hio.contribution.toFixed(2)} ({settlement.hio.eligibleCount} eligible)
+          </div>
+        )}
+      </div>
 
-      {/* Greenie Results */}
-      <h4 style={{ marginTop: '20px', marginBottom: '10px' }}>Greenies</h4>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-        {[4, 8, 12, 17].map(hole => {
-          const result = settlement.greenieResults[hole]
+      {/* Team Settlements */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>
+          Team Settlements
+          {!settlement.completion?.all && <span style={{ fontSize: '11px', color: '#e67e22', marginLeft: '8px', fontWeight: 'normal' }}>(in progress)</span>}
+        </h4>
+        {settlement.teamSettlements.map(team => {
+          const pendingItems = []
+          if (!settlement.completion?.front9) pendingItems.push('Front 9')
+          if (!settlement.completion?.back9) pendingItems.push('Back 9')
+          if (settlement.format === 'matchPlay' && !settlement.completion?.all) pendingItems.push('Overall')
+          const isPending = pendingItems.length > 0
+
           return (
-            <div key={hole} style={{
-              background: result?.winner ? '#d4edda' : '#f8f9fa',
+            <div key={team.teamId} style={{
+              background: isPending ? '#fff8e1' : (team.net >= 0 ? '#e8f5e9' : '#ffebee'),
               padding: '12px',
               borderRadius: '8px',
-              textAlign: 'center',
-              border: result?.winner ? '2px solid #27ae60' : '1px solid #e0e0e0'
+              marginBottom: '10px',
+              border: isPending ? '2px solid #f39c12' : `2px solid ${team.net >= 0 ? '#27ae60' : '#e74c3c'}`
             }}>
-              <div style={{ fontWeight: 'bold' }}>Hole {hole}</div>
-              <div style={{ fontSize: '12px', color: '#666' }}>Pot: ${result?.pot || 0}</div>
-              {result?.winnerName ? (
-                <div style={{ fontSize: '13px', color: '#27ae60', marginTop: '5px', fontWeight: '500' }}>
-                  {result.winnerName}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div>
+                  <strong>{team.teamName}</strong>
+                  <span style={{ fontSize: '11px', color: '#666', marginLeft: '8px' }}>({team.teamSize} players)</span>
                 </div>
-              ) : (
-                <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>No winner</div>
-              )}
+                <div style={{
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  color: isPending ? '#e67e22' : (team.net >= 0 ? '#27ae60' : '#e74c3c')
+                }}>
+                  {isPending ? '⏳ ' : ''}{team.net >= 0 ? '+' : ''}${team.net.toFixed(2)}
+                </div>
+              </div>
+              <div style={{ fontSize: '11px', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                <span>Entry: ${team.entry.toFixed(2)}</span>
+                <span>Winnings: ${team.winnings.toFixed(2)}</span>
+                {team.wins.length > 0 && <span style={{ color: '#27ae60' }}>Won: {team.wins.join(', ')}</span>}
+                {isPending && pendingItems.length > 0 && <span style={{ color: '#e67e22' }}>Pending: {pendingItems.join(', ')}</span>}
+              </div>
+              <div style={{ fontSize: '11px', marginTop: '6px', color: '#666' }}>
+                Per player: {team.perPlayerNet >= 0 ? '+' : ''}${team.perPlayerNet.toFixed(2)}
+              </div>
             </div>
           )
         })}
       </div>
-      {settlement.carryoverRemaining > 0 && (
-        <div style={{ marginTop: '10px', fontSize: '13px', color: '#f39c12' }}>
-          Carryover: ${settlement.carryoverRemaining}
+
+      {/* Greenie Pools */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>Greenie Pools</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+          {[4, 8, 12, 17].map(hole => {
+            const result = settlement.greenieResults[hole]
+            const winnerPlayer = result?.winner ? liveRound.teams.flatMap(t => t.players).find(p => String(p.id) === String(result.winner)) : null
+            return (
+              <div key={hole} style={{
+                background: result?.isFinal ? (result.winner ? '#e8f5e9' : '#fff3e0') : '#f5f5f5',
+                padding: '8px',
+                borderRadius: '6px',
+                textAlign: 'center',
+                border: result?.isFinal ? (result.winner ? '2px solid #27ae60' : '2px solid #f39c12') : '1px solid #ddd'
+              }}>
+                <div style={{ fontSize: '11px', color: '#666' }}>Hole {hole}</div>
+                <div style={{ fontWeight: '700', color: '#27ae60' }}>${result?.pot?.toFixed(2) || '0.00'}</div>
+                <div style={{ fontSize: '9px', color: '#999' }}>{settlement.totalPlayers} players</div>
+                {result?.isFinal && (
+                  <div style={{ fontSize: '9px', marginTop: '4px', color: result.winner ? '#27ae60' : '#e67e22' }}>
+                    {result.winner ? `✓ ${winnerPlayer?.name || result.winnerName}` : '↩ No winner'}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Greenie Payouts */}
+      {Object.keys(settlement.greeniePayouts).length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>Greenie Payouts</h4>
+          <div style={{ background: '#f8f9fa', padding: '10px', borderRadius: '8px' }}>
+            {Object.entries(settlement.greeniePayouts).map(([playerId, amount]) => {
+              const player = liveRound.teams.flatMap(t => t.players).find(p => String(p.id) === String(playerId))
+              return (
+                <div key={playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                  <span>{player?.name || 'Unknown'}</span>
+                  <span style={{ color: '#27ae60', fontWeight: '600' }}>${amount.toFixed(2)}</span>
+                </div>
+              )
+            })}
+            {settlement.carryoverRemaining > 0 && (
+              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #ddd', color: '#e67e22', fontSize: '12px' }}>
+                ⏳ Carryover pending: ${settlement.carryoverRemaining.toFixed(2)} (waiting for final greenie)
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Player Breakdown */}
-      <h4 style={{ marginTop: '20px', marginBottom: '10px' }}>Player Breakdown</h4>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-          <thead>
-            <tr style={{ background: '#f8f9fa' }}>
-              <th style={{ padding: '10px', textAlign: 'left' }}>Player</th>
-              <th style={{ padding: '10px', textAlign: 'right' }}>Team</th>
-              <th style={{ padding: '10px', textAlign: 'right' }}>Greenies</th>
-              <th style={{ padding: '10px', textAlign: 'right' }}>Net</th>
-            </tr>
-          </thead>
-          <tbody>
-            {settlement.playerSettlements
-              .sort((a, b) => b.leagueNet - a.leagueNet)
-              .map(player => (
-                <tr key={player.playerId} style={{ borderBottom: '1px solid #e0e0e0' }}>
-                  <td style={{ padding: '10px' }}>
-                    {player.playerName}
-                    {player.isDNF && <span style={{ color: '#e74c3c', marginLeft: '5px' }}>(DNF)</span>}
-                  </td>
-                  <td style={{
-                    padding: '10px',
-                    textAlign: 'right',
-                    color: player.team.net >= 0 ? '#27ae60' : '#e74c3c'
-                  }}>
-                    {formatMoney(player.team.net)}
-                  </td>
-                  <td style={{
-                    padding: '10px',
-                    textAlign: 'right',
-                    color: player.greenies.net >= 0 ? '#27ae60' : '#e74c3c'
-                  }}>
-                    {formatMoney(player.greenies.net)}
-                  </td>
-                  <td style={{
-                    padding: '10px',
-                    textAlign: 'right',
-                    fontWeight: 'bold',
-                    color: player.leagueNet > 0 ? '#27ae60' : player.leagueNet < 0 ? '#e74c3c' : '#333'
-                  }}>
-                    {formatMoney(player.leagueNet)}
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+      {/* Individual Player Breakdown */}
+      <div>
+        <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>Individual Breakdown</h4>
+        {settlement.playerSettlements
+          .sort((a, b) => b.leagueNet - a.leagueNet)
+          .map(player => (
+            <div key={player.playerId} style={{
+              background: '#f8f9fa',
+              padding: '10px',
+              borderRadius: '8px',
+              marginBottom: '8px',
+              borderLeft: `4px solid ${player.leagueNet >= 0 ? '#27ae60' : '#e74c3c'}`
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div>
+                  <strong>{player.playerName}</strong>
+                  <span style={{ fontSize: '10px', color: '#666', marginLeft: '6px' }}>{player.teamName}</span>
+                  {player.isDNF && (
+                    <span style={{ marginLeft: '6px', padding: '2px 6px', background: '#e74c3c', color: 'white', borderRadius: '8px', fontSize: '9px', fontWeight: '600' }}>DNF</span>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: '700', color: player.leagueNet >= 0 ? '#27ae60' : '#e74c3c' }}>
+                    {player.leagueNet >= 0 ? '+' : ''}${player.leagueNet.toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: '9px', color: '#666' }}>League</div>
+                </div>
+              </div>
+
+              {/* League breakdown */}
+              <div style={{ fontSize: '10px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px', marginBottom: '6px' }}>
+                <div>
+                  Greenies: <span style={{ color: player.greenies.net >= 0 ? '#27ae60' : '#e74c3c' }}>
+                    {player.greenies.net >= 0 ? '+' : ''}${player.greenies.net.toFixed(2)}
+                  </span>
+                </div>
+                <div>
+                  Team: <span style={{ color: player.team.net >= 0 ? '#27ae60' : '#e74c3c' }}>
+                    {player.team.net >= 0 ? '+' : ''}${player.team.net.toFixed(2)}
+                  </span>
+                </div>
+                {player.hio?.paid > 0 && (
+                  <div>HIO: <span style={{ color: '#e74c3c' }}>-${player.hio.paid.toFixed(2)}</span></div>
+                )}
+              </div>
+            </div>
+          ))}
       </div>
     </div>
   )

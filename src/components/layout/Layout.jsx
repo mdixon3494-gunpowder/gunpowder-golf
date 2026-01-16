@@ -86,7 +86,7 @@ function Layout() {
           to="/generate"
           className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
         >
-          Generate
+          Check-In
         </NavLink>
         <NavLink
           to="/teams"
