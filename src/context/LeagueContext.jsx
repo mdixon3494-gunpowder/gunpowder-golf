@@ -129,6 +129,7 @@ export function LeagueProvider({ children }) {
   })
 
   const hasLoadedData = useRef(false)
+  const isUpdatingFromRealtime = useRef(false)
 
   // Load existing league on mount
   useEffect(() => {
@@ -186,6 +187,10 @@ export function LeagueProvider({ children }) {
 
   // Save to Supabase when data changes
   useEffect(() => {
+    // Skip saving if we're updating from a real-time subscription
+    if (isUpdatingFromRealtime.current) {
+      return
+    }
     if (leagueId && isSetup && hasLoadedData.current) {
       CloudStorage.saveData(
         leagueId,
@@ -240,10 +245,14 @@ export function LeagueProvider({ children }) {
           const newData = payload.new.data
           const parsedNewData = typeof newData === 'string' ? JSON.parse(newData) : newData
 
+          // Set flag to prevent save loop
+          isUpdatingFromRealtime.current = true
+
           // Check if round was started on another device
           if (parsedNewData.liveRound && !liveRound) {
             console.log('Round started on another device')
             setLiveRound(normalizeRound(parsedNewData.liveRound))
+            setTimeout(() => { isUpdatingFromRealtime.current = false }, 100)
             return
           }
 
@@ -251,6 +260,7 @@ export function LeagueProvider({ children }) {
           if (!parsedNewData.liveRound && liveRound) {
             console.log('Round finished on another device')
             setLiveRound(null)
+            setTimeout(() => { isUpdatingFromRealtime.current = false }, 100)
             return
           }
 
@@ -285,6 +295,9 @@ export function LeagueProvider({ children }) {
               setPlayers(parsedNewData.players)
             }
           }
+
+          // Clear flag after state updates are processed
+          setTimeout(() => { isUpdatingFromRealtime.current = false }, 100)
         }
       )
       .subscribe()
