@@ -1,0 +1,26 @@
+{
+  "name": "Gunpowder Big Boy's Golf",
+  "short_name": "Gunpowder Golf",
+  "description": "Golf league management app for live scoring, team generation, and statistics tracking",
+  "start_url": "/gunpowder-golf/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#27ae60",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "golf-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "golf-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["sports", "utilities"],
+  "prefer_related_applications": false
+}
