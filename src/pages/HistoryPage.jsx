@@ -470,6 +470,428 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
   )
 }
 
+function SkinsResults({ round }) {
+  const [skinsView, setSkinsView] = useState('front')
+
+  const skinsMatch = round.skinsMatch
+  if (!skinsMatch) return null
+
+  const allPlayers = round.teams.flatMap(t => t.players)
+  const skinsPlayers = allPlayers.filter(p => skinsMatch.participants.includes(String(p.id)))
+
+  const frontHoles = GUNPOWDER_SCORECARD.front9
+  const backHoles = GUNPOWDER_SCORECARD.back9
+  const allHoles = [...frontHoles, ...backHoles]
+  const displayHoles = skinsView === 'front' ? frontHoles : skinsView === 'back' ? backHoles : allHoles
+
+  // Calculate skins results (same logic as LivePage)
+  const calculateSkins = () => {
+    if (!skinsMatch || skinsPlayers.length < 2) return {}
+
+    const results = {}
+    let carryoverCount = 0
+    let carryoverFromHoles = []
+
+    allHoles.forEach(holeInfo => {
+      const hole = holeInfo.hole
+      const par = holeInfo.par
+
+      const playerScores = []
+      skinsPlayers.forEach(player => {
+        const score = player.scores?.[hole]
+        if (score !== undefined && score !== null && score !== '' && score !== 'X') {
+          playerScores.push({ playerId: player.id, score: parseInt(score), name: player.name })
+        }
+      })
+
+      const allScored = playerScores.length === skinsPlayers.length
+
+      if (playerScores.length === 0) {
+        results[hole] = { winner: null, isTie: false, allScored: false, carryoverCount: 0 }
+        return
+      }
+
+      const minScore = Math.min(...playerScores.map(p => p.score))
+      const playersWithMin = playerScores.filter(p => p.score === minScore)
+
+      if (playersWithMin.length > 1) {
+        results[hole] = { winner: null, isTie: true, allScored, minScore, carryoverCount: 0 }
+        if (skinsMatch.settings.carryovers) {
+          carryoverCount++
+          carryoverFromHoles.push(hole)
+        }
+      } else {
+        const winner = playersWithMin[0]
+
+        if (skinsMatch.settings.parOrBetterRequired && winner.score > par) {
+          results[hole] = { winner: null, isTie: false, allScored, parNotMet: true, carryoverCount: 0 }
+          if (skinsMatch.settings.carryovers) {
+            carryoverCount++
+            carryoverFromHoles.push(hole)
+          }
+        } else {
+          let skinValue = 1
+          if (skinsMatch.settings.birdieDoubleEagleTriple) {
+            const diff = winner.score - par
+            if (diff === -1) skinValue = 2
+            else if (diff <= -2) skinValue = 3
+          }
+
+          if (skinsMatch.settings.carryovers && carryoverCount > 0) {
+            results[hole] = {
+              winner: winner.playerId,
+              winnerName: winner.name,
+              score: winner.score,
+              skinValue,
+              carryoverCount,
+              carryoverFromHoles: [...carryoverFromHoles],
+              allScored
+            }
+            carryoverCount = 0
+            carryoverFromHoles = []
+          } else {
+            results[hole] = { winner: winner.playerId, winnerName: winner.name, score: winner.score, skinValue, carryoverCount: 0, allScored }
+          }
+        }
+      }
+    })
+
+    return results
+  }
+
+  // Get skins summary per player
+  const getSkinsSummary = (results) => {
+    const summary = {}
+    skinsPlayers.forEach(p => {
+      summary[String(p.id)] = { skinsWon: 0, totalValue: 0, holes: [] }
+    })
+
+    let totalSkinsWon = 0
+    const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+
+    Object.entries(results).forEach(([hole, result]) => {
+      if (result.winner) {
+        const playerId = String(result.winner)
+        if (summary[playerId]) {
+          summary[playerId].skinsWon += 1
+          summary[playerId].totalValue += result.skinValue || 1
+          summary[playerId].holes.push(parseInt(hole))
+          totalSkinsWon += 1
+
+          if (result.carryoverCount > 0) {
+            summary[playerId].skinsWon += result.carryoverCount
+            summary[playerId].totalValue += result.carryoverCount
+            totalSkinsWon += result.carryoverCount
+          }
+        }
+      }
+    })
+
+    const numParticipants = skinsPlayers.length
+    Object.keys(summary).forEach(playerId => {
+      const totalPot = totalSkinsWon * cost
+      const playerWinnings = summary[playerId].totalValue * cost
+      const playerCost = (totalSkinsWon - summary[playerId].totalValue) * cost / (numParticipants - 1) * (numParticipants - 1) / numParticipants
+      summary[playerId].amountWon = playerWinnings
+      summary[playerId].netAmount = summary[playerId].totalValue * cost - (totalSkinsWon - summary[playerId].totalValue) * cost / (numParticipants - 1)
+    })
+
+    return { playerSummary: summary, totalSkinsWon }
+  }
+
+  const skinsResults = calculateSkins()
+  const { playerSummary, totalSkinsWon } = getSkinsSummary(skinsResults)
+
+  if (skinsPlayers.length < 2) {
+    return (
+      <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
+        No skins match data available for this round.
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* Skins Header */}
+      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+          color: 'white',
+          padding: '12px 15px',
+          fontSize: '16px',
+          fontWeight: '600',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>Skins Match Results</span>
+          <span style={{ fontSize: '13px', opacity: 0.9 }}>
+            ${skinsMatch.settings.costPerSkin}/skin - {skinsPlayers.length} players
+          </span>
+        </div>
+
+        {/* Settings Summary */}
+        <div style={{ padding: '10px 15px', background: '#fff8e1', fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          {skinsMatch.settings.carryovers && <span>Carryovers</span>}
+          {skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && <span>Wrap to {skinsMatch.settings.wrapTo === 'front' ? 'Front 9' : 'Back 9'}</span>}
+          {skinsMatch.settings.parOrBetterRequired && <span>Par or Better</span>}
+          {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie 2x/Eagle 3x</span>}
+        </div>
+      </div>
+
+      {/* View Toggle */}
+      <div style={{ display: 'flex', gap: '5px', marginBottom: '15px', justifyContent: 'center' }}>
+        {['front', 'back', 'overall'].map(view => (
+          <button
+            key={view}
+            onClick={() => setSkinsView(view)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '20px',
+              border: skinsView === view ? '2px solid #f39c12' : '1px solid #ddd',
+              background: skinsView === view ? '#f39c12' : 'white',
+              color: skinsView === view ? 'white' : '#333',
+              fontSize: '12px',
+              fontWeight: skinsView === view ? '600' : 'normal',
+              cursor: 'pointer'
+            }}
+          >
+            {view === 'front' ? 'Front 9' : view === 'back' ? 'Back 9' : 'All 18'}
+          </button>
+        ))}
+      </div>
+
+      {/* Skins Scoreboard Table */}
+      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', minWidth: skinsView === 'overall' ? '600px' : '400px' }}>
+            <thead>
+              <tr style={{ background: '#f39c12', color: 'white' }}>
+                <th style={{ padding: '8px 6px', textAlign: 'left', position: 'sticky', left: 0, background: '#f39c12', zIndex: 1, minWidth: '70px' }}>Player</th>
+                {displayHoles.map(h => (
+                  <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
+                ))}
+                <th style={{ padding: '8px 6px', textAlign: 'center', background: '#e67e22', minWidth: '40px' }}>Skins</th>
+              </tr>
+              <tr style={{ background: '#ffe0b2' }}>
+                <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: '#ffe0b2', zIndex: 1 }}>Par</td>
+                {displayHoles.map(h => (
+                  <td key={h.hole} style={{ padding: '4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
+                ))}
+                <td style={{ background: '#ffcc80' }}></td>
+              </tr>
+            </thead>
+            <tbody>
+              {skinsPlayers.map((player, idx) => {
+                const pSummary = playerSummary[String(player.id)] || { skinsWon: 0 }
+                return (
+                  <tr key={player.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                    <td style={{
+                      padding: '8px 6px',
+                      fontWeight: '600',
+                      position: 'sticky',
+                      left: 0,
+                      background: idx % 2 === 0 ? '#fff' : '#f9f9f9',
+                      zIndex: 1,
+                      borderRight: '1px solid #eee',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {player.name.split(' ')[0]}
+                    </td>
+                    {displayHoles.map(h => {
+                      const score = player.scores?.[h.hole]
+                      const holeResult = skinsResults[h.hole] || {}
+                      const hasScore = score !== undefined && score !== null && score !== ''
+
+                      let bgColor = 'transparent'
+                      let borderColor = 'transparent'
+                      let isCarryoverWin = false
+
+                      if (holeResult.winner === player.id) {
+                        bgColor = '#d4edda'
+                        borderColor = '#28a745'
+                      } else {
+                        for (const [otherHole, otherResult] of Object.entries(skinsResults)) {
+                          if (otherResult.winner === player.id &&
+                              otherResult.carryoverFromHoles &&
+                              otherResult.carryoverFromHoles.includes(h.hole)) {
+                            bgColor = '#e8f5e9'
+                            borderColor = '#81c784'
+                            isCarryoverWin = true
+                            break
+                          }
+                        }
+                      }
+
+                      let isPushedHole = false
+                      if (bgColor === 'transparent' && holeResult.isTie && holeResult.allScored) {
+                        let claimedViaCarryover = false
+                        for (const [otherHole, otherResult] of Object.entries(skinsResults)) {
+                          if (otherResult.carryoverFromHoles &&
+                              otherResult.carryoverFromHoles.includes(h.hole)) {
+                            claimedViaCarryover = true
+                            break
+                          }
+                        }
+                        if (!claimedViaCarryover) {
+                          isPushedHole = true
+                          bgColor = '#ffebee'
+                          borderColor = '#ef9a9a'
+                        }
+                      }
+
+                      return (
+                        <td key={h.hole} style={{
+                          padding: '4px',
+                          textAlign: 'center',
+                          background: isCarryoverWin
+                            ? `repeating-linear-gradient(45deg, ${bgColor}, ${bgColor} 3px, #c8e6c9 3px, #c8e6c9 6px)`
+                            : bgColor,
+                          border: borderColor !== 'transparent' ? `2px solid ${borderColor}` : 'none',
+                          borderRadius: '4px'
+                        }}>
+                          {hasScore ? (score === 'X' ? 'X' : score) : '-'}
+                          {holeResult.winner === player.id && holeResult.carryoverCount > 0 && (
+                            <div style={{ fontSize: '8px', color: '#2e7d32', marginTop: '1px' }}>
+                              +{holeResult.carryoverCount}
+                            </div>
+                          )}
+                        </td>
+                      )
+                    })}
+                    <td style={{
+                      padding: '8px 6px',
+                      textAlign: 'center',
+                      fontWeight: '700',
+                      fontSize: '14px',
+                      background: pSummary.skinsWon > 0 ? '#fff3e0' : '#f5f5f5',
+                      color: pSummary.skinsWon > 0 ? '#e65100' : '#999'
+                    }}>
+                      {pSummary.skinsWon}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Legend */}
+        <div style={{ padding: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '11px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '14px', height: '14px', background: '#ffebee', border: '2px solid #ef9a9a', borderRadius: '3px' }}></span> Push
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '14px', height: '14px', background: '#d4edda', border: '2px solid #28a745', borderRadius: '3px' }}></span> Won Outright
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, #e8f5e9, #e8f5e9 3px, #c8e6c9 3px, #c8e6c9 6px)', border: '2px solid #81c784', borderRadius: '3px' }}></span> Won w/ Carryover
+          </span>
+        </div>
+      </div>
+
+      {/* Payout Summary */}
+      {totalSkinsWon > 0 && (
+        <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden' }}>
+          <div style={{
+            background: '#27ae60',
+            color: 'white',
+            padding: '10px 15px',
+            fontWeight: '600',
+            fontSize: '14px'
+          }}>
+            Payout Summary
+          </div>
+          <div style={{ padding: '10px' }}>
+            {skinsPlayers
+              .sort((a, b) => (playerSummary[String(b.id)]?.netAmount || 0) - (playerSummary[String(a.id)]?.netAmount || 0))
+              .map(player => {
+                const summary = playerSummary[String(player.id)] || {}
+                const netAmount = summary.netAmount || 0
+                return (
+                  <div key={player.id} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    borderBottom: '1px solid #eee'
+                  }}>
+                    <span>
+                      <strong>{player.name}</strong>
+                      <span style={{ color: '#666', fontSize: '12px', marginLeft: '8px' }}>
+                        ({summary.skinsWon || 0} skins)
+                      </span>
+                    </span>
+                    <span style={{
+                      fontWeight: '700',
+                      color: netAmount > 0 ? '#27ae60' : netAmount < 0 ? '#e74c3c' : '#666'
+                    }}>
+                      {netAmount >= 0 ? '+' : ''}${netAmount.toFixed(2)}
+                    </span>
+                  </div>
+                )
+              })}
+          </div>
+
+          {/* Who Owes Who */}
+          <div style={{
+            borderTop: '2px solid #27ae60',
+            padding: '10px 15px',
+            background: '#f8fff8'
+          }}>
+            <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: '#27ae60' }}>
+              Who Owes Who
+            </div>
+            {(() => {
+              const cost = parseFloat(skinsMatch.settings.costPerSkin) || 0
+              const settlements = []
+
+              for (let i = 0; i < skinsPlayers.length; i++) {
+                for (let j = i + 1; j < skinsPlayers.length; j++) {
+                  const playerA = skinsPlayers[i]
+                  const playerB = skinsPlayers[j]
+                  const summaryA = playerSummary[String(playerA.id)] || {}
+                  const summaryB = playerSummary[String(playerB.id)] || {}
+
+                  const aOwesB = (summaryB.totalValue || 0) * cost
+                  const bOwesA = (summaryA.totalValue || 0) * cost
+                  const netOwed = aOwesB - bOwesA
+
+                  if (Math.abs(netOwed) > 0.001) {
+                    if (netOwed > 0) {
+                      settlements.push({ from: playerA.name, to: playerB.name, amount: netOwed })
+                    } else {
+                      settlements.push({ from: playerB.name, to: playerA.name, amount: -netOwed })
+                    }
+                  }
+                }
+              }
+
+              if (settlements.length === 0) {
+                return <div style={{ color: '#666', fontSize: '12px' }}>Everyone is even!</div>
+              }
+
+              return settlements.map((s, idx) => (
+                <div key={idx} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '6px 0',
+                  borderBottom: idx < settlements.length - 1 ? '1px solid #e8f5e9' : 'none',
+                  fontSize: '13px'
+                }}>
+                  <span style={{ color: '#e74c3c' }}>{s.from}</span>
+                  <span style={{ margin: '0 8px', color: '#666' }}>owes</span>
+                  <span style={{ color: '#27ae60' }}>{s.to}</span>
+                  <span style={{ marginLeft: 'auto', fontWeight: '700', color: '#27ae60' }}>${s.amount.toFixed(2)}</span>
+                </div>
+              ))
+            })()}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot }) {
   const [showMoney, setShowMoney] = useState(false)
   const [activeTab, setActiveTab] = useState('scorecard')
@@ -546,6 +968,19 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot }) {
           >
             Money
           </button>
+          {round.skinsMatch && (
+            <button
+              onClick={() => setActiveTab('skins')}
+              style={{
+                flex: 1, padding: '12px', border: 'none', cursor: 'pointer',
+                background: activeTab === 'skins' ? '#f39c12' : '#f8f9fa',
+                color: activeTab === 'skins' ? 'white' : '#333',
+                fontWeight: '600'
+              }}
+            >
+              Skins
+            </button>
+          )}
         </div>
 
         <div className="modal-body" style={{ padding: '15px' }}>
@@ -819,6 +1254,10 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot }) {
 
           {activeTab === 'money' && settlement && (
             <MoneySettlement round={round} settlement={settlement} payoutFormats={payoutFormats} />
+          )}
+
+          {activeTab === 'skins' && round.skinsMatch && (
+            <SkinsResults round={round} />
           )}
         </div>
       </div>
