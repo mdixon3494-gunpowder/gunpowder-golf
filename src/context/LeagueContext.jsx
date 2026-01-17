@@ -123,6 +123,10 @@ export function LeagueProvider({ children }) {
   const [skinsMatch, setSkinsMatch] = useState(null)
   const [quickSkinsMode, setQuickSkinsMode] = useState(false)
 
+  // Check-in state (persists across navigation)
+  const [checkedInPlayers, setCheckedInPlayers] = useState([])
+  const [manualTeams, setManualTeams] = useState([])
+
   // Admin state
   const [isAdmin, setIsAdmin] = useState(() => {
     return localStorage.getItem('gunpowder_admin') === 'true'
@@ -429,6 +433,12 @@ export function LeagueProvider({ children }) {
     setSkinsMatch,
     quickSkinsMode,
     setQuickSkinsMode,
+
+    // Check-in state
+    checkedInPlayers,
+    setCheckedInPlayers,
+    manualTeams,
+    setManualTeams,
 
     // Utilities
     normalizeRound

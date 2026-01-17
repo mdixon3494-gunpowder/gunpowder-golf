@@ -84,22 +84,47 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
   // Calculate team settlements
   const teamSettlements = round.teams.map((team, idx) => {
     const teamSize = team.players.length
-    const teamEntry = teamSize * (format.front9 + format.back9 + (isMatchPlay ? format.overall : 0))
+
+    // Team competition entry (front 9, back 9, overall for match play)
+    const teamCompEntry = teamSize * (format.front9 + format.back9 + (isMatchPlay ? format.overall : 0))
+
+    // Greenies entry (4 par 3 holes per player)
+    const greeniesEntry = teamSize * 4 * format.greeniePerHole
+
+    // HIO entry (per eligible player on this team)
+    const teamHioEligible = team.players.filter(p => holeInOnePot?.playerEligibility?.[p.id] !== false).length
+    const hioEntry = hioEnabled ? teamHioEligible * format.holeInOne : 0
+
+    // Total entry fee (everything owed, excluding skins which is separate)
+    const teamEntry = teamCompEntry + greeniesEntry + hioEntry
 
     let teamWinnings = 0
     const wins = []
+    const ties = []
 
     if (front9Winner?.includes(idx)) {
       teamWinnings += front9Pool / front9Winner.length
-      wins.push('Front 9')
+      if (front9Winner.length > 1) {
+        ties.push({ category: 'Front 9', numTeams: front9Winner.length })
+      } else {
+        wins.push('Front 9')
+      }
     }
     if (back9Winner?.includes(idx)) {
       teamWinnings += back9Pool / back9Winner.length
-      wins.push('Back 9')
+      if (back9Winner.length > 1) {
+        ties.push({ category: 'Back 9', numTeams: back9Winner.length })
+      } else {
+        wins.push('Back 9')
+      }
     }
     if (isMatchPlay && overallWinner?.includes(idx)) {
       teamWinnings += overallPool / overallWinner.length
-      wins.push('Overall')
+      if (overallWinner.length > 1) {
+        ties.push({ category: 'Overall', numTeams: overallWinner.length })
+      } else {
+        wins.push('Overall')
+      }
     }
 
     return {
@@ -107,12 +132,16 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
       teamName: team.name,
       teamSize,
       entry: teamEntry,
+      teamCompEntry,
+      greeniesEntry,
+      hioEntry,
       winnings: teamWinnings,
-      net: teamWinnings - teamEntry,
+      net: teamWinnings - teamCompEntry, // Net is based on team comp only (greenies/HIO are individual winnings)
       wins,
+      ties,
       perPlayerEntry: teamEntry / teamSize,
       perPlayerWinnings: teamWinnings / teamSize,
-      perPlayerNet: (teamWinnings - teamEntry) / teamSize
+      perPlayerNet: (teamWinnings - teamCompEntry) / teamSize
     }
   })
 

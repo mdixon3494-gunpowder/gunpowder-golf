@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
-import { generateTeams, getTeamName, calculateTeamSkill, calculateTeamBalance } from '../utils/teamGeneration'
+import { generateTeams } from '../utils/teamGeneration'
 
 function PlayerCheckInCard({ player, isSelected, isInManualTeam, onToggle, showSkill }) {
   return (
@@ -395,80 +395,6 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
   )
 }
 
-function GeneratedTeamsPreview({ teams, onStartRound, onBack }) {
-  const balance = calculateTeamBalance(teams)
-
-  return (
-    <div style={{ marginTop: '30px' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
-        color: 'white',
-        padding: '20px',
-        borderRadius: '10px',
-        marginBottom: '20px',
-        textAlign: 'center'
-      }}>
-        <h3 style={{ marginBottom: '10px' }}>Teams Generated!</h3>
-        <div style={{ fontSize: '14px', opacity: 0.9 }}>
-          {teams.length} teams created | Skill Range: {balance.range.toFixed(1)} | Avg: {balance.avg?.toFixed(1) || '0'}
-        </div>
-      </div>
-
-      {teams.map((team, idx) => {
-        const teamSkill = calculateTeamSkill(team)
-        const avgSkill = team.length > 0 ? teamSkill / team.length : 0
-
-        return (
-          <div key={idx} className="team-container" style={{ marginBottom: '15px' }}>
-            <div className="team-header" style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span>
-                <span style={{
-                  background: '#95a5a6',
-                  color: 'white',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  fontSize: '12px',
-                  marginRight: '10px'
-                }}>
-                  #{idx + 1}
-                </span>
-                {getTeamName(team)} ({team.length})
-              </span>
-              <span style={{ fontSize: '13px', color: '#333' }}>
-                Skill: {teamSkill.toFixed(1)} (Avg: {avgSkill.toFixed(1)})
-              </span>
-            </div>
-            {team.map(player => (
-              <div key={player.id} className="team-member">
-                {player.name} ({player.skillRating?.toFixed(1) || '5.0'})
-              </div>
-            ))}
-          </div>
-        )
-      })}
-
-      <button
-        className="btn btn-primary"
-        onClick={onStartRound}
-        style={{ width: '100%', padding: '15px', fontSize: '18px', marginTop: '20px' }}
-      >
-        Start Live Round
-      </button>
-      <button
-        className="btn btn-secondary"
-        onClick={onBack}
-        style={{ width: '100%', marginTop: '10px' }}
-      >
-        Back to Check-In
-      </button>
-    </div>
-  )
-}
-
 function GeneratePage() {
   const navigate = useNavigate()
   const {
@@ -481,15 +407,49 @@ function GeneratePage() {
     setPairingRequests,
     isAdmin,
     skinsMatch,
-    setSkinsMatch
+    setSkinsMatch,
+    checkedInPlayers,
+    setCheckedInPlayers,
+    manualTeams,
+    setManualTeams
   } = useLeague()
 
-  const [selectedPlayers, setSelectedPlayers] = useState([])
-  const [manualTeams, setManualTeams] = useState([])
   const [creatingManualTeam, setCreatingManualTeam] = useState(false)
-  const [generatedTeams, setGeneratedTeams] = useState(null)
+
+  // Use context state for checked-in players
+  const selectedPlayers = checkedInPlayers
+  const setSelectedPlayers = setCheckedInPlayers
 
   const activePlayers = players.filter(p => p.isActive !== false)
+
+  // If there's a live round in progress, show message and redirect to Live tab
+  if (liveRound) {
+    return (
+      <div>
+        <h2 style={{ marginBottom: '20px' }}>Player Check-In</h2>
+        <div style={{
+          background: '#fff3cd',
+          border: '2px solid #f39c12',
+          padding: '30px',
+          borderRadius: '10px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '15px' }}>⛳</div>
+          <h3 style={{ marginBottom: '15px', color: '#856404' }}>Round In Progress</h3>
+          <p style={{ color: '#856404', marginBottom: '20px' }}>
+            A live round is currently in progress. Check-in is not available until the current round is finished.
+          </p>
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate('/live')}
+            style={{ padding: '12px 30px', fontSize: '16px' }}
+          >
+            Go to Live Round
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   // Get players that are in manual teams
   const playersInManualTeams = new Set(
@@ -546,59 +506,10 @@ function GeneratePage() {
   const handleGenerateTeams = () => {
     const selectedPlayerObjects = activePlayers.filter(p => selectedPlayers.includes(p.id))
     const generated = generateTeams(selectedPlayerObjects, pairingRequests, manualTeams)
-    setGeneratedTeams(generated)
-  }
 
-  const handleStartRound = () => {
-    // Save teams
-    setTeams(generatedTeams)
-
-    // Create live round
-    const round = {
-      id: Date.now(),
-      date: new Date().toISOString(),
-      teams: generatedTeams.map((team, idx) => ({
-        id: idx,
-        name: getTeamName(team),
-        players: team.map(p => ({
-          id: p.id,
-          name: p.name,
-          skillRating: p.skillRating,
-          scores: {},
-          isDNF: false,
-          includeInTeamScore: true,
-          joinedLate: false
-        })),
-        totalScore: 0,
-        isFinished: false,
-        greenies: {}
-      }))
-    }
-
-    setLiveRound(round)
-
-    // Clear state
-    setGeneratedTeams(null)
-    setManualTeams([])
-    setSelectedPlayers([])
-    setPairingRequests([])
-
-    // Navigate to live
-    navigate('/live')
-  }
-
-  // If teams have been generated and are showing in preview
-  if (generatedTeams) {
-    return (
-      <div>
-        <h2 style={{ marginBottom: '20px' }}>Player Check-In</h2>
-        <GeneratedTeamsPreview
-          teams={generatedTeams}
-          onStartRound={handleStartRound}
-          onBack={() => setGeneratedTeams(null)}
-        />
-      </div>
-    )
+    // Save teams to context and navigate to Teams page
+    setTeams(generated)
+    navigate('/teams')
   }
 
   return (
@@ -623,6 +534,24 @@ function GeneratePage() {
           </div>
         ) : (
           <div>
+            {/* Player count at top */}
+            <div style={{
+              padding: '10px 15px',
+              background: '#e3f2fd',
+              borderRadius: '8px',
+              marginBottom: '10px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span style={{ color: '#1976d2', fontWeight: '600' }}>
+                {selectedPlayers.length} of {activePlayers.length} Checked In
+              </span>
+              {selectedPlayers.length >= 6 && (
+                <span style={{ color: '#27ae60', fontSize: '13px' }}>Ready to generate teams</span>
+              )}
+            </div>
+
             {activePlayers.map(player => (
               <PlayerCheckInCard
                 key={player.id}
@@ -633,21 +562,26 @@ function GeneratePage() {
                 showSkill={isAdmin}
               />
             ))}
+
+            {/* Player count at bottom */}
+            <div style={{
+              padding: '10px 15px',
+              background: '#e3f2fd',
+              borderRadius: '8px',
+              marginTop: '10px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span style={{ color: '#1976d2', fontWeight: '600' }}>
+                {selectedPlayers.length} of {activePlayers.length} Checked In
+              </span>
+              {selectedPlayers.length >= 6 && (
+                <span style={{ color: '#27ae60', fontSize: '13px' }}>Ready to generate teams</span>
+              )}
+            </div>
           </div>
         )}
-
-        {/* Check-In Summary */}
-        <div style={{
-          marginTop: '15px',
-          padding: '15px',
-          background: '#e3f2fd',
-          borderRadius: '8px',
-          textAlign: 'center'
-        }}>
-          <strong style={{ fontSize: '18px', color: '#1976d2' }}>
-            {selectedPlayers.length} Players Checked In
-          </strong>
-        </div>
       </div>
 
       {/* Skins Opt-In Section */}

@@ -1015,6 +1015,73 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
   )
 }
 
+function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
+  return (
+    <div style={{
+      background: 'white',
+      padding: '20px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      border: '1px solid #e0e0e0'
+    }}>
+      <h3 style={{ marginBottom: '15px' }}>Round Settings</h3>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px' }}>
+          Default Starting Hole
+        </label>
+        <p style={{ color: '#666', fontSize: '13px', marginBottom: '10px' }}>
+          Set which hole the round typically starts on. This affects the default leaderboard view.
+        </p>
+        {isAdmin ? (
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => onUpdate(1)}
+              style={{
+                padding: '12px 20px',
+                borderRadius: '8px',
+                border: defaultStartingHole === 1 || defaultStartingHole <= 9 ? '2px solid #27ae60' : '2px solid #ddd',
+                background: defaultStartingHole === 1 || (defaultStartingHole >= 1 && defaultStartingHole <= 9) ? '#e8f5e9' : 'white',
+                fontWeight: defaultStartingHole >= 1 && defaultStartingHole <= 9 ? '600' : 'normal',
+                color: defaultStartingHole >= 1 && defaultStartingHole <= 9 ? '#27ae60' : '#666',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Front 9 (Hole 1)
+            </button>
+            <button
+              onClick={() => onUpdate(10)}
+              style={{
+                padding: '12px 20px',
+                borderRadius: '8px',
+                border: defaultStartingHole >= 10 ? '2px solid #e67e22' : '2px solid #ddd',
+                background: defaultStartingHole >= 10 ? '#fff3e0' : 'white',
+                fontWeight: defaultStartingHole >= 10 ? '600' : 'normal',
+                color: defaultStartingHole >= 10 ? '#e67e22' : '#666',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Back 9 (Hole 10)
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            background: '#f8f9fa',
+            padding: '12px 15px',
+            borderRadius: '8px',
+            fontSize: '14px'
+          }}>
+            Starting on: <strong>{defaultStartingHole >= 10 ? 'Back 9 (Hole 10)' : 'Front 9 (Hole 1)'}</strong>
+            <span style={{ color: '#999', marginLeft: '10px', fontSize: '12px' }}>(Admin only)</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SettingsPage() {
   const navigate = useNavigate()
   const {
@@ -1031,7 +1098,9 @@ function SettingsPage() {
     liveRound,
     setLiveRound,
     setSkinsMatch,
-    setQuickSkinsMode
+    setQuickSkinsMode,
+    defaultStartingHole,
+    setDefaultStartingHole
   } = useLeague()
 
   const handleStartQuickSkins = ({ players: qsPlayers, teams, skinsSettings, greenieSettings }) => {
@@ -1088,6 +1157,12 @@ function SettingsPage() {
       <LeagueInfoSection
         leagueId={leagueId}
         onLeave={leaveLeague}
+      />
+
+      <RoundSettingsSection
+        defaultStartingHole={defaultStartingHole}
+        onUpdate={setDefaultStartingHole}
+        isAdmin={isAdmin}
       />
 
       <HoleInOnePotSection

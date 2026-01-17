@@ -398,7 +398,11 @@ function TeamsPage() {
     setLiveRound,
     isAdmin,
     skinsMatch,
-    setSkinsMatch
+    setSkinsMatch,
+    setCheckedInPlayers,
+    setManualTeams,
+    setPairingRequests,
+    players
   } = useLeague()
 
   const balance = teams.length > 0 ? calculateTeamBalance(teams) : null
@@ -429,15 +433,20 @@ function TeamsPage() {
       teams: teams.map((team, idx) => ({
         id: idx,
         name: getTeamName(team),
-        players: team.map(p => ({
-          id: p.id,
-          name: p.name,
-          skillRating: p.skillRating,
-          scores: {},
-          isDNF: false,
-          includeInTeamScore: true,
-          joinedLate: false
-        })),
+        players: team.map(p => {
+          // Get the full player data to include avgTotal
+          const fullPlayer = players.find(fp => fp.id === p.id) || p
+          return {
+            id: p.id,
+            name: p.name,
+            skillRating: p.skillRating || fullPlayer.skillRating,
+            avgTotal: p.avgTotal || fullPlayer.avgTotal || 0,
+            scores: {},
+            isDNF: false,
+            includeInTeamScore: true,
+            joinedLate: false
+          }
+        }),
         totalScore: 0,
         isFinished: false,
         greenies: {}
@@ -445,12 +454,21 @@ function TeamsPage() {
     }
 
     setLiveRound(round)
+
+    // Clear check-in state
+    setCheckedInPlayers([])
+    setManualTeams([])
+    setPairingRequests([])
+
     navigate('/live')
   }
 
   const clearTeams = () => {
     if (window.confirm('Clear all teams? This cannot be undone.')) {
       setTeams([])
+      setCheckedInPlayers([])
+      setManualTeams([])
+      setPairingRequests([])
     }
   }
 

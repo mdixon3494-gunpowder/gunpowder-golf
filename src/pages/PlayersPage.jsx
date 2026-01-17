@@ -315,40 +315,239 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin }) {
   )
 }
 
-function RoundDetailModal({ round, onClose }) {
+function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound, isAdmin }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedScores, setEditedScores] = useState({})
+  const [showPinPrompt, setShowPinPrompt] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [pendingAction, setPendingAction] = useState(null) // 'edit' or 'delete'
+  const [activeKeypad, setActiveKeypad] = useState(null)
+  const [keypadValue, setKeypadValue] = useState('')
+
   const total = round.total || round.totalScore
   const front = round.frontNine || round.frontNineScore
   const back = round.backNine || round.backNineScore
+  const frontPar = GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + h.par, 0)
+  const backPar = GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + h.par, 0)
+  const totalPar = frontPar + backPar
+
+  // Calculate totals from edited scores
+  const calcFront = isEditing ? [1,2,3,4,5,6,7,8,9].reduce((sum, h) => {
+    const val = editedScores[h]
+    if (val === 'X' || val === 'x') return sum + 10
+    return sum + (parseInt(val) || 0)
+  }, 0) : front
+
+  const calcBack = isEditing ? [10,11,12,13,14,15,16,17,18].reduce((sum, h) => {
+    const val = editedScores[h]
+    if (val === 'X' || val === 'x') return sum + 10
+    return sum + (parseInt(val) || 0)
+  }, 0) : back
+
+  const calcTotal = isEditing ? calcFront + calcBack : total
+
+  const cellStyle = {
+    border: '1px solid #333',
+    padding: '4px 2px',
+    textAlign: 'center',
+    fontSize: '11px',
+    minWidth: '28px'
+  }
+
+  const headerCellStyle = {
+    ...cellStyle,
+    background: '#1a472a',
+    color: 'white',
+    fontWeight: 'bold'
+  }
+
+  const getScoreStyle = (score, par, isEditMode) => {
+    const baseStyle = { ...cellStyle, fontWeight: 'bold', cursor: isEditMode ? 'pointer' : 'default' }
+    if (!score || score === 'X') return baseStyle
+    const diff = parseInt(score) - par
+    let bg = 'white'
+    let border = cellStyle.border
+    if (diff <= -2) { bg = '#ffd700'; border = '2px solid #b8860b' }
+    else if (diff === -1) { bg = '#90EE90'; border = '1px solid #333' }
+    else if (diff === 0) { bg = '#e8f5e9' }
+    else if (diff === 1) { bg = '#fff3e0' }
+    else if (diff >= 2) { bg = '#ffcdd2' }
+    return { ...baseStyle, background: bg, border }
+  }
+
+  const handleEditClick = () => {
+    setPendingAction('edit')
+    setShowPinPrompt(true)
+  }
+
+  const handleDeleteClick = () => {
+    if (confirm('Are you sure you want to delete this round? This cannot be undone.')) {
+      setPendingAction('delete')
+      setShowPinPrompt(true)
+    }
+  }
+
+  const handlePinSubmit = () => {
+    if (pinInput === '1234') {
+      if (pendingAction === 'edit') {
+        setIsEditing(true)
+        setEditedScores(round.scores ? { ...round.scores } : {})
+      } else if (pendingAction === 'delete') {
+        onDeleteRound(playerId, round.id)
+        onClose()
+      }
+      setShowPinPrompt(false)
+      setPinInput('')
+      setPendingAction(null)
+    } else {
+      alert('Incorrect PIN')
+      setPinInput('')
+    }
+  }
+
+  const handleScoreClick = (hole) => {
+    if (!isEditing) return
+    setActiveKeypad(hole)
+    setKeypadValue(editedScores[hole]?.toString() || '')
+  }
+
+  const handleKeypadPress = (key) => {
+    if (key === 'backspace') {
+      setKeypadValue(prev => prev.slice(0, -1))
+    } else if (key === 'X') {
+      setKeypadValue('X')
+    } else if (key === 'clear') {
+      setKeypadValue('')
+    } else {
+      if (keypadValue === 'X') {
+        setKeypadValue(key)
+      } else if (keypadValue.length < 2) {
+        setKeypadValue(prev => prev + key)
+      }
+    }
+  }
+
+  const handleKeypadDone = () => {
+    if (activeKeypad !== null) {
+      const newScores = { ...editedScores }
+      if (keypadValue === '' || keypadValue === null) {
+        delete newScores[activeKeypad]
+      } else {
+        newScores[activeKeypad] = keypadValue === 'X' ? 'X' : parseInt(keypadValue)
+      }
+      setEditedScores(newScores)
+    }
+    setActiveKeypad(null)
+    setKeypadValue('')
+  }
+
+  const handleSave = () => {
+    // Calculate breakdown
+    const allHoles = [...GUNPOWDER_SCORECARD.front9, ...GUNPOWDER_SCORECARD.back9]
+    const breakdown = { holeInOne: 0, eagles: 0, birdies: 0, pars: 0, bogeys: 0, doubleBogeys: 0, worse: 0 }
+
+    allHoles.forEach(holeInfo => {
+      const val = editedScores[holeInfo.hole]
+      if (val && val !== 'X' && val !== 'x') {
+        const score = parseInt(val)
+        if (score === 1) breakdown.holeInOne++
+        const diff = score - holeInfo.par
+        if (diff <= -2) breakdown.eagles++
+        else if (diff === -1) breakdown.birdies++
+        else if (diff === 0) breakdown.pars++
+        else if (diff === 1) breakdown.bogeys++
+        else if (diff === 2) breakdown.doubleBogeys++
+        else if (diff >= 3) breakdown.worse++
+      } else if (val === 'X' || val === 'x') {
+        breakdown.worse++
+      }
+    })
+
+    const holesCompleted = Object.keys(editedScores).filter(k =>
+      editedScores[k] !== undefined && editedScores[k] !== null && editedScores[k] !== ''
+    ).length
+
+    const updatedRound = {
+      ...round,
+      scores: editedScores,
+      frontNine: calcFront,
+      backNine: calcBack,
+      total: calcTotal,
+      frontNineScore: calcFront,
+      backNineScore: calcBack,
+      totalScore: calcTotal,
+      breakdown,
+      holesCompleted,
+      isComplete: holesCompleted === 18
+    }
+
+    onSaveRound(playerId, updatedRound)
+    setIsEditing(false)
+    onClose()
+  }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+    <div className="modal-overlay" onClick={isEditing ? undefined : onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
         <div className="modal-header">
-          <h3>Round Details - {new Date(round.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</h3>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3>{isEditing ? 'Edit Round' : 'Round Details'} - {new Date(round.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</h3>
+          {!isEditing && <button className="modal-close" onClick={onClose}>&times;</button>}
         </div>
         <div className="modal-body">
-          {/* Score summary */}
-          <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '8px' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: '#666' }}>Front 9</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#27ae60' }}>{front || '-'}</div>
+          {/* Admin Edit/Delete buttons */}
+          {isAdmin && !isEditing && (
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <button
+                onClick={handleEditClick}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: '#3498db',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Edit Scores
+              </button>
+              <button
+                onClick={handleDeleteClick}
+                style={{
+                  padding: '10px 20px',
+                  background: '#e74c3c',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Delete
+              </button>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: '#666' }}>Back 9</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#e67e22' }}>{back || '-'}</div>
+          )}
+
+          {/* Editing mode header */}
+          {isEditing && (
+            <div style={{
+              background: '#fff3cd',
+              border: '2px solid #f39c12',
+              padding: '12px',
+              borderRadius: '8px',
+              marginBottom: '15px',
+              textAlign: 'center'
+            }}>
+              <strong>Editing Mode</strong> - Tap any score to change it
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: '#666' }}>Total</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{total || '-'}</div>
-            </div>
-          </div>
+          )}
 
           {/* Score breakdown */}
-          {round.breakdown && (
+          {round.breakdown && !isEditing && (
             <div style={{ background: '#e8f5e9', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
               <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '13px' }}>Score Breakdown</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', fontSize: '12px' }}>
                 {round.breakdown.holeInOne > 0 && <div>Hole in One: <strong>{round.breakdown.holeInOne}</strong></div>}
                 <div>Eagles: <strong>{round.breakdown.eagles || 0}</strong></div>
                 <div>Birdies: <strong>{round.breakdown.birdies || 0}</strong></div>
@@ -361,61 +560,90 @@ function RoundDetailModal({ round, onClose }) {
           )}
 
           {/* Greenies won */}
-          {round.greeniesWon && round.greeniesWon.length > 0 && (
+          {round.greeniesWon && round.greeniesWon.length > 0 && !isEditing && (
             <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', fontSize: '13px' }}>
               <strong>Greenies Won:</strong> {round.greeniesWon.map(h => `Hole ${h}`).join(', ')}
             </div>
           )}
 
-          {/* Hole-by-hole scorecard */}
+          {/* Traditional Scorecard Grid */}
           {round.scores && (
-            <>
-              <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>Hole-by-Hole Scorecard</div>
+            <div style={{
+              background: 'white',
+              border: '2px solid #1a472a',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            }}>
+              {/* Course Header */}
+              <div style={{
+                background: '#1a472a',
+                color: 'white',
+                padding: '8px 12px',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                textAlign: 'center'
+              }}>
+                Gunpowder Golf Course
+              </div>
 
               {/* Front 9 */}
-              <div style={{ overflowX: 'auto', marginBottom: '10px' }}>
-                <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '400px' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: '#27ae60', color: 'white' }}>
-                      <th style={{ padding: '6px 4px', textAlign: 'center' }}>Hole</th>
+                    <tr>
+                      <th style={{ ...headerCellStyle, minWidth: '50px' }}>HOLE</th>
                       {[1,2,3,4,5,6,7,8,9].map(h => (
-                        <th key={h} style={{ padding: '6px 4px', textAlign: 'center' }}>{h}</th>
+                        <th key={h} style={headerCellStyle}>{h}</th>
                       ))}
-                      <th style={{ padding: '6px 4px', textAlign: 'center', background: '#229954' }}>OUT</th>
+                      <th style={{ ...headerCellStyle, background: '#0d2818' }}>OUT</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr style={{ background: '#f8f9fa' }}>
-                      <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold' }}>Par</td>
+                    {/* Blue Tees */}
+                    <tr>
+                      <td style={{ ...cellStyle, background: '#e3f2fd', fontWeight: '600', fontSize: '10px' }}>BLUE</td>
                       {GUNPOWDER_SCORECARD.front9.map(h => (
-                        <td key={h.hole} style={{ padding: '6px 4px', textAlign: 'center' }}>{h.par}</td>
+                        <td key={h.hole} style={{ ...cellStyle, background: '#e3f2fd', fontSize: '10px' }}>{h.blue}</td>
                       ))}
-                      <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold' }}>
-                        {GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + h.par, 0)}
+                      <td style={{ ...cellStyle, background: '#e3f2fd', fontWeight: '600', fontSize: '10px' }}>
+                        {GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + h.blue, 0)}
                       </td>
                     </tr>
-                    <tr style={{ background: 'white' }}>
-                      <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold' }}>Score</td>
+                    {/* Handicap */}
+                    <tr>
+                      <td style={{ ...cellStyle, background: '#f5f5f5', fontWeight: '600', fontSize: '10px' }}>HCP</td>
+                      {GUNPOWDER_SCORECARD.front9.map(h => (
+                        <td key={h.hole} style={{ ...cellStyle, background: '#f5f5f5', fontSize: '10px' }}>{h.hcp}</td>
+                      ))}
+                      <td style={{ ...cellStyle, background: '#f5f5f5' }}></td>
+                    </tr>
+                    {/* Par */}
+                    <tr>
+                      <td style={{ ...cellStyle, background: '#fff8e1', fontWeight: '600' }}>PAR</td>
+                      {GUNPOWDER_SCORECARD.front9.map(h => (
+                        <td key={h.hole} style={{ ...cellStyle, background: '#fff8e1', fontWeight: '600' }}>{h.par}</td>
+                      ))}
+                      <td style={{ ...cellStyle, background: '#fff8e1', fontWeight: 'bold' }}>{frontPar}</td>
+                    </tr>
+                    {/* Player Score */}
+                    <tr>
+                      <td style={{ ...cellStyle, fontWeight: '600', background: '#f0f0f0' }}>SCORE</td>
                       {[1,2,3,4,5,6,7,8,9].map(h => {
-                        const score = round.scores[h]
+                        const score = isEditing ? editedScores[h] : round.scores[h]
                         const par = getHoleInfo(h)?.par || 4
-                        const diff = score ? score - par : 0
-                        let bg = 'white'
-                        if (score && score !== 'X') {
-                          if (diff <= -2) bg = '#ffd700'
-                          else if (diff === -1) bg = '#90EE90'
-                          else if (diff === 0) bg = '#e8f5e9'
-                          else if (diff === 1) bg = '#fff3e0'
-                          else if (diff >= 2) bg = '#ffebee'
-                        }
                         return (
-                          <td key={h} style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold', background: bg }}>
+                          <td
+                            key={h}
+                            style={getScoreStyle(score, par, isEditing)}
+                            onClick={() => handleScoreClick(h)}
+                          >
                             {score || '-'}
                           </td>
                         )
                       })}
-                      <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold', background: '#e8f5e9' }}>
-                        {front || '-'}
+                      <td style={{ ...cellStyle, fontWeight: 'bold', background: '#e8f5e9', fontSize: '13px' }}>
+                        {isEditing ? calcFront : front || '-'}
                       </td>
                     </tr>
                   </tbody>
@@ -423,73 +651,366 @@ function RoundDetailModal({ round, onClose }) {
               </div>
 
               {/* Back 9 */}
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '400px' }}>
+              <div style={{ overflowX: 'auto', borderTop: '2px solid #1a472a' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: '#ef6c00', color: 'white' }}>
-                      <th style={{ padding: '6px 4px', textAlign: 'center' }}>Hole</th>
+                    <tr>
+                      <th style={{ ...headerCellStyle, minWidth: '50px' }}>HOLE</th>
                       {[10,11,12,13,14,15,16,17,18].map(h => (
-                        <th key={h} style={{ padding: '6px 4px', textAlign: 'center' }}>{h}</th>
+                        <th key={h} style={headerCellStyle}>{h}</th>
                       ))}
-                      <th style={{ padding: '6px 4px', textAlign: 'center', background: '#e65100' }}>IN</th>
+                      <th style={{ ...headerCellStyle, background: '#0d2818' }}>IN</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr style={{ background: '#f8f9fa' }}>
-                      <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold' }}>Par</td>
+                    {/* Blue Tees */}
+                    <tr>
+                      <td style={{ ...cellStyle, background: '#e3f2fd', fontWeight: '600', fontSize: '10px' }}>BLUE</td>
                       {GUNPOWDER_SCORECARD.back9.map(h => (
-                        <td key={h.hole} style={{ padding: '6px 4px', textAlign: 'center' }}>{h.par}</td>
+                        <td key={h.hole} style={{ ...cellStyle, background: '#e3f2fd', fontSize: '10px' }}>{h.blue}</td>
                       ))}
-                      <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold' }}>
-                        {GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + h.par, 0)}
+                      <td style={{ ...cellStyle, background: '#e3f2fd', fontWeight: '600', fontSize: '10px' }}>
+                        {GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + h.blue, 0)}
                       </td>
                     </tr>
-                    <tr style={{ background: 'white' }}>
-                      <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold' }}>Score</td>
+                    {/* Handicap */}
+                    <tr>
+                      <td style={{ ...cellStyle, background: '#f5f5f5', fontWeight: '600', fontSize: '10px' }}>HCP</td>
+                      {GUNPOWDER_SCORECARD.back9.map(h => (
+                        <td key={h.hole} style={{ ...cellStyle, background: '#f5f5f5', fontSize: '10px' }}>{h.hcp}</td>
+                      ))}
+                      <td style={{ ...cellStyle, background: '#f5f5f5' }}></td>
+                    </tr>
+                    {/* Par */}
+                    <tr>
+                      <td style={{ ...cellStyle, background: '#fff8e1', fontWeight: '600' }}>PAR</td>
+                      {GUNPOWDER_SCORECARD.back9.map(h => (
+                        <td key={h.hole} style={{ ...cellStyle, background: '#fff8e1', fontWeight: '600' }}>{h.par}</td>
+                      ))}
+                      <td style={{ ...cellStyle, background: '#fff8e1', fontWeight: 'bold' }}>{backPar}</td>
+                    </tr>
+                    {/* Player Score */}
+                    <tr>
+                      <td style={{ ...cellStyle, fontWeight: '600', background: '#f0f0f0' }}>SCORE</td>
                       {[10,11,12,13,14,15,16,17,18].map(h => {
-                        const score = round.scores[h]
+                        const score = isEditing ? editedScores[h] : round.scores[h]
                         const par = getHoleInfo(h)?.par || 4
-                        const diff = score ? score - par : 0
-                        let bg = 'white'
-                        if (score && score !== 'X') {
-                          if (diff <= -2) bg = '#ffd700'
-                          else if (diff === -1) bg = '#90EE90'
-                          else if (diff === 0) bg = '#e8f5e9'
-                          else if (diff === 1) bg = '#fff3e0'
-                          else if (diff >= 2) bg = '#ffebee'
-                        }
                         return (
-                          <td key={h} style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold', background: bg }}>
+                          <td
+                            key={h}
+                            style={getScoreStyle(score, par, isEditing)}
+                            onClick={() => handleScoreClick(h)}
+                          >
                             {score || '-'}
                           </td>
                         )
                       })}
-                      <td style={{ padding: '6px 4px', textAlign: 'center', fontWeight: 'bold', background: '#fff3e0' }}>
-                        {back || '-'}
+                      <td style={{ ...cellStyle, fontWeight: 'bold', background: '#fff3e0', fontSize: '13px' }}>
+                        {isEditing ? calcBack : back || '-'}
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              {/* Total row */}
-              <div style={{ marginTop: '10px', padding: '10px', background: '#1a472a', color: 'white', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
-                <span>TOTAL</span>
-                <span>{total || '-'}</span>
+              {/* Totals Footer */}
+              <div style={{
+                background: '#1a472a',
+                color: 'white',
+                padding: '10px 15px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ display: 'flex', gap: '20px', fontSize: '13px' }}>
+                  <span>OUT: <strong>{isEditing ? calcFront : front || '-'}</strong></span>
+                  <span>IN: <strong>{isEditing ? calcBack : back || '-'}</strong></span>
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                  TOTAL: {isEditing ? calcTotal : total || '-'}
+                  {(isEditing ? calcTotal : total) && (
+                    <span style={{
+                      marginLeft: '10px',
+                      fontSize: '14px',
+                      color: (isEditing ? calcTotal : total) - totalPar < 0 ? '#90EE90' : (isEditing ? calcTotal : total) - totalPar > 0 ? '#ffcdd2' : '#fff'
+                    }}>
+                      ({(isEditing ? calcTotal : total) - totalPar >= 0 ? '+' : ''}{(isEditing ? calcTotal : total) - totalPar})
+                    </span>
+                  )}
+                </div>
               </div>
-            </>
+            </div>
           )}
 
-          <button className="btn btn-secondary" onClick={onClose} style={{ width: '100%', marginTop: '20px' }}>
-            Close
-          </button>
+          {/* Legend */}
+          {!isEditing && (
+            <div style={{
+              marginTop: '15px',
+              padding: '10px',
+              background: '#f8f9fa',
+              borderRadius: '6px',
+              fontSize: '11px',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '15px',
+              flexWrap: 'wrap'
+            }}>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#ffd700', border: '2px solid #b8860b', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Eagle+</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#90EE90', border: '1px solid #333', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Birdie</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#e8f5e9', border: '1px solid #333', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Par</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#fff3e0', border: '1px solid #333', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Bogey</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#ffcdd2', border: '1px solid #333', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Double+</span>
+            </div>
+          )}
+
+          {/* Buttons */}
+          {isEditing ? (
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setIsEditing(false)}
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSave}
+                style={{ flex: 1 }}
+              >
+                Save Changes
+              </button>
+            </div>
+          ) : (
+            <button className="btn btn-secondary" onClick={onClose} style={{ width: '100%', marginTop: '20px' }}>
+              Close
+            </button>
+          )}
         </div>
       </div>
+
+      {/* PIN Prompt Modal */}
+      {showPinPrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 3000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '25px',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '300px',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ marginBottom: '15px' }}>Enter Admin PIN</h3>
+            <input
+              type="password"
+              value={pinInput}
+              onChange={(e) => setPinInput(e.target.value)}
+              placeholder="Enter PIN"
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '18px',
+                textAlign: 'center',
+                border: '2px solid #ddd',
+                borderRadius: '8px',
+                marginBottom: '15px'
+              }}
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+            />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => { setShowPinPrompt(false); setPinInput(''); setPendingAction(null) }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: '#f8f9fa',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePinSubmit}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: '#27ae60',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Score Keypad Modal */}
+      {activeKeypad !== null && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 3000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '15px',
+            width: '90%',
+            maxWidth: '320px'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid #e0e0e0' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#27ae60' }}>Hole {activeKeypad}</div>
+              <div style={{ fontSize: '14px', color: '#666' }}>Par {getHoleInfo(activeKeypad)?.par}</div>
+            </div>
+
+            <div style={{
+              background: '#f8f9fa',
+              padding: '15px',
+              borderRadius: '10px',
+              textAlign: 'center',
+              fontSize: '42px',
+              fontWeight: 'bold',
+              marginBottom: '15px',
+              minHeight: '70px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid #e0e0e0'
+            }}>
+              {keypadValue || '-'}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '15px' }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                <button
+                  key={num}
+                  onClick={() => handleKeypadPress(num.toString())}
+                  style={{
+                    padding: '18px',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                    border: '2px solid #dee2e6',
+                    borderRadius: '10px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {num}
+                </button>
+              ))}
+              <button
+                onClick={() => handleKeypadPress('X')}
+                style={{
+                  padding: '18px',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                X
+              </button>
+              <button
+                onClick={() => handleKeypadPress('0')}
+                style={{
+                  padding: '18px',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                  border: '2px solid #dee2e6',
+                  borderRadius: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                0
+              </button>
+              <button
+                onClick={() => handleKeypadPress('backspace')}
+                style={{
+                  padding: '18px',
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                  border: '2px solid #dee2e6',
+                  borderRadius: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                ⌫
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => { setActiveKeypad(null); setKeypadValue('') }}
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  background: '#f8f9fa',
+                  border: '2px solid #dee2e6',
+                  borderRadius: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleKeypadDone}
+                style={{
+                  flex: 1,
+                  padding: '14px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  cursor: 'pointer'
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function PlayerStatsModal({ player, onClose }) {
+function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin }) {
   const history = player.scoreHistory || []
   const [statFilter, setStatFilter] = useState('all')
   const [filterYear, setFilterYear] = useState(new Date().getFullYear())
@@ -641,8 +1162,69 @@ function PlayerStatsModal({ player, onClose }) {
     statFilter === 'lastX' ? `Last ${filterLastX} Rounds` :
     statFilter === 'range' ? 'Date Range' : ''
 
+  // Handler for saving edited round
+  const handleSaveRound = (playerId, updatedRound) => {
+    const updatedHistory = player.scoreHistory.map(round =>
+      round.id === updatedRound.id ? updatedRound : round
+    )
+
+    // Recalculate player stats
+    const validRounds = updatedHistory.filter(r => r.isComplete !== false && (r.total || r.totalScore) > 0)
+    const totals = validRounds.map(r => r.total || r.totalScore)
+    const fronts = validRounds.map(r => r.frontNine || r.frontNineScore).filter(s => s > 0)
+    const backs = validRounds.map(r => r.backNine || r.backNineScore).filter(s => s > 0)
+
+    const avgTotal = totals.length > 0 ? totals.reduce((a, b) => a + b, 0) / totals.length : 0
+    const avgFront = fronts.length > 0 ? fronts.reduce((a, b) => a + b, 0) / fronts.length : 0
+    const avgBack = backs.length > 0 ? backs.reduce((a, b) => a + b, 0) / backs.length : 0
+
+    onUpdatePlayer({
+      ...player,
+      scoreHistory: updatedHistory,
+      gamesPlayed: validRounds.length,
+      avgTotal,
+      avgFrontNine: avgFront,
+      avgBackNine: avgBack
+    })
+  }
+
+  // Handler for deleting a round
+  const handleDeleteRound = (playerId, roundId) => {
+    const updatedHistory = player.scoreHistory.filter(round => round.id !== roundId)
+
+    // Recalculate player stats
+    const validRounds = updatedHistory.filter(r => r.isComplete !== false && (r.total || r.totalScore) > 0)
+    const totals = validRounds.map(r => r.total || r.totalScore)
+    const fronts = validRounds.map(r => r.frontNine || r.frontNineScore).filter(s => s > 0)
+    const backs = validRounds.map(r => r.backNine || r.backNineScore).filter(s => s > 0)
+
+    const avgTotal = totals.length > 0 ? totals.reduce((a, b) => a + b, 0) / totals.length : 0
+    const avgFront = fronts.length > 0 ? fronts.reduce((a, b) => a + b, 0) / fronts.length : 0
+    const avgBack = backs.length > 0 ? backs.reduce((a, b) => a + b, 0) / backs.length : 0
+
+    onUpdatePlayer({
+      ...player,
+      scoreHistory: updatedHistory,
+      gamesPlayed: validRounds.length,
+      avgTotal,
+      avgFrontNine: avgFront,
+      avgBackNine: avgBack
+    })
+
+    setViewingRound(null)
+  }
+
   if (viewingRound) {
-    return <RoundDetailModal round={viewingRound} onClose={() => setViewingRound(null)} />
+    return (
+      <RoundDetailModal
+        round={viewingRound}
+        onClose={() => setViewingRound(null)}
+        playerId={player.id}
+        onSaveRound={handleSaveRound}
+        onDeleteRound={handleDeleteRound}
+        isAdmin={isAdmin}
+      />
+    )
   }
 
   return (
@@ -1034,6 +1616,11 @@ function PlayersPage() {
         <PlayerStatsModal
           player={viewingPlayer}
           onClose={() => setViewingPlayer(null)}
+          onUpdatePlayer={(updatedPlayer) => {
+            setPlayers(players.map(p => p.id === updatedPlayer.id ? updatedPlayer : p))
+            setViewingPlayer(updatedPlayer)
+          }}
+          isAdmin={isAdmin}
         />
       )}
     </div>
