@@ -1975,7 +1975,11 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
     wrapUnwonSkins: true,
     wrapTo: 'front',
     parOrBetterRequired: false,
-    birdieDoubleEagleTriple: false
+    birdieDoubleEagleTriple: false,
+    // Greenie settings for Quick Skins
+    greeniesEnabled: false,
+    greeniesCostPerHole: 1,
+    greeniesCarryover: true
   })
   const [editSettings, setEditSettings] = useState(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
@@ -2116,6 +2120,28 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
       }
     }
 
+    // Handle wrap unwon skins - if carryovers remain after hole 18, wrap to first winner
+    if (skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && carryoverCount > 0) {
+      const wrapToFront = skinsMatch.settings.wrapTo === 'front'
+      const searchHoles = wrapToFront ? [1,2,3,4,5,6,7,8,9] : [10,11,12,13,14,15,16,17,18]
+
+      // Find the first hole with a winner on the target nine
+      for (const hole of searchHoles) {
+        if (results[hole]?.winner) {
+          // Add the wrapped carryovers to this winner
+          results[hole].carryoverCount = (results[hole].carryoverCount || 0) + carryoverCount
+          results[hole].carryoverFromHoles = [
+            ...(results[hole].carryoverFromHoles || []),
+            ...carryoverFromHoles
+          ]
+          results[hole].hasWrappedCarryovers = true
+          carryoverCount = 0
+          carryoverFromHoles = []
+          break
+        }
+      }
+    }
+
     return results
   }
 
@@ -2164,10 +2190,122 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
     return { playerSummary: summary, totalSkinsWon }
   }
 
+  // Calculate greenies for Quick Skins
+  const PAR_3_HOLES = [4, 8, 12, 17]
+
+  const calculateGreenies = () => {
+    if (!skinsMatch?.settings?.greeniesEnabled || skinsPlayers.length < 2) return {}
+
+    const results = {}
+    let carryoverCount = 0
+    let carryoverFromHoles = []
+
+    PAR_3_HOLES.forEach(hole => {
+      // Check if any player hit the green and has an odometer reading
+      // For Quick Skins, we track greenies via the team greenies data
+      const greenieData = liveRound.teams
+        .flatMap(t => t.greenies?.[hole] ? [{ ...t.greenies[hole], teamId: t.id }] : [])
+        .filter(g => g && g.playerId && skinsMatch.participants.includes(String(g.playerId)))
+        .sort((a, b) => (a.distance || 999) - (b.distance || 999))[0]
+
+      results[hole] = {
+        winner: null,
+        winnerName: null,
+        distance: null,
+        carryoverCount: 0,
+        carryoverFromHoles: [],
+        pot: skinsMatch.settings.greeniesCostPerHole * skinsPlayers.length
+      }
+
+      if (greenieData?.playerId && greenieData?.distance) {
+        // We have a winner
+        results[hole].winner = greenieData.playerId
+        results[hole].winnerName = greenieData.playerName || skinsPlayers.find(p => String(p.id) === String(greenieData.playerId))?.name
+        results[hole].distance = greenieData.distance
+
+        // Apply carryovers
+        if (skinsMatch.settings.greeniesCarryover && carryoverCount > 0) {
+          results[hole].carryoverCount = carryoverCount
+          results[hole].carryoverFromHoles = [...carryoverFromHoles]
+        }
+        carryoverCount = 0
+        carryoverFromHoles = []
+      } else {
+        // No winner on this hole
+        if (skinsMatch.settings.greeniesCarryover) {
+          carryoverCount++
+          carryoverFromHoles.push(hole)
+        }
+      }
+    })
+
+    // If carryovers remain after hole 17, wrap to first par 3 winner
+    if (skinsMatch.settings.greeniesCarryover && carryoverCount > 0) {
+      for (const hole of PAR_3_HOLES) {
+        if (results[hole]?.winner) {
+          results[hole].carryoverCount = (results[hole].carryoverCount || 0) + carryoverCount
+          results[hole].carryoverFromHoles = [
+            ...(results[hole].carryoverFromHoles || []),
+            ...carryoverFromHoles
+          ]
+          break
+        }
+      }
+    }
+
+    return results
+  }
+
+  const getGreeniesSummary = (results) => {
+    const summary = {}
+    skinsPlayers.forEach(p => {
+      summary[String(p.id)] = { greeniesWon: 0, totalPot: 0, holes: [] }
+    })
+
+    const cost = parseFloat(skinsMatch?.settings?.greeniesCostPerHole) || 0
+    const potPerHole = cost * skinsPlayers.length
+    let totalGreeniesWon = 0
+
+    Object.entries(results).forEach(([hole, result]) => {
+      if (result.winner) {
+        const playerId = String(result.winner)
+        if (summary[playerId]) {
+          summary[playerId].greeniesWon += 1
+          summary[playerId].totalPot += potPerHole
+          summary[playerId].holes.push(parseInt(hole))
+          totalGreeniesWon += 1
+
+          if (result.carryoverCount > 0) {
+            summary[playerId].greeniesWon += result.carryoverCount
+            summary[playerId].totalPot += result.carryoverCount * potPerHole
+            totalGreeniesWon += result.carryoverCount
+          }
+        }
+      }
+    })
+
+    // Calculate net amounts
+    const numParticipants = skinsPlayers.length
+    const totalPotCollected = 4 * potPerHole // 4 par 3 holes
+    Object.keys(summary).forEach(playerId => {
+      const playerSummary = summary[playerId]
+      playerSummary.amountWon = playerSummary.totalPot
+      playerSummary.amountPaid = totalPotCollected / numParticipants
+      playerSummary.netAmount = playerSummary.amountWon - playerSummary.amountPaid
+    })
+
+    return { playerSummary: summary, totalGreeniesWon }
+  }
+
   const skinsResults = skinsMatch ? calculateSkins() : {}
   const { playerSummary, totalSkinsWon } = skinsMatch && skinsPlayers.length >= 2
     ? getSkinsSummary(skinsResults)
     : { playerSummary: {}, totalSkinsWon: 0 }
+
+  const greenieResults = skinsMatch?.settings?.greeniesEnabled ? calculateGreenies() : {}
+  const { playerSummary: greeniePlayerSummary, totalGreeniesWon } = skinsMatch?.settings?.greeniesEnabled && skinsPlayers.length >= 2
+    ? getGreeniesSummary(greenieResults)
+    : { playerSummary: {}, totalGreeniesWon: 0 }
 
   if (!skinsMatch) {
     return (
@@ -2232,6 +2370,40 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
                     <span>Birdie = 2x, Eagle = 3x value</span>
                   </label>
                 </div>
+
+                {/* Greenies Settings */}
+                <div style={{ marginBottom: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Greenies (Par 3s)</label>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                    <button onClick={() => setSettings({ ...settings, greeniesEnabled: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.greeniesEnabled ? '2px solid #27ae60' : '2px solid #ddd', background: settings.greeniesEnabled ? '#e8f5e9' : 'white', fontWeight: settings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setSettings({ ...settings, greeniesEnabled: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.greeniesEnabled ? '2px solid #27ae60' : '2px solid #ddd', background: !settings.greeniesEnabled ? '#e8f5e9' : 'white', fontWeight: !settings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                  </div>
+                  {settings.greeniesEnabled && (
+                    <>
+                      <div className="input-group" style={{ marginBottom: '10px' }}>
+                        <label>Cost Per Greenie Hole ($)</label>
+                        <input
+                          type="number"
+                          value={settings.greeniesCostPerHole}
+                          onChange={e => setSettings({ ...settings, greeniesCostPerHole: parseFloat(e.target.value) || 1 })}
+                          min="0.5"
+                          step="0.5"
+                        />
+                      </div>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Greenie Carryovers</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button onClick={() => setSettings({ ...settings, greeniesCarryover: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.greeniesCarryover ? '2px solid #27ae60' : '2px solid #ddd', background: settings.greeniesCarryover ? '#e8f5e9' : 'white', fontWeight: settings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                          <button onClick={() => setSettings({ ...settings, greeniesCarryover: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.greeniesCarryover ? '2px solid #27ae60' : '2px solid #ddd', background: !settings.greeniesCarryover ? '#e8f5e9' : 'white', fontWeight: !settings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>
+                          Par 3 holes: 4, 8, 12, 17
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 <button className="btn btn-primary" onClick={setupSkinsMatch} style={{ width: '100%', marginTop: '10px' }}>
                   Start Skins Match
                 </button>
@@ -2269,6 +2441,11 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
           {skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && <span>Wrap to {skinsMatch.settings.wrapTo === 'front' ? 'Front 9' : 'Back 9'}</span>}
           {skinsMatch.settings.parOrBetterRequired && <span>Par or Better</span>}
           {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie 2x/Eagle 3x</span>}
+          {skinsMatch.settings.greeniesEnabled && (
+            <span style={{ color: '#27ae60', fontWeight: '600' }}>
+              Greenies ${skinsMatch.settings.greeniesCostPerHole}/hole {skinsMatch.settings.greeniesCarryover && '(carryovers)'}
+            </span>
+          )}
           {isAdmin && (
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
               <button
@@ -2499,8 +2676,85 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
         </div>
       )}
 
+      {/* Greenies Section */}
+      {skinsMatch.settings.greeniesEnabled && skinsPlayers.length >= 2 && (
+        <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
+            color: 'white',
+            padding: '10px 15px',
+            fontWeight: '600',
+            fontSize: '14px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span>Greenies (Par 3s)</span>
+            <span style={{ fontSize: '12px', opacity: 0.9 }}>
+              ${skinsMatch.settings.greeniesCostPerHole}/hole × {skinsPlayers.length} players = ${(skinsMatch.settings.greeniesCostPerHole * skinsPlayers.length).toFixed(2)}/pot
+            </span>
+          </div>
+          <div style={{ padding: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+              {PAR_3_HOLES.map(hole => {
+                const result = greenieResults[hole] || {}
+                const hasCarryover = result.carryoverCount > 0
+                const totalPot = (1 + (result.carryoverCount || 0)) * skinsMatch.settings.greeniesCostPerHole * skinsPlayers.length
+                return (
+                  <div key={hole} style={{
+                    background: result.winner ? (hasCarryover ? '#e8f5e9' : '#d4edda') : '#f8f9fa',
+                    padding: '12px 8px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    border: result.winner ? '2px solid #27ae60' : '1px solid #ddd'
+                  }}>
+                    <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>#{hole}</div>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px' }}>Par 3</div>
+                    {result.winner ? (
+                      <>
+                        <div style={{ fontWeight: '600', color: '#27ae60', fontSize: '13px' }}>
+                          {result.winnerName?.split(' ')[0] || 'Winner'}
+                        </div>
+                        {result.distance && (
+                          <div style={{ fontSize: '11px', color: '#666' }}>{result.distance}</div>
+                        )}
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#27ae60', marginTop: '4px' }}>
+                          ${totalPot.toFixed(2)}
+                          {hasCarryover && <span style={{ fontSize: '10px' }}> (+{result.carryoverCount})</span>}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ color: '#999', fontSize: '12px' }}>
+                        No winner
+                        {skinsMatch.settings.greeniesCarryover && <div style={{ fontSize: '10px' }}>→ carries over</div>}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {totalGreeniesWon > 0 && (
+              <div style={{ marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px' }}>Greenie Payouts:</div>
+                {skinsPlayers
+                  .filter(p => (greeniePlayerSummary[String(p.id)]?.greeniesWon || 0) > 0)
+                  .map(player => {
+                    const summary = greeniePlayerSummary[String(player.id)] || {}
+                    return (
+                      <div key={player.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#e8f5e9', borderRadius: '4px', marginBottom: '4px' }}>
+                        <span>{player.name} <span style={{ color: '#666', fontSize: '11px' }}>({summary.greeniesWon} greenie{summary.greeniesWon > 1 ? 's' : ''})</span></span>
+                        <span style={{ color: '#27ae60', fontWeight: '700' }}>${summary.totalPot?.toFixed(2)}</span>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Payout Summary */}
-      {skinsPlayers.length >= 2 && totalSkinsWon > 0 && (
+      {skinsPlayers.length >= 2 && (totalSkinsWon > 0 || totalGreeniesWon > 0) && (
         <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden' }}>
           <div style={{
             background: '#27ae60',
@@ -2513,10 +2767,19 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
           </div>
           <div style={{ padding: '10px' }}>
             {skinsPlayers
-              .sort((a, b) => (playerSummary[String(b.id)]?.netAmount || 0) - (playerSummary[String(a.id)]?.netAmount || 0))
+              .sort((a, b) => {
+                const aSkinsNet = playerSummary[String(a.id)]?.netAmount || 0
+                const bSkinsNet = playerSummary[String(b.id)]?.netAmount || 0
+                const aGreeniesNet = greeniePlayerSummary[String(a.id)]?.netAmount || 0
+                const bGreeniesNet = greeniePlayerSummary[String(b.id)]?.netAmount || 0
+                return (bSkinsNet + bGreeniesNet) - (aSkinsNet + aGreeniesNet)
+              })
               .map(player => {
-                const summary = playerSummary[String(player.id)] || {}
-                const netAmount = summary.netAmount || 0
+                const skinsSummary = playerSummary[String(player.id)] || {}
+                const greenieSummary = greeniePlayerSummary[String(player.id)] || {}
+                const skinsNet = skinsSummary.netAmount || 0
+                const greeniesNet = greenieSummary.netAmount || 0
+                const totalNet = skinsNet + greeniesNet
                 return (
                   <div key={player.id} style={{
                     display: 'flex',
@@ -2527,14 +2790,14 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
                     <span>
                       <strong>{player.name}</strong>
                       <span style={{ color: '#666', fontSize: '12px', marginLeft: '8px' }}>
-                        ({summary.skinsWon || 0} skins)
+                        ({skinsSummary.skinsWon || 0} skins{skinsMatch.settings.greeniesEnabled && `, ${greenieSummary.greeniesWon || 0} greenies`})
                       </span>
                     </span>
                     <span style={{
                       fontWeight: '700',
-                      color: netAmount > 0 ? '#27ae60' : netAmount < 0 ? '#e74c3c' : '#666'
+                      color: totalNet > 0 ? '#27ae60' : totalNet < 0 ? '#e74c3c' : '#666'
                     }}>
-                      {netAmount >= 0 ? '+' : ''}${netAmount.toFixed(2)}
+                      {totalNet >= 0 ? '+' : ''}${totalNet.toFixed(2)}
                     </span>
                   </div>
                 )
@@ -2551,18 +2814,35 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
               Who Owes Who
             </div>
             {(() => {
-              const cost = parseFloat(skinsMatch.settings.costPerSkin) || 0
+              const skinsCost = parseFloat(skinsMatch.settings.costPerSkin) || 0
+              const greenieCost = parseFloat(skinsMatch.settings.greeniesCostPerHole) || 0
+              const greeniesEnabled = skinsMatch.settings.greeniesEnabled
               const settlements = []
 
               for (let i = 0; i < skinsPlayers.length; i++) {
                 for (let j = i + 1; j < skinsPlayers.length; j++) {
                   const playerA = skinsPlayers[i]
                   const playerB = skinsPlayers[j]
-                  const summaryA = playerSummary[String(playerA.id)] || {}
-                  const summaryB = playerSummary[String(playerB.id)] || {}
+                  const skinsSummaryA = playerSummary[String(playerA.id)] || {}
+                  const skinsSummaryB = playerSummary[String(playerB.id)] || {}
+                  const greenieSummaryA = greeniePlayerSummary[String(playerA.id)] || {}
+                  const greenieSummaryB = greeniePlayerSummary[String(playerB.id)] || {}
 
-                  const aOwesB = (summaryB.totalValue || 0) * cost
-                  const bOwesA = (summaryA.totalValue || 0) * cost
+                  // Skins: A owes B for B's skins wins
+                  let aOwesB = (skinsSummaryB.totalValue || 0) * skinsCost
+                  let bOwesA = (skinsSummaryA.totalValue || 0) * skinsCost
+
+                  // Greenies: Each greenie pot is split among all players, winner takes pot
+                  // For greenies, A owes B = B's greenie pots won (since A contributed to those pots)
+                  if (greeniesEnabled) {
+                    const potPerHole = greenieCost * skinsPlayers.length
+                    const aGreeniesValue = (greenieSummaryA.greeniesWon || 0)
+                    const bGreeniesValue = (greenieSummaryB.greeniesWon || 0)
+                    // A contributed greenieCost to each pot B won
+                    aOwesB += bGreeniesValue * greenieCost
+                    bOwesA += aGreeniesValue * greenieCost
+                  }
+
                   const netOwed = aOwesB - bOwesA
 
                   if (Math.abs(netOwed) > 0.001) {
@@ -2794,12 +3074,43 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
+                <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px' }}>Birdie = 2x, Eagle = 3x?</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={() => setEditSettings({ ...editSettings, birdieDoubleEagleTriple: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.birdieDoubleEagleTriple ? '2px solid #f39c12' : '2px solid #ddd', background: editSettings.birdieDoubleEagleTriple ? '#fff8e1' : 'white', fontWeight: editSettings.birdieDoubleEagleTriple ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
                     <button onClick={() => setEditSettings({ ...editSettings, birdieDoubleEagleTriple: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.birdieDoubleEagleTriple ? '2px solid #f39c12' : '2px solid #ddd', background: !editSettings.birdieDoubleEagleTriple ? '#fff8e1' : 'white', fontWeight: !editSettings.birdieDoubleEagleTriple ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                   </div>
+                </div>
+
+                {/* Greenies Settings */}
+                <div style={{ borderTop: '1px solid #eee', paddingTop: '15px', marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px', color: '#27ae60' }}>Greenies (Par 3s)</label>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                    <button onClick={() => setEditSettings({ ...editSettings, greeniesEnabled: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.greeniesEnabled ? '2px solid #27ae60' : '2px solid #ddd', background: editSettings.greeniesEnabled ? '#e8f5e9' : 'white', fontWeight: editSettings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setEditSettings({ ...editSettings, greeniesEnabled: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.greeniesEnabled ? '2px solid #27ae60' : '2px solid #ddd', background: !editSettings.greeniesEnabled ? '#e8f5e9' : 'white', fontWeight: !editSettings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                  </div>
+                  {editSettings.greeniesEnabled && (
+                    <>
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '12px' }}>Cost Per Greenie Hole ($)</label>
+                        <input
+                          type="number"
+                          value={editSettings.greeniesCostPerHole || 1}
+                          onChange={(e) => setEditSettings({ ...editSettings, greeniesCostPerHole: parseFloat(e.target.value) || 1 })}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
+                          min="0.5"
+                          step="0.5"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '12px' }}>Greenie Carryovers</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button onClick={() => setEditSettings({ ...editSettings, greeniesCarryover: true })} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: editSettings.greeniesCarryover ? '2px solid #27ae60' : '2px solid #ddd', background: editSettings.greeniesCarryover ? '#e8f5e9' : 'white', fontWeight: editSettings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>Yes</button>
+                          <button onClick={() => setEditSettings({ ...editSettings, greeniesCarryover: false })} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: !editSettings.greeniesCarryover ? '2px solid #27ae60' : '2px solid #ddd', background: !editSettings.greeniesCarryover ? '#e8f5e9' : 'white', fontWeight: !editSettings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>No</button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>

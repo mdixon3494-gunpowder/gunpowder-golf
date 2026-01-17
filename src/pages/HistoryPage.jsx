@@ -556,6 +556,28 @@ function SkinsResults({ round }) {
       }
     })
 
+    // Handle wrap unwon skins - if carryovers remain after hole 18, wrap to first winner
+    if (skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && carryoverCount > 0) {
+      const wrapToFront = skinsMatch.settings.wrapTo === 'front'
+      const searchHoles = wrapToFront ? [1,2,3,4,5,6,7,8,9] : [10,11,12,13,14,15,16,17,18]
+
+      // Find the first hole with a winner on the target nine
+      for (const hole of searchHoles) {
+        if (results[hole]?.winner) {
+          // Add the wrapped carryovers to this winner
+          results[hole].carryoverCount = (results[hole].carryoverCount || 0) + carryoverCount
+          results[hole].carryoverFromHoles = [
+            ...(results[hole].carryoverFromHoles || []),
+            ...carryoverFromHoles
+          ]
+          results[hole].hasWrappedCarryovers = true
+          carryoverCount = 0
+          carryoverFromHoles = []
+          break
+        }
+      }
+    }
+
     return results
   }
 
