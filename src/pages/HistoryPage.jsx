@@ -589,11 +589,16 @@ function SkinsResults({ round }) {
 
     const numParticipants = skinsPlayers.length
     Object.keys(summary).forEach(playerId => {
-      const totalPot = totalSkinsWon * cost
-      const playerWinnings = summary[playerId].totalValue * cost
-      const playerCost = (totalSkinsWon - summary[playerId].totalValue) * cost / (numParticipants - 1) * (numParticipants - 1) / numParticipants
-      summary[playerId].amountWon = playerWinnings
-      summary[playerId].netAmount = summary[playerId].totalValue * cost - (totalSkinsWon - summary[playerId].totalValue) * cost / (numParticipants - 1)
+      const playerSummary = summary[playerId]
+      // When you win a skin, you collect cost from each OTHER player
+      const winnings = playerSummary.totalValue * cost * (numParticipants - 1)
+      // When someone else wins, you pay them cost (use totalValue sum for birdie 2x/eagle 3x)
+      const totalValueWon = Object.values(summary).reduce((sum, s) => sum + s.totalValue, 0)
+      const othersValue = totalValueWon - playerSummary.totalValue
+      const payments = othersValue * cost
+      playerSummary.amountWon = winnings
+      playerSummary.amountPaid = payments
+      playerSummary.netAmount = winnings - payments
     })
 
     return { playerSummary: summary, totalSkinsWon }
