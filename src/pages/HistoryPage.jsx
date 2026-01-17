@@ -1,11 +1,63 @@
 import { useState } from 'react'
 import { useLeague } from '../context/LeagueContext'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
+import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
 
 function formatRelativeToPar(score) {
   if (score === 0) return 'E'
   if (score > 0) return `+${score}`
   return score.toString()
+}
+
+// Calculate team score for a 9-hole range
+function calculateTeamScore(team, startHole, endHole) {
+  let totalScore = 0
+  for (let hole = startHole; hole <= endHole; hole++) {
+    const holeInfo = getHoleInfo(hole)
+    const par = holeInfo?.par || 4
+
+    const playerScores = team.players
+      .filter(p => !p.isDNF && p.includeInTeamScore !== false)
+      .map(p => p.scores?.[hole])
+      .filter(s => s !== undefined && s !== null && s !== '' && s !== 'X')
+      .map(s => parseInt(s))
+
+    if (playerScores.length === 0) continue
+
+    const underParScores = playerScores.filter(s => s < par)
+
+    if (underParScores.length > 0) {
+      totalScore += underParScores.reduce((sum, s) => sum + (s - par), 0)
+    } else {
+      const bestScore = Math.min(...playerScores)
+      totalScore += (bestScore - par)
+    }
+  }
+  return totalScore
+}
+
+// Determine winners for a round
+function determineRoundWinners(round) {
+  if (!round.teams || round.teams.length === 0) return { front9: [], back9: [], overall: [] }
+
+  const teamScores = round.teams.map((team, idx) => ({
+    idx,
+    teamId: team.id,
+    front9: calculateTeamScore(team, 1, 9),
+    back9: calculateTeamScore(team, 10, 18),
+    total: calculateTeamScore(team, 1, 9) + calculateTeamScore(team, 10, 18)
+  }))
+
+  const minFront = Math.min(...teamScores.map(t => t.front9))
+  const minBack = Math.min(...teamScores.map(t => t.back9))
+  const minTotal = Math.min(...teamScores.map(t => t.total))
+
+  return {
+    front9: teamScores.filter(t => t.front9 === minFront).map(t => t.teamId),
+    back9: teamScores.filter(t => t.back9 === minBack).map(t => t.teamId),
+    overall: teamScores.filter(t => t.total === minTotal).map(t => t.teamId),
+    isMatchPlay: round.teams.length === 2
+  }
 }
 
 function RoundCard({ round, onView, onDelete, isAdmin }) {
@@ -17,11 +69,39 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
     year: 'numeric'
   })
 
-  // Find winning team
-  const sortedTeams = [...(round.teams || [])].sort((a, b) =>
-    (a.totalScore || 0) - (b.totalScore || 0)
-  )
+  // Calculate winners
+  const winners = determineRoundWinners(round)
+
+  // Find overall winning team for header display
+  const sortedTeams = [...(round.teams || [])].map(team => ({
+    ...team,
+    front9Score: calculateTeamScore(team, 1, 9),
+    back9Score: calculateTeamScore(team, 10, 18),
+    totalScore: calculateTeamScore(team, 1, 9) + calculateTeamScore(team, 10, 18)
+  })).sort((a, b) => a.totalScore - b.totalScore)
   const winner = sortedTeams[0]
+
+  // Helper to get win/tie badges for a team
+  const getTeamBadges = (teamId) => {
+    const badges = []
+    const isFront9Winner = winners.front9.includes(teamId)
+    const isBack9Winner = winners.back9.includes(teamId)
+    const isOverallWinner = winners.overall.includes(teamId)
+
+    if (isFront9Winner) {
+      const isTie = winners.front9.length > 1
+      badges.push({ label: 'F9', type: isTie ? 'tie' : 'win' })
+    }
+    if (isBack9Winner) {
+      const isTie = winners.back9.length > 1
+      badges.push({ label: 'B9', type: isTie ? 'tie' : 'win' })
+    }
+    if (winners.isMatchPlay && isOverallWinner) {
+      const isTie = winners.overall.length > 1
+      badges.push({ label: 'Overall', type: isTie ? 'tie' : 'win' })
+    }
+    return badges
+  }
 
   return (
     <div style={{
@@ -42,7 +122,7 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
         <div>
           <div style={{ fontWeight: '600', fontSize: '16px' }}>{formattedDate}</div>
           <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '4px' }}>
-            {round.teams?.length || 0} teams
+            {round.teams?.length || 0} teams • {winners.isMatchPlay ? 'Match Play' : 'Standard'}
           </div>
         </div>
         {winner && (
@@ -52,9 +132,9 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
             <div style={{
               fontSize: '18px',
               fontWeight: 'bold',
-              color: (winner.totalScore || 0) < 0 ? '#2ecc71' : (winner.totalScore || 0) > 0 ? '#e74c3c' : '#fff'
+              color: winner.totalScore < 0 ? '#2ecc71' : winner.totalScore > 0 ? '#e74c3c' : '#fff'
             }}>
-              {formatRelativeToPar(winner.totalScore || 0)}
+              {formatRelativeToPar(winner.totalScore)}
             </div>
           </div>
         )}
@@ -62,50 +142,69 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
 
       <div style={{ padding: '15px' }}>
         {/* Team scores summary */}
-        {round.teams?.map((team, idx) => (
-          <div key={team.id || idx} style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '10px',
-            background: idx === 0 ? '#fff8e1' : (idx % 2 === 0 ? '#f8f9fa' : 'white'),
-            borderRadius: '6px',
-            marginBottom: '6px',
-            border: idx === 0 ? '1px solid #f9a825' : 'none'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                background: idx === 0 ? '#f9a825' : '#95a5a6',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}>
-                {idx + 1}
-              </span>
-              <span style={{ fontWeight: idx === 0 ? '600' : 'normal' }}>{team.name}</span>
+        {sortedTeams.map((team, idx) => {
+          const badges = getTeamBadges(team.id)
+          return (
+            <div key={team.id || idx} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '10px',
+              background: idx === 0 ? '#fff8e1' : (idx % 2 === 0 ? '#f8f9fa' : 'white'),
+              borderRadius: '6px',
+              marginBottom: '6px',
+              border: idx === 0 ? '1px solid #f9a825' : 'none'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: idx === 0 ? '#f9a825' : '#95a5a6',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}>
+                  {idx + 1}
+                </span>
+                <span style={{ fontWeight: idx === 0 ? '600' : 'normal' }}>{team.name}</span>
+                {badges.length > 0 && (
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {badges.map((badge, i) => (
+                      <span key={i} style={{
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        background: badge.type === 'win' ? '#27ae60' : '#3498db',
+                        color: 'white'
+                      }}>
+                        {badge.type === 'win' ? '✓' : '≈'} {badge.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#666' }}>
+                  F9: {formatRelativeToPar(team.front9Score)}
+                </span>
+                <span style={{ fontSize: '12px', color: '#666' }}>
+                  B9: {formatRelativeToPar(team.back9Score)}
+                </span>
+                <span style={{
+                  fontWeight: 'bold',
+                  color: team.totalScore < 0 ? '#27ae60' : team.totalScore > 0 ? '#e74c3c' : '#333'
+                }}>
+                  {formatRelativeToPar(team.totalScore)}
+                </span>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: '#666' }}>
-                F9: {formatRelativeToPar(team.front9Score || 0)}
-              </span>
-              <span style={{ fontSize: '12px', color: '#666' }}>
-                B9: {formatRelativeToPar(team.back9Score || 0)}
-              </span>
-              <span style={{
-                fontWeight: 'bold',
-                color: (team.totalScore || 0) < 0 ? '#27ae60' : (team.totalScore || 0) > 0 ? '#e74c3c' : '#333'
-              }}>
-                {formatRelativeToPar(team.totalScore || 0)}
-              </span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
 
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
@@ -131,8 +230,249 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
   )
 }
 
+function MoneySettlement({ round, settlement, payoutFormats }) {
+  const format = settlement.format === 'matchPlay' ? payoutFormats.matchPlay : payoutFormats.standard
+  const perPlayerEntry = format.front9 + format.back9 + (settlement.format === 'matchPlay' ? format.overall : 0) + (4 * format.greeniePerHole) + (settlement.hio.enabled ? format.holeInOne : 0)
+
+  // Calculate total greenie payouts
+  const totalGreeniePayouts = Object.values(settlement.greeniePayouts).reduce((sum, amt) => sum + amt, 0)
+
+  return (
+    <div style={{ background: 'white', borderRadius: '10px' }}>
+      <h3 style={{ marginBottom: '15px', color: '#27ae60' }}>Treasurer's Settlement Guide</h3>
+
+      {/* Entry Fee Summary */}
+      <div style={{ background: '#e3f2fd', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '2px solid #2196f3' }}>
+        <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1565c0' }}>Entry Fee Per Player: ${perPlayerEntry.toFixed(2)}</div>
+        <div style={{ fontSize: '11px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <span>Team: ${(format.front9 + format.back9 + (settlement.format === 'matchPlay' ? format.overall : 0)).toFixed(2)}</span>
+          <span>Greenies: ${(4 * format.greeniePerHole).toFixed(2)}</span>
+          {settlement.hio.enabled && <span>HIO: ${format.holeInOne.toFixed(2)}</span>}
+        </div>
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>
+          {settlement.totalPlayers} players × ${perPlayerEntry.toFixed(2)} = <strong>${(settlement.totalPlayers * perPlayerEntry).toFixed(2)}</strong> total collected
+        </div>
+      </div>
+
+      {/* Step 1: Collect from Teams */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>1</span>
+          Collect From Each Team
+        </h4>
+        {settlement.teamSettlements.map(team => {
+          const teamOwes = team.entry
+          const teamWins = team.winnings
+          const netAmount = teamWins - teamOwes
+          const winsMore = netAmount > 0
+          const owesMore = netAmount < 0
+
+          return (
+            <div key={team.teamId} style={{
+              background: '#f8f9fa',
+              padding: '12px',
+              borderRadius: '8px',
+              marginBottom: '10px',
+              border: '1px solid #ddd'
+            }}>
+              <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '15px' }}>
+                {team.teamName} <span style={{ fontWeight: 'normal', fontSize: '12px', color: '#666' }}>({team.teamSize} players)</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px', fontSize: '12px' }}>
+                <div style={{ background: '#ffebee', padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ color: '#c62828', fontWeight: '600' }}>Team Owes</div>
+                  <div style={{ fontSize: '18px', fontWeight: '700' }}>${teamOwes.toFixed(2)}</div>
+                  <div style={{ fontSize: '10px', color: '#666' }}>${(teamOwes / team.teamSize).toFixed(2)}/player</div>
+                </div>
+                <div style={{ background: '#e8f5e9', padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ color: '#2e7d32', fontWeight: '600' }}>Team Wins</div>
+                  <div style={{ fontSize: '18px', fontWeight: '700' }}>${teamWins.toFixed(2)}</div>
+                  <div style={{ fontSize: '10px', color: '#666' }}>${(teamWins / team.teamSize).toFixed(2)}/player</div>
+                </div>
+              </div>
+
+              {/* Show what they won */}
+              {(team.wins.length > 0 || team.ties?.length > 0) && (
+                <div style={{ fontSize: '11px', marginBottom: '10px', padding: '6px', background: '#e8f5e9', borderRadius: '4px' }}>
+                  {team.wins.length > 0 && <span style={{ color: '#2e7d32' }}>✓ Won: {team.wins.join(', ')}</span>}
+                  {team.ties?.length > 0 && team.ties.map((tie, i) => (
+                    <span key={i} style={{ color: '#1565c0', marginLeft: team.wins.length > 0 ? '8px' : '0' }}>
+                      ≈ Tied: {tie.category} ({tie.numTeams} teams)
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Settlement Options */}
+              <div style={{ background: '#fff8e1', padding: '10px', borderRadius: '6px', border: '1px solid #f9a825' }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px', color: '#f57f17' }}>Settlement Options:</div>
+
+                {winsMore ? (
+                  <>
+                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                      <strong>Option A:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
+                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: '#2e7d32', fontWeight: '600' }}>+${(netAmount / team.teamSize).toFixed(2)} net</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                      <strong>Option B:</strong> Captain collects $0, gets back ${netAmount.toFixed(2)} net
+                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                        Each player pays $0, gets back <span style={{ color: '#2e7d32', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : owesMore ? (
+                  <>
+                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                      <strong>Option A:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
+                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: '#c62828', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)} net</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                      <strong>Option B:</strong> Captain collects ${Math.abs(netAmount).toFixed(2)} net, gets back $0
+                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                        Each player pays <span style={{ color: '#c62828', fontWeight: '600' }}>${(Math.abs(netAmount) / team.teamSize).toFixed(2)}</span>, gets back $0
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <strong>Break Even:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
+                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                      Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ fontWeight: '600' }}>$0 net</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Step 2: Pay Greenie Winners */}
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>2</span>
+          Pay Greenie Winners
+        </h4>
+        <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
+            {[4, 8, 12, 17].map(hole => {
+              const result = settlement.greenieResults[hole]
+              const winnerPlayer = result?.winner ? round.teams.flatMap(t => t.players).find(p => String(p.id) === String(result.winner)) : null
+              return (
+                <div key={hole} style={{
+                  background: result?.isFinal ? (result.winner ? '#e8f5e9' : '#fff3e0') : '#f5f5f5',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  textAlign: 'center',
+                  border: result?.isFinal ? (result.winner ? '2px solid #27ae60' : '2px solid #f39c12') : '1px solid #ddd'
+                }}>
+                  <div style={{ fontSize: '11px', color: '#666' }}>Hole {hole}</div>
+                  <div style={{ fontWeight: '700', color: '#27ae60' }}>${result?.pot?.toFixed(2) || '0.00'}</div>
+                  {result?.isFinal && (
+                    <div style={{ fontSize: '10px', marginTop: '4px', color: result.winner ? '#2e7d32' : '#e67e22' }}>
+                      {result.winner ? `${winnerPlayer?.name || result.winnerName || 'Unknown'}` : 'No winner'}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {Object.keys(settlement.greeniePayouts).length > 0 ? (
+            <div style={{ borderTop: '1px solid #ddd', paddingTop: '10px' }}>
+              <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px' }}>Pay to individuals:</div>
+              {Object.entries(settlement.greeniePayouts).map(([playerId, amount]) => {
+                const player = round.teams.flatMap(t => t.players).find(p => String(p.id) === String(playerId))
+                return (
+                  <div key={playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#e8f5e9', borderRadius: '4px', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: '500' }}>{player?.name || 'Unknown'}</span>
+                    <span style={{ color: '#2e7d32', fontWeight: '700' }}>${amount.toFixed(2)}</span>
+                  </div>
+                )
+              })}
+              {settlement.carryoverRemaining > 0 && (
+                <div style={{ marginTop: '8px', color: '#e67e22', fontSize: '11px' }}>
+                  ${settlement.carryoverRemaining.toFixed(2)} carrying over (waiting for final greenie)
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ color: '#666', fontSize: '12px', fontStyle: 'italic' }}>
+              No greenie winners recorded
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Step 3: HIO Pot */}
+      {settlement.hio.enabled && (
+        <div style={{ marginBottom: '20px' }}>
+          <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>3</span>
+            Hole-in-One Pot
+          </h4>
+          <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', border: '2px solid #f39c12' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: '600' }}>Add to HIO Pot</div>
+                <div style={{ fontSize: '11px', color: '#666' }}>{settlement.hio.eligibleCount} eligible players × ${format.holeInOne.toFixed(2)}</div>
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: '#f57f17' }}>
+                ${settlement.hio.contribution.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verification */}
+      <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
+        <h4 style={{ fontSize: '13px', marginBottom: '10px' }}>✓ Verification</h4>
+        <div style={{ fontSize: '11px', display: 'grid', gap: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Total Collected:</span>
+            <span style={{ fontWeight: '600' }}>${(settlement.totalPlayers * perPlayerEntry).toFixed(2)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Team Winnings Paid Out:</span>
+            <span>${settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0).toFixed(2)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Greenie Payouts:</span>
+            <span>${totalGreeniePayouts.toFixed(2)}</span>
+          </div>
+          {settlement.hio.enabled && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>HIO Pot:</span>
+              <span>${settlement.hio.contribution.toFixed(2)}</span>
+            </div>
+          )}
+          {settlement.carryoverRemaining > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e67e22' }}>
+              <span>Greenie Carryover (pending):</span>
+              <span>${settlement.carryoverRemaining.toFixed(2)}</span>
+            </div>
+          )}
+          <div style={{ borderTop: '1px solid #ddd', paddingTop: '6px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}>
+            <span>Remaining (should be $0):</span>
+            <span style={{ color: Math.abs((settlement.totalPlayers * perPlayerEntry) - settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0) - totalGreeniePayouts - (settlement.hio.enabled ? settlement.hio.contribution : 0) - settlement.carryoverRemaining) < 0.01 ? '#2e7d32' : '#c62828' }}>
+              ${((settlement.totalPlayers * perPlayerEntry) - settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0) - totalGreeniePayouts - (settlement.hio.enabled ? settlement.hio.contribution : 0) - settlement.carryoverRemaining).toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot }) {
   const [showMoney, setShowMoney] = useState(false)
+  const [activeTab, setActiveTab] = useState('scorecard')
 
   if (!round) return null
 
@@ -145,211 +485,341 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot }) {
   })
 
   const settlement = calculateRoundSettlement(round, payoutFormats, holeInOnePot, null)
+  const winners = determineRoundWinners(round)
+
+  const front9Holes = GUNPOWDER_SCORECARD.front9
+  const back9Holes = GUNPOWDER_SCORECARD.back9
+
+  // Get score cell style based on score vs par - matches live round format
+  const getScoreStyle = (score, par) => {
+    if (!score || score === '' || score === 'X') return {}
+    const numScore = parseInt(score)
+    const diff = numScore - par
+    if (diff <= -2) return {
+      background: '#fff8e1',
+      border: '2px double #f39c12',
+      borderRadius: '50%',
+      fontWeight: '700'
+    } // Eagle or better
+    if (diff === -1) return {
+      background: '#e8f5e9',
+      border: '2px solid #27ae60',
+      borderRadius: '50%',
+      fontWeight: '600'
+    } // Birdie
+    return {} // Par and worse - no special styling
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}
+        style={{ maxWidth: '95%', width: '900px', maxHeight: '90vh', overflowY: 'auto', padding: 0 }}
       >
-        <div className="modal-header">
-          <h3>Round Details - {formattedDate}</h3>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%)' }}>
+          <h3 style={{ color: 'white', margin: 0 }}>{formattedDate}</h3>
+          <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
         </div>
-        <div className="modal-body">
-          {round.teams?.map((team, teamIdx) => (
-            <div key={team.id || teamIdx} style={{ marginBottom: '20px' }}>
-              <div style={{
-                background: teamIdx === 0
-                  ? 'linear-gradient(135deg, #f9a825 0%, #f57c00 100%)'
-                  : 'linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%)',
-                color: 'white',
-                padding: '12px 15px',
-                borderRadius: '8px 8px 0 0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <span style={{ fontWeight: 'bold' }}>{team.name}</span>
-                  <span style={{ marginLeft: '10px', fontSize: '12px', opacity: 0.9 }}>
-                    ({team.players?.length || 0} players)
-                  </span>
-                </div>
-                <div style={{ fontWeight: 'bold', fontSize: '18px' }}>
-                  {formatRelativeToPar(team.totalScore || 0)}
-                </div>
-              </div>
 
-              <div style={{
-                background: '#f8f9fa',
-                borderRadius: '0 0 8px 8px',
-                border: '1px solid #e0e0e0',
-                borderTop: 'none'
-              }}>
-                {team.players?.map((player, playerIdx) => {
-                  // Calculate player totals
-                  let front9 = 0, back9 = 0
-                  for (let h = 1; h <= 9; h++) if (player.scores?.[h]) front9 += player.scores[h]
-                  for (let h = 10; h <= 18; h++) if (player.scores?.[h]) back9 += player.scores[h]
-                  const total = front9 + back9
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '2px solid #e0e0e0' }}>
+          <button
+            onClick={() => setActiveTab('scorecard')}
+            style={{
+              flex: 1, padding: '12px', border: 'none', cursor: 'pointer',
+              background: activeTab === 'scorecard' ? '#1a472a' : '#f8f9fa',
+              color: activeTab === 'scorecard' ? 'white' : '#333',
+              fontWeight: '600'
+            }}
+          >
+            Scorecard
+          </button>
+          <button
+            onClick={() => setActiveTab('money')}
+            style={{
+              flex: 1, padding: '12px', border: 'none', cursor: 'pointer',
+              background: activeTab === 'money' ? '#1a472a' : '#f8f9fa',
+              color: activeTab === 'money' ? 'white' : '#333',
+              fontWeight: '600'
+            }}
+          >
+            Money
+          </button>
+        </div>
 
-                  return (
-                    <div key={player.id} style={{
+        <div className="modal-body" style={{ padding: '15px' }}>
+          {activeTab === 'scorecard' && (
+            <>
+              {/* Scorecard for each team */}
+              {round.teams?.map((team, teamIdx) => {
+                const teamFront9 = calculateTeamScore(team, 1, 9)
+                const teamBack9 = calculateTeamScore(team, 10, 18)
+                const teamTotal = teamFront9 + teamBack9
+
+                // Get badges for this team
+                const badges = []
+                if (winners.front9.includes(team.id)) {
+                  badges.push({ label: 'F9', type: winners.front9.length > 1 ? 'tie' : 'win' })
+                }
+                if (winners.back9.includes(team.id)) {
+                  badges.push({ label: 'B9', type: winners.back9.length > 1 ? 'tie' : 'win' })
+                }
+                if (winners.isMatchPlay && winners.overall.includes(team.id)) {
+                  badges.push({ label: 'Overall', type: winners.overall.length > 1 ? 'tie' : 'win' })
+                }
+
+                return (
+                  <div key={team.id || teamIdx} style={{ marginBottom: '25px' }}>
+                    {/* Team Header */}
+                    <div style={{
+                      background: teamIdx === 0 ? 'linear-gradient(135deg, #f9a825 0%, #f57c00 100%)' : 'linear-gradient(135deg, #607d8b 0%, #455a64 100%)',
+                      color: 'white',
                       padding: '10px 15px',
-                      borderBottom: playerIdx < team.players.length - 1 ? '1px solid #e0e0e0' : 'none',
+                      borderRadius: '8px 8px 0 0',
                       display: 'flex',
                       justifyContent: 'space-between',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '8px'
                     }}>
-                      <div>
-                        <span style={{ fontWeight: '500' }}>{player.name}</span>
-                        {player.isDNF && (
-                          <span style={{
-                            marginLeft: '8px',
-                            background: '#e74c3c',
-                            color: 'white',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontSize: '10px'
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{team.name}</span>
+                        {badges.map((badge, i) => (
+                          <span key={i} style={{
+                            padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600',
+                            background: badge.type === 'win' ? '#27ae60' : '#3498db', color: 'white'
                           }}>
-                            DNF
+                            {badge.type === 'win' ? '✓' : '≈'} {badge.label}
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px' }}>
+                          <span style={{ opacity: 0.8 }}>F9: </span>
+                          <span style={{ fontWeight: '600' }}>{formatRelativeToPar(teamFront9)}</span>
+                        </span>
+                        <span style={{ fontSize: '13px' }}>
+                          <span style={{ opacity: 0.8 }}>B9: </span>
+                          <span style={{ fontWeight: '600' }}>{formatRelativeToPar(teamBack9)}</span>
+                        </span>
+                        {winners.isMatchPlay && (
+                          <span style={{ fontSize: '15px', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '4px' }}>
+                            {formatRelativeToPar(teamTotal)}
                           </span>
                         )}
                       </div>
-                      {!player.isDNF && total > 0 && (
-                        <div style={{ display: 'flex', gap: '15px', fontSize: '13px' }}>
-                          <span style={{ color: '#666' }}>F9: {front9}</span>
-                          <span style={{ color: '#666' }}>B9: {back9}</span>
-                          <span style={{ fontWeight: 'bold' }}>Total: {total}</span>
-                        </div>
-                      )}
                     </div>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
 
-          {/* Greenies section */}
-          {round.teams?.some(t => t.greenies && Object.values(t.greenies).some(g => g)) && (
-            <div style={{ marginTop: '20px' }}>
-              <h4 style={{ marginBottom: '10px' }}>Greenies</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                {[4, 8, 12, 17].map(hole => {
-                  const greenie = round.teams
-                    ?.flatMap(t => t.greenies?.[hole] ? [t.greenies[hole]] : [])
-                    ?.[0]
-                  return (
-                    <div key={hole} style={{
-                      background: greenie ? '#d4edda' : '#f8f9fa',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      textAlign: 'center',
-                      border: greenie ? '2px solid #27ae60' : '1px solid #e0e0e0'
-                    }}>
-                      <div style={{ fontWeight: 'bold' }}>Hole {hole}</div>
-                      <div style={{ fontSize: '13px', color: greenie ? '#27ae60' : '#999', marginTop: '4px' }}>
-                        {greenie?.playerName || 'No winner'}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Money Breakdown Toggle */}
-          <div style={{ marginTop: '20px' }}>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowMoney(!showMoney)}
-              style={{ width: '100%' }}
-            >
-              {showMoney ? 'Hide Money Breakdown' : 'Show Money Breakdown'}
-            </button>
-
-            {showMoney && settlement && (
-              <div style={{ marginTop: '15px' }}>
-                {/* Team Results */}
-                <h4 style={{ marginBottom: '10px' }}>Team Money</h4>
-                {settlement.teamSettlements.map(team => (
-                  <div key={team.teamId} style={{
-                    background: team.net > 0 ? '#d4edda' : team.net < 0 ? '#f8f9fa' : '#fff',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    marginBottom: '8px',
-                    border: team.net > 0 ? '2px solid #27ae60' : '1px solid #e0e0e0'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontWeight: 'bold' }}>{team.teamName}</div>
-                        <div style={{ fontSize: '11px', color: '#666' }}>
-                          {team.wins.length > 0 ? `Won: ${team.wins.join(', ')}` : 'No wins'}
-                        </div>
-                      </div>
-                      <div style={{
-                        fontWeight: 'bold',
-                        color: team.net > 0 ? '#27ae60' : team.net < 0 ? '#e74c3c' : '#333'
-                      }}>
-                        {formatMoney(team.net)}
-                        <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>
-                          (${Math.abs(team.perPlayerNet).toFixed(0)}/player)
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Player Breakdown */}
-                <h4 style={{ marginTop: '15px', marginBottom: '10px' }}>Player Breakdown</h4>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                    <thead>
-                      <tr style={{ background: '#f8f9fa' }}>
-                        <th style={{ padding: '8px', textAlign: 'left' }}>Player</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Team</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Greenies</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Net</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {settlement.playerSettlements
-                        .sort((a, b) => b.leagueNet - a.leagueNet)
-                        .map(player => (
-                          <tr key={player.playerId} style={{ borderBottom: '1px solid #e0e0e0' }}>
-                            <td style={{ padding: '8px' }}>{player.playerName}</td>
-                            <td style={{
-                              padding: '8px',
-                              textAlign: 'right',
-                              color: player.team.net >= 0 ? '#27ae60' : '#e74c3c'
-                            }}>
-                              {formatMoney(player.team.net)}
-                            </td>
-                            <td style={{
-                              padding: '8px',
-                              textAlign: 'right',
-                              color: player.greenies.net >= 0 ? '#27ae60' : '#e74c3c'
-                            }}>
-                              {formatMoney(player.greenies.net)}
-                            </td>
-                            <td style={{
-                              padding: '8px',
-                              textAlign: 'right',
-                              fontWeight: 'bold',
-                              color: player.leagueNet > 0 ? '#27ae60' : player.leagueNet < 0 ? '#e74c3c' : '#333'
-                            }}>
-                              {formatMoney(player.leagueNet)}
+                    {/* Scorecard Table */}
+                    <div style={{ overflowX: 'auto', border: '1px solid #e0e0e0', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', minWidth: '700px' }}>
+                        {/* Front 9 */}
+                        <thead>
+                          <tr style={{ background: '#1a472a', color: 'white' }}>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: '600', minWidth: '80px' }}>HOLE</th>
+                            {front9Holes.map(h => (
+                              <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center', minWidth: '32px' }}>{h.hole}</th>
+                            ))}
+                            <th style={{ padding: '8px 6px', textAlign: 'center', background: '#0d2818', minWidth: '40px' }}>OUT</th>
+                          </tr>
+                          <tr style={{ background: '#2d5a3d', color: 'white' }}>
+                            <td style={{ padding: '6px', fontWeight: '600' }}>PAR</td>
+                            {front9Holes.map(h => (
+                              <td key={h.hole} style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
+                            ))}
+                            <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#1a3d2a' }}>
+                              {front9Holes.reduce((sum, h) => sum + h.par, 0)}
                             </td>
                           </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody>
+                          {team.players?.map((player, pIdx) => {
+                            let front9Total = 0
+                            front9Holes.forEach(h => {
+                              const s = player.scores?.[h.hole]
+                              if (s && s !== 'X') front9Total += parseInt(s)
+                            })
+                            return (
+                              <tr key={player.id} style={{ background: pIdx % 2 === 0 ? '#fff' : '#f8f9fa' }}>
+                                <td style={{ padding: '8px 6px', fontWeight: '500', borderRight: '1px solid #e0e0e0' }}>
+                                  {player.name.split(' ')[0]}
+                                  {player.isDNF && <span style={{ color: '#e74c3c', fontSize: '9px', marginLeft: '4px' }}>DNF</span>}
+                                </td>
+                                {front9Holes.map(h => {
+                                  const score = player.scores?.[h.hole]
+                                  const scoreStyle = getScoreStyle(score, h.par)
+                                  const hasStyle = Object.keys(scoreStyle).length > 0
+                                  return (
+                                    <td key={h.hole} style={{
+                                      padding: '4px 2px', textAlign: 'center',
+                                      borderRight: '1px solid #eee'
+                                    }}>
+                                      {hasStyle ? (
+                                        <span style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          width: '24px',
+                                          height: '24px',
+                                          ...scoreStyle
+                                        }}>
+                                          {score}
+                                        </span>
+                                      ) : (
+                                        score || '-'
+                                      )}
+                                    </td>
+                                  )
+                                })}
+                                <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#e8f5e9', borderLeft: '2px solid #1a472a' }}>
+                                  {front9Total || '-'}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+
+                        {/* Back 9 */}
+                        <thead>
+                          <tr style={{ background: '#1a472a', color: 'white' }}>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: '600' }}>HOLE</th>
+                            {back9Holes.map(h => (
+                              <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center' }}>{h.hole}</th>
+                            ))}
+                            <th style={{ padding: '8px 6px', textAlign: 'center', background: '#0d2818' }}>IN</th>
+                          </tr>
+                          <tr style={{ background: '#2d5a3d', color: 'white' }}>
+                            <td style={{ padding: '6px', fontWeight: '600' }}>PAR</td>
+                            {back9Holes.map(h => (
+                              <td key={h.hole} style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
+                            ))}
+                            <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#1a3d2a' }}>
+                              {back9Holes.reduce((sum, h) => sum + h.par, 0)}
+                            </td>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {team.players?.map((player, pIdx) => {
+                            let front9Total = 0, back9Total = 0
+                            front9Holes.forEach(h => {
+                              const s = player.scores?.[h.hole]
+                              if (s && s !== 'X') front9Total += parseInt(s)
+                            })
+                            back9Holes.forEach(h => {
+                              const s = player.scores?.[h.hole]
+                              if (s && s !== 'X') back9Total += parseInt(s)
+                            })
+                            const totalScore = front9Total + back9Total
+                            return (
+                              <tr key={player.id} style={{ background: pIdx % 2 === 0 ? '#fff' : '#f8f9fa' }}>
+                                <td style={{ padding: '8px 6px', fontWeight: '500', borderRight: '1px solid #e0e0e0' }}>
+                                  {player.name.split(' ')[0]}
+                                </td>
+                                {back9Holes.map(h => {
+                                  const score = player.scores?.[h.hole]
+                                  const scoreStyle = getScoreStyle(score, h.par)
+                                  const hasStyle = Object.keys(scoreStyle).length > 0
+                                  return (
+                                    <td key={h.hole} style={{
+                                      padding: '4px 2px', textAlign: 'center',
+                                      borderRight: '1px solid #eee'
+                                    }}>
+                                      {hasStyle ? (
+                                        <span style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          width: '24px',
+                                          height: '24px',
+                                          ...scoreStyle
+                                        }}>
+                                          {score}
+                                        </span>
+                                      ) : (
+                                        score || '-'
+                                      )}
+                                    </td>
+                                  )
+                                })}
+                                <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#e8f5e9', borderLeft: '2px solid #1a472a' }}>
+                                  {back9Total || '-'}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Greenies section */}
+              {round.teams?.some(t => t.greenies && Object.values(t.greenies).some(g => g)) && (
+                <div style={{ marginTop: '20px' }}>
+                  <h4 style={{ marginBottom: '10px' }}>Greenies</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                    {[4, 8, 12, 17].map(hole => {
+                      const greenie = round.teams
+                        ?.flatMap(t => t.greenies?.[hole] ? [t.greenies[hole]] : [])
+                        ?.[0]
+                      return (
+                        <div key={hole} style={{
+                          background: greenie?.playerName ? '#d4edda' : '#f8f9fa',
+                          padding: '12px',
+                          borderRadius: '8px',
+                          textAlign: 'center',
+                          border: greenie?.playerName ? '2px solid #27ae60' : '1px solid #e0e0e0'
+                        }}>
+                          <div style={{ fontWeight: 'bold' }}>Hole {hole}</div>
+                          <div style={{ fontSize: '13px', color: greenie?.playerName ? '#27ae60' : '#999', marginTop: '4px' }}>
+                            {greenie?.playerName || 'No winner'}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
+              )}
+
+              {/* Score Legend */}
+              <div style={{ marginTop: '20px', display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '12px', justifyContent: 'center' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    width: '22px',
+                    height: '22px',
+                    background: '#fff8e1',
+                    border: '2px double #f39c12',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: '700'
+                  }}>2</span> Eagle+
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    width: '22px',
+                    height: '22px',
+                    background: '#e8f5e9',
+                    border: '2px solid #27ae60',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: '600'
+                  }}>3</span> Birdie
+                </span>
               </div>
-            )}
-          </div>
+            </>
+          )}
+
+          {activeTab === 'money' && settlement && (
+            <MoneySettlement round={round} settlement={settlement} payoutFormats={payoutFormats} />
+          )}
         </div>
       </div>
     </div>
@@ -406,10 +876,43 @@ function HistoryPage() {
   const [viewingRound, setViewingRound] = useState(null)
   const [deletingRound, setDeletingRound] = useState(null)
 
+  // Filter state
+  const [historyFilter, setHistoryFilter] = useState('all')
+  const [historyFilterYear, setHistoryFilterYear] = useState(new Date().getFullYear())
+  const [historyFilterStartDate, setHistoryFilterStartDate] = useState('')
+  const [historyFilterEndDate, setHistoryFilterEndDate] = useState('')
+  const [historyFilterLastX, setHistoryFilterLastX] = useState(5)
+
   const handleDeleteRound = (roundId) => {
     setHistory(history.filter(r => r.id !== roundId))
     setDeletingRound(null)
   }
+
+  // Get available years from history
+  const availableYears = [...new Set(history.map(r => new Date(r.date).getFullYear()))].sort((a, b) => b - a)
+
+  // Apply filters
+  const getFilteredHistory = () => {
+    let filtered = [...history]
+
+    if (historyFilter === 'year') {
+      filtered = filtered.filter(r => new Date(r.date).getFullYear() === historyFilterYear)
+    } else if (historyFilter === 'range' && historyFilterStartDate && historyFilterEndDate) {
+      const start = new Date(historyFilterStartDate)
+      const end = new Date(historyFilterEndDate)
+      end.setHours(23, 59, 59) // Include the end date fully
+      filtered = filtered.filter(r => {
+        const rDate = new Date(r.date)
+        return rDate >= start && rDate <= end
+      })
+    } else if (historyFilter === 'lastX') {
+      filtered = filtered.slice(0, historyFilterLastX)
+    }
+
+    return filtered
+  }
+
+  const filteredHistory = getFilteredHistory()
 
   return (
     <div>
@@ -422,19 +925,84 @@ function HistoryPage() {
         </div>
       ) : (
         <>
-          <div className="alert alert-info" style={{ marginBottom: '20px' }}>
-            {history.length} round{history.length !== 1 ? 's' : ''} recorded
+          {/* Filter Bar */}
+          <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+              <select
+                value={historyFilter}
+                onChange={(e) => setHistoryFilter(e.target.value)}
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+              >
+                <option value="all">All Rounds</option>
+                <option value="year">By Year</option>
+                <option value="range">Date Range</option>
+                <option value="lastX">Last X Rounds</option>
+              </select>
+
+              {historyFilter === 'year' && availableYears.length > 0 && (
+                <select
+                  value={historyFilterYear}
+                  onChange={(e) => setHistoryFilterYear(parseInt(e.target.value))}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                >
+                  {availableYears.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              )}
+
+              {historyFilter === 'range' && (
+                <>
+                  <input
+                    type="date"
+                    value={historyFilterStartDate}
+                    onChange={(e) => setHistoryFilterStartDate(e.target.value)}
+                    style={{ padding: '8px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                  />
+                  <span style={{ color: '#666' }}>to</span>
+                  <input
+                    type="date"
+                    value={historyFilterEndDate}
+                    onChange={(e) => setHistoryFilterEndDate(e.target.value)}
+                    style={{ padding: '8px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                  />
+                </>
+              )}
+
+              {historyFilter === 'lastX' && (
+                <select
+                  value={historyFilterLastX}
+                  onChange={(e) => setHistoryFilterLastX(parseInt(e.target.value))}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                >
+                  <option value="3">Last 3</option>
+                  <option value="5">Last 5</option>
+                  <option value="10">Last 10</option>
+                  <option value="20">Last 20</option>
+                </select>
+              )}
+
+              <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#666' }}>
+                Showing {filteredHistory.length} of {history.length} round{history.length !== 1 ? 's' : ''}
+              </span>
+            </div>
           </div>
 
-          {history.map(round => (
-            <RoundCard
-              key={round.id}
-              round={round}
-              onView={setViewingRound}
-              onDelete={setDeletingRound}
-              isAdmin={isAdmin}
-            />
-          ))}
+          {filteredHistory.length === 0 ? (
+            <div className="alert alert-info">
+              No rounds match the selected filter.
+            </div>
+          ) : (
+            filteredHistory.map(round => (
+              <RoundCard
+                key={round.id}
+                round={round}
+                onView={setViewingRound}
+                onDelete={setDeletingRound}
+                isAdmin={isAdmin}
+              />
+            ))
+          )}
         </>
       )}
 
