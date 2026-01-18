@@ -190,6 +190,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees }) {
       avgTotal: 0,
       teammates: {},
       recentTeammates: [],
+      lastRoundTeammates: [],
       scoreHistory: [],
       holeStats: {},
       isActive: true

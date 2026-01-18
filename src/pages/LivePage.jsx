@@ -6149,6 +6149,26 @@ function LivePage() {
         }
       }
 
+      // Update recent teammates for variety in team generation
+      // Find the team this player was on
+      const playerTeam = liveRound.teams.find(t => t.players.some(p => p.id === player.id))
+      if (playerTeam) {
+        // Get IDs of teammates (excluding self)
+        const currentTeammateIds = playerTeam.players
+          .filter(p => p.id !== player.id && !p.isDNF)
+          .map(p => p.id)
+
+        // Previous round's teammates (if any)
+        const previousTeammates = player.lastRoundTeammates || []
+
+        // recentTeammates = last 2 rounds combined (current + previous)
+        updatedPlayer = {
+          ...updatedPlayer,
+          recentTeammates: [...new Set([...currentTeammateIds, ...previousTeammates])],
+          lastRoundTeammates: currentTeammateIds
+        }
+      }
+
       return updatedPlayer
     })
 
