@@ -470,7 +470,7 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
   )
 }
 
-function SkinsResults({ round }) {
+function SkinsResults({ round, onUpdatePaidSettlements }) {
   const [skinsView, setSkinsView] = useState('front')
 
   const skinsMatch = round.skinsMatch
@@ -531,10 +531,22 @@ function SkinsResults({ round }) {
           }
         } else {
           let skinValue = 1
-          if (skinsMatch.settings.birdieDoubleEagleTriple) {
-            const diff = winner.score - par
-            if (diff === -1) skinValue = 2
-            else if (diff <= -2) skinValue = 3
+          const score = winner.score
+          const scoreToPar = score - par
+          const s = skinsMatch.settings
+
+          // Check for backwards compatibility with old setting
+          if (s.birdieDoubleEagleTriple) {
+            if (scoreToPar === -1) skinValue = 2
+            else if (scoreToPar <= -2) skinValue = 3
+          } else {
+            // Use flexible multipliers - apply highest applicable
+            const multipliers = []
+            if (score === 1 && s.holeInOneMultiplier > 1) multipliers.push(s.holeInOneMultiplier)
+            if (scoreToPar <= -3 && s.doubleEagleMultiplier > 1) multipliers.push(s.doubleEagleMultiplier)
+            if (scoreToPar === -2 && s.eagleMultiplier > 1) multipliers.push(s.eagleMultiplier)
+            if (scoreToPar === -1 && s.birdieMultiplier > 1) multipliers.push(s.birdieMultiplier)
+            if (multipliers.length > 0) skinValue = Math.max(...multipliers)
           }
 
           if (skinsMatch.settings.carryovers && carryoverCount > 0) {
@@ -674,7 +686,16 @@ function SkinsResults({ round }) {
           {skinsMatch.settings.carryovers && <span>Carryovers</span>}
           {skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && <span>Wrap to {skinsMatch.settings.wrapTo === 'front' ? 'Front 9' : 'Back 9'}</span>}
           {skinsMatch.settings.parOrBetterRequired && <span>Par or Better</span>}
-          {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie 2x/Eagle 3x</span>}
+          {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie ×2/Eagle ×3</span>}
+          {!skinsMatch.settings.birdieDoubleEagleTriple && (() => {
+            const s = skinsMatch.settings
+            const parts = []
+            if (s.birdieMultiplier > 1) parts.push(`Birdie ×${s.birdieMultiplier}`)
+            if (s.eagleMultiplier > 1) parts.push(`Eagle ×${s.eagleMultiplier}`)
+            if (s.doubleEagleMultiplier > 1) parts.push(`Dbl Eagle ×${s.doubleEagleMultiplier}`)
+            if (s.holeInOneMultiplier > 1) parts.push(`HIO ×${s.holeInOneMultiplier}`)
+            return parts.length > 0 ? <span style={{ color: '#9c27b0' }}>{parts.join(', ')}</span> : null
+          })()}
         </div>
       </div>
 
@@ -790,6 +811,11 @@ function SkinsResults({ round }) {
                           borderRadius: '4px'
                         }}>
                           {hasScore ? (score === 'X' ? 'X' : score) : '-'}
+                          {holeResult.winner === player.id && holeResult.skinValue > 1 && (
+                            <div style={{ fontSize: '8px', color: '#9c27b0', fontWeight: '700', marginTop: '1px' }}>
+                              ×{holeResult.skinValue}
+                            </div>
+                          )}
                           {holeResult.winner === player.id && holeResult.carryoverCount > 0 && (
                             <div style={{ fontSize: '8px', color: '#2e7d32', marginTop: '1px' }}>
                               +{holeResult.carryoverCount}
@@ -806,7 +832,13 @@ function SkinsResults({ round }) {
                       background: pSummary.skinsWon > 0 ? '#fff3e0' : '#f5f5f5',
                       color: pSummary.skinsWon > 0 ? '#e65100' : '#999'
                     }}>
-                      {pSummary.skinsWon}
+                      {(() => {
+                        const s = skinsMatch.settings
+                        const hasMultipliers = s.birdieDoubleEagleTriple || s.birdieMultiplier > 1 || s.eagleMultiplier > 1 || s.doubleEagleMultiplier > 1 || s.holeInOneMultiplier > 1
+                        return hasMultipliers && pSummary.totalValue !== pSummary.skinsWon
+                          ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: '#9c27b0' }}>({pSummary.skinsWon})</span></span>
+                          : pSummary.skinsWon
+                      })()}
                     </td>
                   </tr>
                 )
@@ -826,6 +858,29 @@ function SkinsResults({ round }) {
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, #e8f5e9, #e8f5e9 3px, #c8e6c9 3px, #c8e6c9 6px)', border: '2px solid #81c784', borderRadius: '3px' }}></span> Won w/ Carryover
           </span>
+          {(() => {
+            const s = skinsMatch.settings
+            if (s.birdieDoubleEagleTriple) {
+              return (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ color: '#9c27b0', fontWeight: '700' }}>×2/×3</span> Birdie/Eagle
+                </span>
+              )
+            }
+            const parts = []
+            if (s.birdieMultiplier > 1) parts.push(`Birdie ×${s.birdieMultiplier}`)
+            if (s.eagleMultiplier > 1) parts.push(`Eagle ×${s.eagleMultiplier}`)
+            if (s.doubleEagleMultiplier > 1) parts.push(`Dbl Eagle ×${s.doubleEagleMultiplier}`)
+            if (s.holeInOneMultiplier > 1) parts.push(`HIO ×${s.holeInOneMultiplier}`)
+            if (parts.length > 0) {
+              return (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ color: '#9c27b0', fontWeight: '700' }}>{parts.join(', ')}</span>
+                </span>
+              )
+            }
+            return null
+          })()}
         </div>
       </div>
 
@@ -909,20 +964,100 @@ function SkinsResults({ round }) {
                 return <div style={{ color: '#666', fontSize: '12px' }}>Everyone is even!</div>
               }
 
-              return settlements.map((s, idx) => (
-                <div key={idx} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 0',
-                  borderBottom: idx < settlements.length - 1 ? '1px solid #e8f5e9' : 'none',
-                  fontSize: '13px'
-                }}>
-                  <span style={{ color: '#e74c3c' }}>{s.from}</span>
-                  <span style={{ margin: '0 8px', color: '#666' }}>owes</span>
-                  <span style={{ color: '#27ae60' }}>{s.to}</span>
-                  <span style={{ marginLeft: 'auto', fontWeight: '700', color: '#27ae60' }}>${s.amount.toFixed(2)}</span>
-                </div>
-              ))
+              const paidSettlements = skinsMatch.paidSettlements || {}
+              const paidCount = settlements.filter(s => paidSettlements[`${s.from}->${s.to}`]).length
+              const remainingCount = settlements.length - paidCount
+
+              const togglePaid = (from, to) => {
+                const key = `${from}->${to}`
+                const newPaidSettlements = { ...paidSettlements, [key]: !paidSettlements[key] }
+                if (onUpdatePaidSettlements) {
+                  onUpdatePaidSettlements(newPaidSettlements)
+                }
+              }
+
+              // Sort: unpaid first, then paid
+              const sortedSettlements = [...settlements].sort((a, b) => {
+                const aKey = `${a.from}->${a.to}`
+                const bKey = `${b.from}->${b.to}`
+                const aPaid = paidSettlements[aKey] || false
+                const bPaid = paidSettlements[bKey] || false
+                if (aPaid === bPaid) return 0
+                return aPaid ? 1 : -1
+              })
+
+              return (
+                <>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '10px',
+                    padding: '6px 10px',
+                    background: remainingCount === 0 ? '#d4edda' : '#fff3cd',
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  }}>
+                    <span>
+                      {remainingCount === 0 ? (
+                        <span style={{ color: '#27ae60', fontWeight: '600' }}>✓ All payments complete!</span>
+                      ) : (
+                        <span style={{ color: '#856404' }}>
+                          <strong>{remainingCount}</strong> payment{remainingCount !== 1 ? 's' : ''} remaining
+                        </span>
+                      )}
+                    </span>
+                    {paidCount > 0 && (
+                      <span style={{ color: '#666' }}>
+                        {paidCount} of {settlements.length} paid
+                      </span>
+                    )}
+                  </div>
+                  {sortedSettlements.map((s, idx) => {
+                    const key = `${s.from}->${s.to}`
+                    const isPaid = paidSettlements[key] || false
+                    return (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '6px 0',
+                        borderBottom: idx < sortedSettlements.length - 1 ? '1px solid #e8f5e9' : 'none',
+                        fontSize: '13px',
+                        opacity: isPaid ? 0.75 : 1
+                      }}>
+                        <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginRight: '10px' }}>
+                          <input
+                            type="checkbox"
+                            checked={isPaid}
+                            onChange={() => togglePaid(s.from, s.to)}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                          />
+                        </label>
+                        <span style={{
+                          color: '#e74c3c',
+                          textDecoration: isPaid ? 'line-through' : 'none'
+                        }}>{s.from}</span>
+                        <span style={{ margin: '0 8px', color: '#666' }}>owes</span>
+                        <span style={{
+                          color: '#27ae60',
+                          textDecoration: isPaid ? 'line-through' : 'none'
+                        }}>{s.to}</span>
+                        <span style={{
+                          marginLeft: 'auto',
+                          fontWeight: '700',
+                          color: isPaid ? '#999' : '#27ae60',
+                          textDecoration: isPaid ? 'line-through' : 'none'
+                        }}>${s.amount.toFixed(2)}</span>
+                        {isPaid && (
+                          <span style={{ marginLeft: '8px', color: '#27ae60', fontSize: '11px', fontWeight: '600' }}>
+                            ✓ PAID
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </>
+              )
             })()}
           </div>
         </div>
@@ -931,7 +1066,7 @@ function SkinsResults({ round }) {
   )
 }
 
-function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot }) {
+function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdatePaidSettlements }) {
   const [showMoney, setShowMoney] = useState(false)
   const [activeTab, setActiveTab] = useState('scorecard')
 
@@ -1296,7 +1431,7 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot }) {
           )}
 
           {activeTab === 'skins' && round.skinsMatch && (
-            <SkinsResults round={round} />
+            <SkinsResults round={round} onUpdatePaidSettlements={onUpdatePaidSettlements} />
           )}
         </div>
       </div>
@@ -1397,10 +1532,20 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
         const meetsParRequirement = !skinsMatch.settings.parOrBetterRequired || winner.score <= par
         if (meetsParRequirement && summary[winner.playerId]) {
           let skinValue = 1
-          if (skinsMatch.settings.birdieDoubleEagleTriple) {
-            const diff = winner.score - par
-            if (diff === -1) skinValue = 2
-            else if (diff <= -2) skinValue = 3
+          const score = winner.score
+          const scoreToPar = score - par
+          const s = skinsMatch.settings
+
+          if (s.birdieDoubleEagleTriple) {
+            if (scoreToPar === -1) skinValue = 2
+            else if (scoreToPar <= -2) skinValue = 3
+          } else {
+            const multipliers = []
+            if (score === 1 && s.holeInOneMultiplier > 1) multipliers.push(s.holeInOneMultiplier)
+            if (scoreToPar <= -3 && s.doubleEagleMultiplier > 1) multipliers.push(s.doubleEagleMultiplier)
+            if (scoreToPar === -2 && s.eagleMultiplier > 1) multipliers.push(s.eagleMultiplier)
+            if (scoreToPar === -1 && s.birdieMultiplier > 1) multipliers.push(s.birdieMultiplier)
+            if (multipliers.length > 0) skinValue = Math.max(...multipliers)
           }
           summary[winner.playerId].totalValue += skinValue + carryoverCount
           carryoverCount = 0
@@ -1510,7 +1655,7 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
 }
 
 // Quick Skins Detail Modal
-function QuickSkinsDetailModal({ record, onClose }) {
+function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
   const [skinsView, setSkinsView] = useState('front')
 
   if (!record || !record.skinsMatch) return null
@@ -1606,10 +1751,20 @@ function QuickSkinsDetailModal({ record, onClose }) {
           // We have a winner
           holeWinner = winner
           let skinValue = 1
-          if (skinsMatch.settings.birdieDoubleEagleTriple) {
-            const diff = winner.score - par
-            if (diff === -1) skinValue = 2
-            else if (diff <= -2) skinValue = 3
+          const score = winner.score
+          const scoreToPar = score - par
+          const s = skinsMatch.settings
+
+          if (s.birdieDoubleEagleTriple) {
+            if (scoreToPar === -1) skinValue = 2
+            else if (scoreToPar <= -2) skinValue = 3
+          } else {
+            const multipliers = []
+            if (score === 1 && s.holeInOneMultiplier > 1) multipliers.push(s.holeInOneMultiplier)
+            if (scoreToPar <= -3 && s.doubleEagleMultiplier > 1) multipliers.push(s.doubleEagleMultiplier)
+            if (scoreToPar === -2 && s.eagleMultiplier > 1) multipliers.push(s.eagleMultiplier)
+            if (scoreToPar === -1 && s.birdieMultiplier > 1) multipliers.push(s.birdieMultiplier)
+            if (multipliers.length > 0) skinValue = Math.max(...multipliers)
           }
 
           results[hole].winner = winner.playerId
@@ -1954,6 +2109,15 @@ function QuickSkinsDetailModal({ record, onClose }) {
               )}
               {skinsMatch.settings.parOrBetterRequired && <span>Par or better required</span>}
               {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie 2x / Eagle 3x</span>}
+              {!skinsMatch.settings.birdieDoubleEagleTriple && (() => {
+                const s = skinsMatch.settings
+                const parts = []
+                if (s.birdieMultiplier > 1) parts.push(`Birdie ×${s.birdieMultiplier}`)
+                if (s.eagleMultiplier > 1) parts.push(`Eagle ×${s.eagleMultiplier}`)
+                if (s.doubleEagleMultiplier > 1) parts.push(`Dbl Eagle ×${s.doubleEagleMultiplier}`)
+                if (s.holeInOneMultiplier > 1) parts.push(`HIO ×${s.holeInOneMultiplier}`)
+                return parts.length > 0 ? <span style={{ color: '#9c27b0' }}>{parts.join(', ')}</span> : null
+              })()}
             </div>
             {/* Show player eligibility if participantDetails exists */}
             {skinsMatch.participantDetails && Object.keys(skinsMatch.participantDetails).length > 0 && (
@@ -2132,6 +2296,9 @@ function QuickSkinsDetailModal({ record, onClose }) {
                               fontWeight: isWinner ? '700' : 'normal'
                             }}>
                               {score === 'X' ? 'X' : score || '-'}
+                              {isWinner && result.skinValue > 1 && (
+                                <div style={{ fontSize: '8px', color: '#9c27b0', fontWeight: '700', marginTop: '1px' }}>×{result.skinValue}</div>
+                              )}
                               {isWinner && result.carryoverCount > 0 && (
                                 <div style={{ fontSize: '8px', color: '#2e7d32', marginTop: '1px' }}>+{result.carryoverCount}</div>
                               )}
@@ -2139,13 +2306,54 @@ function QuickSkinsDetailModal({ record, onClose }) {
                           )
                         })}
                         <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#fff3cd' }}>
-                          {pSummary.skinsWon}
+                          {(() => {
+                            const s = skinsMatch.settings
+                            const hasMultipliers = s.birdieDoubleEagleTriple || s.birdieMultiplier > 1 || s.eagleMultiplier > 1 || s.doubleEagleMultiplier > 1 || s.holeInOneMultiplier > 1
+                            return hasMultipliers && pSummary.totalValue !== pSummary.skinsWon
+                              ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: '#9c27b0' }}>({pSummary.skinsWon})</span></span>
+                              : pSummary.skinsWon
+                          })()}
                         </td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
+            </div>
+            {/* Legend */}
+            <div style={{ padding: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '11px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '14px', height: '14px', background: '#ffebee', border: '2px solid #ef9a9a', borderRadius: '3px' }}></span> Push
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '14px', height: '14px', background: '#d4edda', border: '2px solid #28a745', borderRadius: '3px' }}></span> Won
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, #e8f5e9, #e8f5e9 3px, #c8e6c9 3px, #c8e6c9 6px)', border: '2px solid #81c784', borderRadius: '3px' }}></span> Carryover
+              </span>
+              {(() => {
+                const s = skinsMatch.settings
+                if (s.birdieDoubleEagleTriple) {
+                  return (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: '#9c27b0', fontWeight: '700' }}>×2/×3</span> Birdie/Eagle
+                    </span>
+                  )
+                }
+                const parts = []
+                if (s.birdieMultiplier > 1) parts.push(`Birdie ×${s.birdieMultiplier}`)
+                if (s.eagleMultiplier > 1) parts.push(`Eagle ×${s.eagleMultiplier}`)
+                if (s.doubleEagleMultiplier > 1) parts.push(`Dbl Eagle ×${s.doubleEagleMultiplier}`)
+                if (s.holeInOneMultiplier > 1) parts.push(`HIO ×${s.holeInOneMultiplier}`)
+                if (parts.length > 0) {
+                  return (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: '#9c27b0', fontWeight: '700' }}>{parts.join(', ')}</span>
+                    </span>
+                  )
+                }
+                return null
+              })()}
             </div>
           </div>
 
@@ -2274,18 +2482,93 @@ function QuickSkinsDetailModal({ record, onClose }) {
                 return <div style={{ color: '#666', textAlign: 'center' }}>No settlements needed</div>
               }
 
-              return settlements.map((s, idx) => (
-                <div key={idx} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px 0',
-                  borderBottom: idx < settlements.length - 1 ? '1px solid #eee' : 'none'
-                }}>
-                  <span><strong>{s.from}</strong> owes <strong>{s.to}</strong></span>
-                  <span style={{ fontWeight: '700', color: '#e74c3c' }}>${s.amount.toFixed(0)}</span>
-                </div>
-              ))
+              const paidSettlements = record.paidSettlements || {}
+              const paidCount = settlements.filter(s => paidSettlements[`${s.from}->${s.to}`]).length
+              const remainingCount = settlements.length - paidCount
+
+              const togglePaid = (from, to) => {
+                const key = `${from}->${to}`
+                const newPaidSettlements = { ...paidSettlements, [key]: !paidSettlements[key] }
+                if (onUpdatePaidSettlements) {
+                  onUpdatePaidSettlements(newPaidSettlements)
+                }
+              }
+
+              // Sort: unpaid first, then paid
+              const sortedSettlements = [...settlements].sort((a, b) => {
+                const aKey = `${a.from}->${a.to}`
+                const bKey = `${b.from}->${b.to}`
+                const aPaid = paidSettlements[aKey] || false
+                const bPaid = paidSettlements[bKey] || false
+                if (aPaid === bPaid) return 0
+                return aPaid ? 1 : -1
+              })
+
+              return (
+                <>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '10px',
+                    padding: '6px 10px',
+                    background: remainingCount === 0 ? '#d4edda' : '#fff3cd',
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  }}>
+                    <span>
+                      {remainingCount === 0 ? (
+                        <span style={{ color: '#27ae60', fontWeight: '600' }}>✓ All payments complete!</span>
+                      ) : (
+                        <span style={{ color: '#856404' }}>
+                          <strong>{remainingCount}</strong> payment{remainingCount !== 1 ? 's' : ''} remaining
+                        </span>
+                      )}
+                    </span>
+                    {paidCount > 0 && (
+                      <span style={{ color: '#666' }}>
+                        {paidCount} of {settlements.length} paid
+                      </span>
+                    )}
+                  </div>
+                  {sortedSettlements.map((s, idx) => {
+                    const key = `${s.from}->${s.to}`
+                    const isPaid = paidSettlements[key] || false
+                    return (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 0',
+                        borderBottom: idx < sortedSettlements.length - 1 ? '1px solid #eee' : 'none',
+                        opacity: isPaid ? 0.75 : 1
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <input
+                            type="checkbox"
+                            checked={isPaid}
+                            onChange={() => togglePaid(s.from, s.to)}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                          />
+                          <span style={{ textDecoration: isPaid ? 'line-through' : 'none' }}>
+                            <strong>{s.from}</strong> owes <strong>{s.to}</strong>
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{
+                            fontWeight: '700',
+                            color: isPaid ? '#999' : '#e74c3c',
+                            textDecoration: isPaid ? 'line-through' : 'none'
+                          }}>${s.amount.toFixed(0)}</span>
+                          {isPaid && (
+                            <span style={{ color: '#27ae60', fontSize: '11px', fontWeight: '600' }}>✓ PAID</span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </>
+              )
             })()}
           </div>
         </div>
@@ -2317,6 +2600,37 @@ function HistoryPage() {
   const handleDeleteQuickSkins = (recordId) => {
     setQuickSkinsHistory((quickSkinsHistory || []).filter(r => r.id !== recordId))
     setDeletingQuickSkins(null)
+  }
+
+  // Update paid settlements for a league round
+  const handleUpdateRoundPaidSettlements = (roundId, paidSettlements) => {
+    setHistory(history.map(r => {
+      if (r.id === roundId && r.skinsMatch) {
+        return { ...r, skinsMatch: { ...r.skinsMatch, paidSettlements } }
+      }
+      return r
+    }))
+    // Also update viewingRound if it's the same round
+    if (viewingRound?.id === roundId) {
+      setViewingRound(prev => ({
+        ...prev,
+        skinsMatch: { ...prev.skinsMatch, paidSettlements }
+      }))
+    }
+  }
+
+  // Update paid settlements for a quick skins record
+  const handleUpdateQuickSkinsPaidSettlements = (recordId, paidSettlements) => {
+    setQuickSkinsHistory((quickSkinsHistory || []).map(r => {
+      if (r.id === recordId) {
+        return { ...r, paidSettlements }
+      }
+      return r
+    }))
+    // Also update viewingQuickSkins if it's the same record
+    if (viewingQuickSkins?.id === recordId) {
+      setViewingQuickSkins(prev => ({ ...prev, paidSettlements }))
+    }
   }
 
   // Get available years from history
@@ -2543,6 +2857,7 @@ function HistoryPage() {
           onClose={() => setViewingRound(null)}
           payoutFormats={payoutFormats}
           holeInOnePot={holeInOnePot}
+          onUpdatePaidSettlements={(paidSettlements) => handleUpdateRoundPaidSettlements(viewingRound.id, paidSettlements)}
         />
       )}
 
@@ -2560,6 +2875,7 @@ function HistoryPage() {
         <QuickSkinsDetailModal
           record={viewingQuickSkins}
           onClose={() => setViewingQuickSkins(null)}
+          onUpdatePaidSettlements={(paidSettlements) => handleUpdateQuickSkinsPaidSettlements(viewingQuickSkins.id, paidSettlements)}
         />
       )}
 

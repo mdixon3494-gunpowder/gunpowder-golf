@@ -403,14 +403,15 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
 }
 
 // Score Entry Component - Legacy Style
-function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie }) {
+function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins }) {
   const [activeInput, setActiveInput] = useState(null)
   const [keypadValue, setKeypadValue] = useState('')
   const [isFirstKeypress, setIsFirstKeypress] = useState(true)
   const [trackedPlayers, setTrackedPlayers] = useState({}) // { [teamId]: Set of player IDs being tracked }
   const [showPlayerSelector, setShowPlayerSelector] = useState(false)
   const [greeniePrompt, setGreeniePrompt] = useState(null) // { hole: number, isLastTeam: boolean } when showing prompt
-  const [markGreenieAsFinal, setMarkGreenieAsFinal] = useState(true) // Default to checked when last team
+  const [markGreenieAsFinal, setMarkGreenieAsFinal] = useState(false) // User must explicitly check to mark as final
+  const [greenieSelectedPlayer, setGreenieSelectedPlayer] = useState(null) // Selected player in greenie prompt
 
   const selectedTeam = selectedTeamId !== null
     ? liveRound.teams.find(t => t.id === selectedTeamId)
@@ -584,7 +585,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                   return score !== undefined && score !== null && score !== ''
                 })
               })
-            setMarkGreenieAsFinal(otherTeamsFinishedHole) // Default to checked if last team
+            setMarkGreenieAsFinal(false) // User must explicitly check to mark as final
             setGreeniePrompt({ hole: activeInput.hole, isLastTeam: otherTeamsFinishedHole })
           }
         }
@@ -733,35 +734,37 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
           {selectedTeam.isFinished && <span style={{ fontSize: '14px', fontWeight: '600' }}>✓ Done</span>}
         </div>
 
-        {/* Team Score Summary */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '30px',
-          marginTop: '15px',
-          padding: '10px',
-          background: 'rgba(255,255,255,0.15)',
-          borderRadius: '8px'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', opacity: 0.8 }}>FRONT</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
-              {frontTotal === 0 ? 'E' : (frontTotal > 0 ? '+' : '') + frontTotal}
+        {/* Team Score Summary - Hide in Quick Skins mode */}
+        {!isQuickSkins && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '30px',
+            marginTop: '15px',
+            padding: '10px',
+            background: 'rgba(255,255,255,0.15)',
+            borderRadius: '8px'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', opacity: 0.8 }}>FRONT</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                {frontTotal === 0 ? 'E' : (frontTotal > 0 ? '+' : '') + frontTotal}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', opacity: 0.8 }}>BACK</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                {backTotal === 0 ? 'E' : (backTotal > 0 ? '+' : '') + backTotal}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '11px', opacity: 0.8 }}>TOTAL</div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                {(frontTotal + backTotal) === 0 ? 'E' : ((frontTotal + backTotal) > 0 ? '+' : '') + (frontTotal + backTotal)}
+              </div>
             </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', opacity: 0.8 }}>BACK</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
-              {backTotal === 0 ? 'E' : (backTotal > 0 ? '+' : '') + backTotal}
-            </div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', opacity: 0.8 }}>TOTAL</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
-              {(frontTotal + backTotal) === 0 ? 'E' : ((frontTotal + backTotal) > 0 ? '+' : '') + (frontTotal + backTotal)}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Player Tracking Selector */}
@@ -1224,7 +1227,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
               <p style={{ margin: '5px 0 0 0', fontSize: '14px', opacity: 0.9 }}>Who got the greenie?</p>
             </div>
 
-            {/* Players remaining info and Mark as Final checkbox */}
+            {/* Players remaining info */}
             {(() => {
               const allActivePlayers = liveRound.teams.flatMap(t => t.players.filter(p => !p.isDNF))
               const totalPlayers = allActivePlayers.length
@@ -1233,96 +1236,140 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 return score !== undefined && score !== null && score !== ''
               }).length
 
-              return (
-                <>
-                  {!greeniePrompt.isLastTeam && playersCompleted < totalPlayers && (
-                    <div style={{
-                      padding: '10px 12px',
-                      background: '#e3f2fd',
-                      borderRadius: '8px',
-                      marginBottom: '15px',
-                      textAlign: 'center',
-                      fontSize: '13px',
-                      color: '#1976d2',
-                      border: '1px solid #90caf9'
-                    }}>
-                      <strong>{playersCompleted}</strong> of <strong>{totalPlayers}</strong> players have played this hole
-                    </div>
-                  )}
-                  {greeniePrompt.isLastTeam && (
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '12px',
-                      background: '#fff3e0',
-                      borderRadius: '8px',
-                      marginBottom: '15px',
-                      cursor: 'pointer',
-                      border: '2px solid #f39c12'
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={markGreenieAsFinal}
-                        onChange={(e) => setMarkGreenieAsFinal(e.target.checked)}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                      />
-                      <div>
-                        <div style={{ fontWeight: '600', color: '#e67e22' }}>Mark as Final</div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>All teams have played this hole</div>
-                      </div>
-                    </label>
-                  )}
-                </>
+              return playersCompleted < totalPlayers ? (
+                <div style={{
+                  padding: '10px 12px',
+                  background: '#e3f2fd',
+                  borderRadius: '8px',
+                  marginBottom: '15px',
+                  textAlign: 'center',
+                  fontSize: '13px',
+                  color: '#1976d2',
+                  border: '1px solid #90caf9'
+                }}>
+                  <strong>{playersCompleted}</strong> of <strong>{totalPlayers}</strong> players have played this hole
+                </div>
+              ) : (
+                <div style={{
+                  padding: '10px 12px',
+                  background: '#d4edda',
+                  borderRadius: '8px',
+                  marginBottom: '15px',
+                  textAlign: 'center',
+                  fontSize: '13px',
+                  color: '#27ae60',
+                  border: '1px solid #27ae60'
+                }}>
+                  All players have completed this hole
+                </div>
               )
             })()}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {liveRound.teams.flatMap(team =>
-                team.players.filter(p => !p.isDNF).map(player => (
-                  <button
-                    key={player.id}
-                    onClick={() => {
-                      onUpdateGreenie(greeniePrompt.hole, player, greeniePrompt.isLastTeam && markGreenieAsFinal)
-                      setGreeniePrompt(null)
-                    }}
-                    style={{
-                      padding: '12px 15px',
-                      background: 'white',
-                      border: '2px solid #27ae60',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      textAlign: 'left',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <span>{player.name}</span>
-                    <span style={{ fontSize: '12px', color: '#666' }}>{team.name}</span>
-                  </button>
-                ))
+                team.players.filter(p => !p.isDNF).map(player => {
+                  const isSelected = greenieSelectedPlayer?.id === player.id
+                  return (
+                    <button
+                      key={player.id}
+                      onClick={() => setGreenieSelectedPlayer(player)}
+                      style={{
+                        padding: '12px 15px',
+                        background: isSelected ? '#e8f5e9' : 'white',
+                        border: isSelected ? '3px solid #27ae60' : '2px solid #ddd',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: isSelected ? '600' : '500',
+                        textAlign: 'left',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <span>{player.name}</span>
+                      <span style={{ fontSize: '12px', color: '#666' }}>{team.name}</span>
+                    </button>
+                  )
+                })
               )}
             </div>
 
-            <button
-              onClick={() => setGreeniePrompt(null)}
-              style={{
-                width: '100%',
-                marginTop: '15px',
+            {/* Mark as Final checkbox - shown after player selection */}
+            {greenieSelectedPlayer && (
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
                 padding: '12px',
-                background: '#f8f9fa',
-                border: '1px solid #ddd',
+                background: markGreenieAsFinal ? '#e8f5e9' : '#fff3e0',
                 borderRadius: '8px',
+                marginTop: '15px',
                 cursor: 'pointer',
-                fontSize: '14px',
-                color: '#666'
-              }}
-            >
-              No Greenie / Skip
-            </button>
+                border: markGreenieAsFinal ? '2px solid #27ae60' : '2px solid #f39c12'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={markGreenieAsFinal}
+                  onChange={(e) => setMarkGreenieAsFinal(e.target.checked)}
+                  style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                />
+                <div>
+                  <div style={{ fontWeight: '600', color: markGreenieAsFinal ? '#27ae60' : '#e67e22' }}>
+                    {markGreenieAsFinal ? 'Will be marked Final' : 'Mark as Final?'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    Check this if all teams have played this hole
+                  </div>
+                </div>
+              </label>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+              <button
+                onClick={() => {
+                  setGreeniePrompt(null)
+                  setGreenieSelectedPlayer(null)
+                  setMarkGreenieAsFinal(false)
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: '#f8f9fa',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  color: '#666'
+                }}
+              >
+                Skip
+              </button>
+              <button
+                onClick={() => {
+                  if (greenieSelectedPlayer) {
+                    onUpdateGreenie(greeniePrompt.hole, greenieSelectedPlayer, markGreenieAsFinal)
+                  }
+                  setGreeniePrompt(null)
+                  setGreenieSelectedPlayer(null)
+                  setMarkGreenieAsFinal(false)
+                }}
+                disabled={!greenieSelectedPlayer}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: greenieSelectedPlayer ? '#27ae60' : '#ccc',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: greenieSelectedPlayer ? 'pointer' : 'not-allowed',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1371,6 +1418,68 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
   const currentGreenie = getCurrentGreenie(selectedHole)
   const playersCompleted = getPlayersCompleted(selectedHole)
 
+  // Calculate carryover winners for display
+  const getCarryoverInfo = () => {
+    const greeniesCarryover = skinsMatch?.settings?.greeniesCarryover ?? true
+    if (!greeniesCarryover) return {}
+
+    // Check if a hole is fully completed (all eligible players have scores)
+    const isHoleCompleted = (hole) => {
+      const eligible = getEligiblePlayersForHole(hole)
+      return eligible.every(p => {
+        const score = p.scores?.[hole]
+        return score !== undefined && score !== null && score !== ''
+      })
+    }
+
+    const carryoverInfo = {} // { [hole]: { wonBy, wonByName, wonOnHole } }
+    const pendingCarryovers = []
+
+    PAR_3_HOLES.forEach(hole => {
+      // Only process holes that are fully completed
+      if (!isHoleCompleted(hole)) return
+
+      const greenie = getCurrentGreenie(hole)
+      if (greenie?.playerId) {
+        // This hole has a winner - check if it also won any carryovers
+        if (pendingCarryovers.length > 0) {
+          pendingCarryovers.forEach(co => {
+            carryoverInfo[co.fromHole] = {
+              wonBy: greenie.playerId,
+              wonByName: greenie.playerName,
+              wonOnHole: hole
+            }
+          })
+          pendingCarryovers.length = 0
+        }
+      } else {
+        // No winner on this hole - add to pending carryovers
+        pendingCarryovers.push({ fromHole: hole })
+      }
+    })
+
+    // If there are still pending carryovers after all holes, wrap to first winner
+    if (pendingCarryovers.length > 0) {
+      for (const hole of PAR_3_HOLES) {
+        const greenie = getCurrentGreenie(hole)
+        if (greenie?.playerId && greenie.isFinal) {
+          pendingCarryovers.forEach(co => {
+            carryoverInfo[co.fromHole] = {
+              wonBy: greenie.playerId,
+              wonByName: greenie.playerName,
+              wonOnHole: hole
+            }
+          })
+          break
+        }
+      }
+    }
+
+    return carryoverInfo
+  }
+
+  const carryoverInfo = getCarryoverInfo()
+
   return (
     <div>
       <div style={{
@@ -1388,6 +1497,8 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
             const completed = getPlayersCompleted(hole)
             const hasCurrentWinner = greenie && greenie.playerId
             const isCleared = greenie && !greenie.playerId && greenie.history?.length > 0
+            const coInfo = carryoverInfo[hole]
+            const hasCarryoverWinner = !hasCurrentWinner && coInfo
             return (
               <button
                 key={hole}
@@ -1398,7 +1509,7 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                   border: selectedHole === hole ? '3px solid #27ae60' : '1px solid #ddd',
                   background: hasCurrentWinner
                     ? (greenie.isFinal ? '#d4edda' : '#fff3e0')
-                    : (isCleared ? '#f5f5f5' : 'white'),
+                    : (hasCarryoverWinner ? '#fff3e0' : (isCleared ? '#f5f5f5' : 'white')),
                   cursor: 'pointer',
                   textAlign: 'center'
                 }}
@@ -1411,7 +1522,24 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                     {greenie.isFinal && <span style={{ marginLeft: '4px' }}>✓</span>}
                   </div>
                 )}
-                {greenie && !greenie.playerId && greenie.history?.length > 0 && (
+                {hasCarryoverWinner && (
+                  <>
+                    <div style={{ fontSize: '11px', color: '#e67e22', marginTop: '4px' }}>
+                      {coInfo.wonByName}
+                    </div>
+                    <div style={{
+                      fontSize: '9px',
+                      color: '#e67e22',
+                      background: '#fff3e0',
+                      padding: '1px 4px',
+                      borderRadius: '3px',
+                      marginTop: '2px'
+                    }}>
+                      ↗ #{coInfo.wonOnHole}
+                    </div>
+                  </>
+                )}
+                {isCleared && !hasCarryoverWinner && (
                   <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
                     (cleared)
                   </div>
@@ -1446,9 +1574,13 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                 const greenie = getCurrentGreenie(hole)
                 const completed = getPlayersCompleted(hole)
                 const eligibleForHole = getEligiblePlayersForHole(hole).length
+                const coInfo = carryoverInfo[hole]
+                const winnerDisplay = greenie?.playerId
+                  ? `- ${greenie.playerName}`
+                  : (coInfo ? `- ${coInfo.wonByName} (↗#${coInfo.wonOnHole})` : '')
                 return (
                   <option key={hole} value={hole}>
-                    Hole {hole} {greenie?.playerId ? `- ${greenie.playerName}` : ''} ({completed}/{eligibleForHole})
+                    Hole {hole} {winnerDisplay} ({completed}/{eligibleForHole})
                   </option>
                 )
               })}
@@ -1997,7 +2129,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
     wrapUnwonSkins: true,
     wrapTo: 'front',
     parOrBetterRequired: false,
-    birdieDoubleEagleTriple: false,
+    // Flexible multipliers (1 = no multiplier)
+    birdieMultiplier: 1,      // 1 or 2
+    eagleMultiplier: 1,       // 1, 2, or 3
+    doubleEagleMultiplier: 1, // 1, 2, 3, or 4
+    holeInOneMultiplier: 1,   // 1, 2, 3, 4, or 5
     // Greenie settings for Quick Skins
     greeniesEnabled: false,
     greeniesCostPerHole: 1,
@@ -2226,12 +2362,44 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
         results[hole].winnerName = holeWinner.playerName
         results[hole].winningScore = holeWinner.score
 
-        // Calculate skin value with birdie/eagle multiplier
+        // Calculate skin value with flexible multipliers
         let skinValue = 1
-        if (skinsMatch.settings.birdieDoubleEagleTriple) {
-          const scoreToPar = holeWinner.score - holeInfo.par
+        const score = holeWinner.score
+        const scoreToPar = score - holeInfo.par
+        const s = skinsMatch.settings
+
+        // Check for backwards compatibility with old birdieDoubleEagleTriple setting
+        if (s.birdieDoubleEagleTriple) {
           if (scoreToPar === -1) skinValue = 2
           else if (scoreToPar <= -2) skinValue = 3
+        } else {
+          // Use flexible multipliers - apply highest applicable
+          const multipliers = []
+
+          // Hole-in-one check (score of 1 on any hole)
+          if (score === 1 && s.holeInOneMultiplier > 1) {
+            multipliers.push(s.holeInOneMultiplier)
+          }
+
+          // Double eagle (albatross) or better: 3+ under par
+          if (scoreToPar <= -3 && s.doubleEagleMultiplier > 1) {
+            multipliers.push(s.doubleEagleMultiplier)
+          }
+
+          // Eagle: 2 under par
+          if (scoreToPar === -2 && s.eagleMultiplier > 1) {
+            multipliers.push(s.eagleMultiplier)
+          }
+
+          // Birdie: 1 under par
+          if (scoreToPar === -1 && s.birdieMultiplier > 1) {
+            multipliers.push(s.birdieMultiplier)
+          }
+
+          // Use highest applicable multiplier
+          if (multipliers.length > 0) {
+            skinValue = Math.max(...multipliers)
+          }
         }
         results[hole].skinValue = skinValue
       }
@@ -2329,28 +2497,29 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       // For each eligibility group, find the first winner among eligible players in wrap range
       Object.values(carryoversByEligibility).forEach(group => {
         for (const hole of searchHoles) {
-          if (!results[hole]?.winner) continue
-
-          // Check if hole winner is eligible for these carryovers
-          const holeWinnerId = String(results[hole].winner)
-          if (group.eligiblePlayerIds.includes(holeWinnerId)) {
-            // Winner is eligible - give them the carryovers
-            results[hole].carryoverCount = (results[hole].carryoverCount || 0) + group.holes.length
-            results[hole].carryoverFromHoles = [
-              ...(results[hole].carryoverFromHoles || []),
-              ...group.holes
-            ]
-            results[hole].hasWrappedCarryovers = true
-            break
+          // Check if hole has a direct winner who is eligible
+          if (results[hole]?.winner) {
+            const holeWinnerId = String(results[hole].winner)
+            if (group.eligiblePlayerIds.includes(holeWinnerId)) {
+              // Winner is eligible - give them the carryovers
+              results[hole].carryoverCount = (results[hole].carryoverCount || 0) + group.holes.length
+              results[hole].carryoverFromHoles = [
+                ...(results[hole].carryoverFromHoles || []),
+                ...group.holes
+              ]
+              results[hole].hasWrappedCarryovers = true
+              break
+            }
           }
 
-          // Check carryover winners on this hole too
-          const eligibleCoWinner = results[hole].carryoverWinners?.find(cw =>
+          // Check carryover winners on this hole too (even if hole itself was a tie)
+          const eligibleCoWinner = results[hole]?.carryoverWinners?.find(cw =>
             group.eligiblePlayerIds.includes(String(cw.playerId))
           )
           if (eligibleCoWinner) {
             eligibleCoWinner.count += group.holes.length
             eligibleCoWinner.fromHoles = [...eligibleCoWinner.fromHoles, ...group.holes]
+            eligibleCoWinner.hasWrappedCarryovers = true
             break
           }
 
@@ -2454,15 +2623,16 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       if (result.winner) {
         const playerId = String(result.winner)
         if (summary[playerId]) {
+          const skinValue = result.skinValue || 1  // Default to 1 if not set
           summary[playerId].skinsWon += 1
-          summary[playerId].totalValue += result.skinValue
-          summary[playerId].holes.push({ hole, value: result.skinValue })
+          summary[playerId].totalValue += skinValue
+          summary[playerId].holes.push({ hole, value: skinValue })
           totalSkinsWon += 1
 
           skinWins.push({
             hole,
             winnerId: playerId,
-            value: result.skinValue,
+            value: skinValue,
             activePlayerIds: result.activePlayers || skinsPlayers.map(p => String(p.id)),
             isCarryover: false
           })
@@ -2708,6 +2878,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
         greeniesWon: 0,
         totalPot: 0,
         holes: [],
+        holeDetails: [], // { hole, playerCount, pot, isCarryover, wonOnHole }
         carryoverWins: [],
         joinedOnHole: details.joinedOnHole || 1,
         leftOnHole: details.leftOnHole || 18,
@@ -2726,9 +2897,16 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       if (result.winner) {
         const playerId = String(result.winner)
         if (summary[playerId]) {
+          const holePot = cost * activePlayers.length
           summary[playerId].greeniesWon += 1
-          summary[playerId].totalPot += cost * activePlayers.length
+          summary[playerId].totalPot += holePot
           summary[playerId].holes.push(hole)
+          summary[playerId].holeDetails.push({
+            hole,
+            playerCount: activePlayers.length,
+            pot: holePot,
+            isCarryover: false
+          })
           totalGreeniesWon += 1
 
           greenieWins.push({
@@ -2745,7 +2923,15 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             result.carryoverFromHoles?.forEach(coHole => {
               const coResult = results[coHole]
               const coActivePlayers = coResult?.activePlayers || activePlayers
-              summary[playerId].totalPot += cost * coActivePlayers.length
+              const coPot = cost * coActivePlayers.length
+              summary[playerId].totalPot += coPot
+              summary[playerId].holeDetails.push({
+                hole: coHole,
+                playerCount: coActivePlayers.length,
+                pot: coPot,
+                isCarryover: true,
+                wonOnHole: hole
+              })
               greenieWins.push({
                 hole: coHole,
                 winnerId: playerId,
@@ -2774,7 +2960,15 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             cw.fromHoles?.forEach(coHole => {
               const coResult = results[coHole]
               const coActivePlayers = coResult?.activePlayers || cw.eligiblePlayerIds
-              summary[playerId].totalPot += cost * coActivePlayers.length
+              const coPot = cost * coActivePlayers.length
+              summary[playerId].totalPot += coPot
+              summary[playerId].holeDetails.push({
+                hole: coHole,
+                playerCount: coActivePlayers.length,
+                pot: coPot,
+                isCarryover: true,
+                wonOnHole: hole
+              })
               greenieWins.push({
                 hole: coHole,
                 winnerId: playerId,
@@ -2794,9 +2988,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       let amountWon = playerSummary.totalPot
       let amountPaid = 0
 
-      // Amount paid: cost for each greenie hole the player was active
+      // Amount paid: cost for each greenie hole the player was active (including holes they won)
       greenieWins.forEach(gw => {
-        if (gw.winnerId !== playerId && gw.activePlayerIds.includes(playerId)) {
+        if (gw.activePlayerIds.includes(playerId)) {
           amountPaid += cost
         }
       })
@@ -3037,14 +3231,127 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 )}
                 <div style={{ marginBottom: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Optional Rules</label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', cursor: 'pointer' }}>
                     <input type="checkbox" checked={settings.parOrBetterRequired} onChange={e => setSettings({ ...settings, parOrBetterRequired: e.target.checked })} style={{ width: '18px', height: '18px' }} />
                     <span>Par or better required to win</span>
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={settings.birdieDoubleEagleTriple} onChange={e => setSettings({ ...settings, birdieDoubleEagleTriple: e.target.checked })} style={{ width: '18px', height: '18px' }} />
-                    <span>Birdie = 2x, Eagle = 3x value</span>
-                  </label>
+
+                  {/* Score Multipliers */}
+                  <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '8px' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px' }}>Score Multipliers</div>
+
+                    {/* Birdie */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{ fontSize: '11px', marginBottom: '4px', color: '#666' }}>Birdie (1 under)</div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {[1, 2].map(val => (
+                          <button
+                            key={val}
+                            onClick={() => {
+                              // Cascade down: if setting birdie to X, set lower scores to at least X
+                              const newSettings = { ...settings, birdieMultiplier: val }
+                              if (val > 1) {
+                                if ((settings.eagleMultiplier || 1) < val) newSettings.eagleMultiplier = val
+                                if ((settings.doubleEagleMultiplier || 1) < val) newSettings.doubleEagleMultiplier = val
+                                if ((settings.holeInOneMultiplier || 1) < val) newSettings.holeInOneMultiplier = val
+                              }
+                              setSettings(newSettings)
+                            }}
+                            style={{
+                              flex: 1, padding: '6px', borderRadius: '4px', fontSize: '11px',
+                              border: (settings.birdieMultiplier || 1) === val ? '2px solid #9c27b0' : '1px solid #ddd',
+                              background: (settings.birdieMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                              fontWeight: (settings.birdieMultiplier || 1) === val ? '600' : 'normal',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {val === 1 ? 'Off' : `×${val}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Eagle */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{ fontSize: '11px', marginBottom: '4px', color: '#666' }}>Eagle (2 under)</div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {[1, 2, 3].map(val => (
+                          <button
+                            key={val}
+                            onClick={() => {
+                              // Cascade down: if setting eagle to X, set lower scores to at least X
+                              const newSettings = { ...settings, eagleMultiplier: val }
+                              if (val > 1) {
+                                if ((settings.doubleEagleMultiplier || 1) < val) newSettings.doubleEagleMultiplier = val
+                                if ((settings.holeInOneMultiplier || 1) < val) newSettings.holeInOneMultiplier = val
+                              }
+                              setSettings(newSettings)
+                            }}
+                            style={{
+                              flex: 1, padding: '6px', borderRadius: '4px', fontSize: '11px',
+                              border: (settings.eagleMultiplier || 1) === val ? '2px solid #9c27b0' : '1px solid #ddd',
+                              background: (settings.eagleMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                              fontWeight: (settings.eagleMultiplier || 1) === val ? '600' : 'normal',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {val === 1 ? 'Off' : `×${val}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Double Eagle */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{ fontSize: '11px', marginBottom: '4px', color: '#666' }}>Double Eagle (3 under)</div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {[1, 2, 3, 4].map(val => (
+                          <button
+                            key={val}
+                            onClick={() => {
+                              // Cascade down: if setting double eagle to X, set hole-in-one to at least X
+                              const newSettings = { ...settings, doubleEagleMultiplier: val }
+                              if (val > 1 && (settings.holeInOneMultiplier || 1) < val) {
+                                newSettings.holeInOneMultiplier = val
+                              }
+                              setSettings(newSettings)
+                            }}
+                            style={{
+                              flex: 1, padding: '6px', borderRadius: '4px', fontSize: '11px',
+                              border: (settings.doubleEagleMultiplier || 1) === val ? '2px solid #9c27b0' : '1px solid #ddd',
+                              background: (settings.doubleEagleMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                              fontWeight: (settings.doubleEagleMultiplier || 1) === val ? '600' : 'normal',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {val === 1 ? 'Off' : `×${val}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Hole in One */}
+                    <div>
+                      <div style={{ fontSize: '11px', marginBottom: '4px', color: '#666' }}>Hole in One</div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {[1, 2, 3, 4, 5].map(val => (
+                          <button
+                            key={val}
+                            onClick={() => setSettings({ ...settings, holeInOneMultiplier: val })}
+                            style={{
+                              flex: 1, padding: '6px', borderRadius: '4px', fontSize: '11px',
+                              border: (settings.holeInOneMultiplier || 1) === val ? '2px solid #9c27b0' : '1px solid #ddd',
+                              background: (settings.holeInOneMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                              fontWeight: (settings.holeInOneMultiplier || 1) === val ? '600' : 'normal',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {val === 1 ? 'Off' : `×${val}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Greenies Settings */}
@@ -3116,7 +3423,18 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           {skinsMatch.settings.carryovers && <span>Carryovers</span>}
           {skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && <span>Wrap to {skinsMatch.settings.wrapTo === 'front' ? 'Front 9' : 'Back 9'}</span>}
           {skinsMatch.settings.parOrBetterRequired && <span>Par or Better</span>}
-          {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie 2x/Eagle 3x</span>}
+          {/* Backwards compatibility for old setting */}
+          {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie ×2/Eagle ×3</span>}
+          {/* New flexible multipliers */}
+          {!skinsMatch.settings.birdieDoubleEagleTriple && (() => {
+            const s = skinsMatch.settings
+            const parts = []
+            if (s.birdieMultiplier > 1) parts.push(`Birdie ×${s.birdieMultiplier}`)
+            if (s.eagleMultiplier > 1) parts.push(`Eagle ×${s.eagleMultiplier}`)
+            if (s.doubleEagleMultiplier > 1) parts.push(`Dbl Eagle ×${s.doubleEagleMultiplier}`)
+            if (s.holeInOneMultiplier > 1) parts.push(`HIO ×${s.holeInOneMultiplier}`)
+            return parts.length > 0 ? <span style={{ color: '#9c27b0' }}>{parts.join(', ')}</span> : null
+          })()}
           {greeniesEnabled && (
             <span style={{ color: '#27ae60', fontWeight: '600' }}>
               Greenies ${greeniesCostPerHole}/hole {greeniesCarryover && '(carryovers)'}
@@ -3370,6 +3688,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                             borderRadius: '4px'
                           }}>
                             {hasScore ? (score === 'X' ? 'X' : score) : '-'}
+                            {holeResult.winner === player.id && holeResult.skinValue > 1 && (
+                              <div style={{ fontSize: '8px', color: '#9c27b0', fontWeight: '700', marginTop: '1px' }}>
+                                ×{holeResult.skinValue}
+                              </div>
+                            )}
                             {holeResult.winner === player.id && holeResult.carryoverCount > 0 && (
                               <div style={{ fontSize: '8px', color: '#2e7d32', marginTop: '1px' }}>
                                 +{holeResult.carryoverCount}
@@ -3386,7 +3709,13 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         background: pSummary.skinsWon > 0 ? '#fff3e0' : '#f5f5f5',
                         color: pSummary.skinsWon > 0 ? '#e65100' : '#999'
                       }}>
-                        {pSummary.skinsWon}
+                        {(() => {
+                          const s = skinsMatch.settings
+                          const hasMultipliers = s.birdieDoubleEagleTriple || s.birdieMultiplier > 1 || s.eagleMultiplier > 1 || s.doubleEagleMultiplier > 1 || s.holeInOneMultiplier > 1
+                          return hasMultipliers && pSummary.totalValue !== pSummary.skinsWon
+                            ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: '#9c27b0' }}>({pSummary.skinsWon})</span></span>
+                            : pSummary.skinsWon
+                        })()}
                       </td>
                     </tr>
                   )
@@ -3409,6 +3738,16 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, #e8f5e9, #e8f5e9 3px, #c8e6c9 3px, #c8e6c9 6px)', border: '2px solid #81c784', borderRadius: '3px' }}></span> Won w/ Carryover
             </span>
+            {/* Show multiplier legend if any multipliers are active */}
+            {(skinsMatch.settings.birdieDoubleEagleTriple ||
+              skinsMatch.settings.birdieMultiplier > 1 ||
+              skinsMatch.settings.eagleMultiplier > 1 ||
+              skinsMatch.settings.doubleEagleMultiplier > 1 ||
+              skinsMatch.settings.holeInOneMultiplier > 1) && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ color: '#9c27b0', fontWeight: '700' }}>×N</span> Multiplier
+              </span>
+            )}
           </div>
         </div>
       ) : (
@@ -3443,27 +3782,80 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 const result = greenieResults[hole] || {}
                 const hasCarryover = result.carryoverCount > 0
                 const totalPot = (1 + (result.carryoverCount || 0)) * greeniesCostPerHole * skinsPlayers.length
+                const holePot = greeniesCostPerHole * (result.activePlayers?.length || skinsPlayers.length)
+
+                // Check if this hole was won via carryover on another hole
+                let carryoverWonBy = null
+                let carryoverWonOnHole = null
+                if (!result.winner && greeniesCarryover) {
+                  for (const [otherHoleStr, otherResult] of Object.entries(greenieResults)) {
+                    if (otherHoleStr === 'pendingCarryovers') continue
+                    const otherHole = parseInt(otherHoleStr)
+                    // Check carryoverFromHoles (winner won the carryovers)
+                    if (otherResult.carryoverFromHoles?.includes(hole)) {
+                      carryoverWonBy = otherResult.winnerName
+                      carryoverWonOnHole = otherHole
+                      break
+                    }
+                    // Check carryoverWinners (different player won carryovers)
+                    const coWin = otherResult.carryoverWinners?.find(cw => cw.fromHoles?.includes(hole))
+                    if (coWin) {
+                      carryoverWonBy = coWin.playerName
+                      carryoverWonOnHole = otherHole
+                      break
+                    }
+                  }
+                }
+
                 return (
                   <div key={hole} style={{
-                    background: result.winner ? (hasCarryover ? '#e8f5e9' : '#d4edda') : '#f8f9fa',
+                    background: result.winner
+                      ? (hasCarryover ? '#e8f5e9' : '#d4edda')
+                      : (carryoverWonBy ? '#fff3e0' : '#f8f9fa'),
                     padding: '12px 8px',
                     borderRadius: '8px',
                     textAlign: 'center',
-                    border: result.winner ? '2px solid #27ae60' : '1px solid #ddd'
+                    border: result.winner
+                      ? '2px solid #27ae60'
+                      : (carryoverWonBy ? '2px solid #f39c12' : '1px solid #ddd')
                   }}>
                     <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>#{hole}</div>
                     <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px' }}>Par 3</div>
                     {result.winner ? (
                       <>
                         <div style={{ fontWeight: '600', color: '#27ae60', fontSize: '13px' }}>
-                          {result.winnerName?.split(' ')[0] || 'Winner'}
+                          {result.winnerName || 'Winner'}
                         </div>
                         {result.distance && (
                           <div style={{ fontSize: '11px', color: '#666' }}>{result.distance}</div>
                         )}
                         <div style={{ fontSize: '12px', fontWeight: '700', color: '#27ae60', marginTop: '4px' }}>
-                          ${totalPot.toFixed(2)}
-                          {hasCarryover && <span style={{ fontSize: '10px' }}> (+{result.carryoverCount})</span>}
+                          ${holePot.toFixed(2)}
+                        </div>
+                        {hasCarryover && (
+                          <div style={{ fontSize: '10px', color: '#2e7d32', marginTop: '2px' }}>
+                            +{result.carryoverCount} carryover{result.carryoverCount > 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </>
+                    ) : carryoverWonBy ? (
+                      <>
+                        <div style={{ fontWeight: '600', color: '#e67e22', fontSize: '13px' }}>
+                          {carryoverWonBy}
+                        </div>
+                        <div style={{
+                          fontSize: '10px',
+                          color: '#e67e22',
+                          background: '#fff3e0',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          marginTop: '2px',
+                          fontWeight: '600'
+                        }}>
+                          ↗ Won on #{carryoverWonOnHole}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                          ${holePot.toFixed(2)}
                         </div>
                       </>
                     ) : (
@@ -3484,9 +3876,24 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   .map(player => {
                     const summary = greeniePlayerSummary[String(player.id)] || {}
                     return (
-                      <div key={player.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: '#e8f5e9', borderRadius: '4px', marginBottom: '4px' }}>
-                        <span>{player.name} <span style={{ color: '#666', fontSize: '11px' }}>({summary.greeniesWon} greenie{summary.greeniesWon > 1 ? 's' : ''})</span></span>
-                        <span style={{ color: '#27ae60', fontWeight: '700' }}>${summary.totalPot?.toFixed(2)}</span>
+                      <div key={player.id} style={{ background: '#e8f5e9', borderRadius: '4px', marginBottom: '6px', padding: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: '600' }}>{player.name}</span>
+                          <span style={{ color: '#27ae60', fontWeight: '700' }}>${summary.totalPot?.toFixed(2)}</span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {summary.holeDetails?.map((detail, idx) => (
+                            <span key={idx} style={{
+                              background: detail.isCarryover ? '#fff3e0' : '#d4edda',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              border: detail.isCarryover ? '1px solid #f39c12' : '1px solid #27ae60'
+                            }}>
+                              #{detail.hole} ({detail.playerCount}p = ${detail.pot.toFixed(2)})
+                              {detail.isCarryover && <span style={{ color: '#e67e22' }}> ↗{detail.wonOnHole}</span>}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )
                   })}
@@ -3559,7 +3966,15 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     </div>
                     <div style={{ fontSize: '11px', color: '#666', marginTop: '2px', display: 'flex', gap: '12px' }}>
                       <span>
-                        Skins: {skinsSummary.skinsWon || 0} won
+                        Skins: {(() => {
+                          const s = skinsMatch.settings
+                          const hasMultipliers = s.birdieDoubleEagleTriple || s.birdieMultiplier > 1 || s.eagleMultiplier > 1 || s.doubleEagleMultiplier > 1 || s.holeInOneMultiplier > 1
+                          const totalVal = skinsSummary.totalValue || 0
+                          const skinsWon = skinsSummary.skinsWon || 0
+                          return hasMultipliers && totalVal !== skinsWon
+                            ? <>{totalVal} <span style={{ fontSize: '9px', color: '#9c27b0' }}>({skinsWon})</span></>
+                            : skinsWon
+                        })()} won
                         <span style={{ color: skinsNet >= 0 ? '#27ae60' : '#e74c3c', marginLeft: '4px' }}>
                           ({skinsNet >= 0 ? '+' : ''}${skinsNet.toFixed(2)})
                         </span>
@@ -3727,26 +4142,105 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 return <div style={{ color: '#666', fontSize: '12px' }}>Everyone is even!</div>
               }
 
-              return settlements.map((s, idx) => (
-                <div key={idx} style={{
-                  padding: '8px 0',
-                  borderBottom: idx < settlements.length - 1 ? '1px solid #e8f5e9' : 'none',
-                  fontSize: '13px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ color: '#e74c3c', fontWeight: '600' }}>{s.from}</span>
-                    <span style={{ margin: '0 8px', color: '#666' }}>→</span>
-                    <span style={{ color: '#27ae60', fontWeight: '600' }}>{s.to}</span>
-                    <span style={{ marginLeft: 'auto', fontWeight: '700', color: '#333' }}>
-                      ${s.amount.toFixed(2)}
+              const paidSettlements = skinsMatch.paidSettlements || {}
+              const paidCount = settlements.filter(s => paidSettlements[`${s.from}->${s.to}`]).length
+              const remainingCount = settlements.length - paidCount
+              const togglePaid = (from, to) => {
+                const key = `${from}->${to}`
+                const newPaidSettlements = { ...paidSettlements, [key]: !paidSettlements[key] }
+                setSkinsMatch({ ...skinsMatch, paidSettlements: newPaidSettlements })
+              }
+
+              // Sort: unpaid first, then paid
+              const sortedSettlements = [...settlements].sort((a, b) => {
+                const aKey = `${a.from}->${a.to}`
+                const bKey = `${b.from}->${b.to}`
+                const aPaid = paidSettlements[aKey] || false
+                const bPaid = paidSettlements[bKey] || false
+                if (aPaid === bPaid) return 0
+                return aPaid ? 1 : -1
+              })
+
+              return (
+                <>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '10px',
+                    padding: '6px 10px',
+                    background: remainingCount === 0 ? '#d4edda' : '#fff3cd',
+                    borderRadius: '6px',
+                    fontSize: '12px'
+                  }}>
+                    <span>
+                      {remainingCount === 0 ? (
+                        <span style={{ color: '#27ae60', fontWeight: '600' }}>✓ All payments complete!</span>
+                      ) : (
+                        <span style={{ color: '#856404' }}>
+                          <strong>{remainingCount}</strong> payment{remainingCount !== 1 ? 's' : ''} remaining
+                        </span>
+                      )}
                     </span>
+                    {paidCount > 0 && (
+                      <span style={{ color: '#666' }}>
+                        {paidCount} of {settlements.length} paid
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#888', marginTop: '2px', marginLeft: '20px', display: 'flex', gap: '12px' }}>
-                    {s.skins > 0.001 && <span>Skins: ${s.skins.toFixed(2)}</span>}
-                    {greeniesEnabled && s.greenies > 0.001 && <span>Greenies: ${s.greenies.toFixed(2)}</span>}
+                  {sortedSettlements.map((s, idx) => {
+                const key = `${s.from}->${s.to}`
+                const isPaid = paidSettlements[key] || false
+                return (
+                  <div key={idx} style={{
+                    padding: '8px 0',
+                    borderBottom: idx < sortedSettlements.length - 1 ? '1px solid #e8f5e9' : 'none',
+                    fontSize: '13px',
+                    opacity: isPaid ? 0.75 : 1
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginRight: '10px' }}>
+                        <input
+                          type="checkbox"
+                          checked={isPaid}
+                          onChange={() => togglePaid(s.from, s.to)}
+                          style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        />
+                      </label>
+                      <span style={{
+                        color: '#e74c3c',
+                        fontWeight: '600',
+                        textDecoration: isPaid ? 'line-through' : 'none'
+                      }}>{s.from}</span>
+                      <span style={{ margin: '0 8px', color: '#666' }}>→</span>
+                      <span style={{
+                        color: '#27ae60',
+                        fontWeight: '600',
+                        textDecoration: isPaid ? 'line-through' : 'none'
+                      }}>{s.to}</span>
+                      <span style={{
+                        marginLeft: 'auto',
+                        fontWeight: '700',
+                        color: isPaid ? '#999' : '#333',
+                        textDecoration: isPaid ? 'line-through' : 'none'
+                      }}>
+                        ${s.amount.toFixed(2)}
+                      </span>
+                      {isPaid && (
+                        <span style={{ marginLeft: '8px', color: '#27ae60', fontSize: '11px', fontWeight: '600' }}>
+                          ✓ PAID
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#888', marginTop: '2px', marginLeft: '38px', display: 'flex', gap: '12px' }}>
+                      {s.skins > 0.001 && <span>Skins: ${s.skins.toFixed(2)}</span>}
+                      {greeniesEnabled && s.greenies > 0.001 && <span>Greenies: ${s.greenies.toFixed(2)}</span>}
+                    </div>
                   </div>
-                </div>
-              ))
+                )
+              })}
+                </>
+              )
             })()}
           </div>
         </div>
@@ -3946,11 +4440,120 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   </div>
                 </div>
 
+                {/* Score Multipliers */}
                 <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px' }}>Birdie = 2x, Eagle = 3x?</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => setEditSettings({ ...editSettings, birdieDoubleEagleTriple: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.birdieDoubleEagleTriple ? '2px solid #f39c12' : '2px solid #ddd', background: editSettings.birdieDoubleEagleTriple ? '#fff8e1' : 'white', fontWeight: editSettings.birdieDoubleEagleTriple ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                    <button onClick={() => setEditSettings({ ...editSettings, birdieDoubleEagleTriple: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.birdieDoubleEagleTriple ? '2px solid #f39c12' : '2px solid #ddd', background: !editSettings.birdieDoubleEagleTriple ? '#fff8e1' : 'white', fontWeight: !editSettings.birdieDoubleEagleTriple ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>Score Multipliers</label>
+
+                  {/* Birdie */}
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: '#666' }}>Birdie (1 under par)</div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[1, 2].map(val => (
+                        <button
+                          key={val}
+                          onClick={() => {
+                            // Cascade down: if setting birdie to X, set lower scores to at least X
+                            const newSettings = { ...editSettings, birdieMultiplier: val, birdieDoubleEagleTriple: false }
+                            if (val > 1) {
+                              if ((editSettings.eagleMultiplier || 1) < val) newSettings.eagleMultiplier = val
+                              if ((editSettings.doubleEagleMultiplier || 1) < val) newSettings.doubleEagleMultiplier = val
+                              if ((editSettings.holeInOneMultiplier || 1) < val) newSettings.holeInOneMultiplier = val
+                            }
+                            setEditSettings(newSettings)
+                          }}
+                          style={{
+                            flex: 1, padding: '8px', borderRadius: '6px', fontSize: '12px',
+                            border: (editSettings.birdieMultiplier || 1) === val ? '2px solid #9c27b0' : '2px solid #ddd',
+                            background: (editSettings.birdieMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                            fontWeight: (editSettings.birdieMultiplier || 1) === val ? '600' : 'normal',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {val === 1 ? 'Off' : `×${val}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Eagle */}
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: '#666' }}>Eagle (2 under par)</div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[1, 2, 3].map(val => (
+                        <button
+                          key={val}
+                          onClick={() => {
+                            // Cascade down: if setting eagle to X, set lower scores to at least X
+                            const newSettings = { ...editSettings, eagleMultiplier: val, birdieDoubleEagleTriple: false }
+                            if (val > 1) {
+                              if ((editSettings.doubleEagleMultiplier || 1) < val) newSettings.doubleEagleMultiplier = val
+                              if ((editSettings.holeInOneMultiplier || 1) < val) newSettings.holeInOneMultiplier = val
+                            }
+                            setEditSettings(newSettings)
+                          }}
+                          style={{
+                            flex: 1, padding: '8px', borderRadius: '6px', fontSize: '12px',
+                            border: (editSettings.eagleMultiplier || 1) === val ? '2px solid #9c27b0' : '2px solid #ddd',
+                            background: (editSettings.eagleMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                            fontWeight: (editSettings.eagleMultiplier || 1) === val ? '600' : 'normal',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {val === 1 ? 'Off' : `×${val}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Double Eagle */}
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: '#666' }}>Double Eagle / Albatross (3 under par)</div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[1, 2, 3, 4].map(val => (
+                        <button
+                          key={val}
+                          onClick={() => {
+                            // Cascade down: if setting double eagle to X, set hole-in-one to at least X
+                            const newSettings = { ...editSettings, doubleEagleMultiplier: val, birdieDoubleEagleTriple: false }
+                            if (val > 1 && (editSettings.holeInOneMultiplier || 1) < val) {
+                              newSettings.holeInOneMultiplier = val
+                            }
+                            setEditSettings(newSettings)
+                          }}
+                          style={{
+                            flex: 1, padding: '8px', borderRadius: '6px', fontSize: '12px',
+                            border: (editSettings.doubleEagleMultiplier || 1) === val ? '2px solid #9c27b0' : '2px solid #ddd',
+                            background: (editSettings.doubleEagleMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                            fontWeight: (editSettings.doubleEagleMultiplier || 1) === val ? '600' : 'normal',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {val === 1 ? 'Off' : `×${val}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hole in One */}
+                  <div>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: '#666' }}>Hole in One</div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[1, 2, 3, 4, 5].map(val => (
+                        <button
+                          key={val}
+                          onClick={() => setEditSettings({ ...editSettings, holeInOneMultiplier: val, birdieDoubleEagleTriple: false })}
+                          style={{
+                            flex: 1, padding: '8px', borderRadius: '6px', fontSize: '12px',
+                            border: (editSettings.holeInOneMultiplier || 1) === val ? '2px solid #9c27b0' : '2px solid #ddd',
+                            background: (editSettings.holeInOneMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                            fontWeight: (editSettings.holeInOneMultiplier || 1) === val ? '600' : 'normal',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {val === 1 ? 'Off' : `×${val}`}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -5657,6 +6260,7 @@ function LivePage() {
           players={players}
           onMarkTeamFinished={markTeamFinished}
           onUpdateGreenie={updateGreenie}
+          isQuickSkins={effectiveQuickSkinsMode}
         />
       )}
       {subTab === 'greenies' && (
