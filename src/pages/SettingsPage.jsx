@@ -104,12 +104,36 @@ function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
   )
 }
 
-function LeagueInfoSection({ leagueId, onLeave }) {
+function LeagueInfoSection({ leagueId, onLeave, onCloneToTest, isAdmin }) {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [showCloneForm, setShowCloneForm] = useState(false)
+  const [testCode, setTestCode] = useState('')
+  const [cloneStatus, setCloneStatus] = useState({ loading: false, error: '', success: '' })
 
   const copyLeagueCode = () => {
     navigator.clipboard.writeText(leagueId)
     alert('League code copied to clipboard!')
+  }
+
+  const handleCloneToTest = async () => {
+    setCloneStatus({ loading: true, error: '', success: '' })
+    const codeToUse = testCode.trim() || `TEST${leagueId}`
+    const result = await onCloneToTest(codeToUse)
+
+    if (result.success) {
+      setCloneStatus({
+        loading: false,
+        error: '',
+        success: `Test league created! Code: ${result.testLeagueId}`
+      })
+      setTestCode('')
+    } else {
+      setCloneStatus({
+        loading: false,
+        error: result.error,
+        success: ''
+      })
+    }
   }
 
   return (
@@ -146,6 +170,101 @@ function LeagueInfoSection({ leagueId, onLeave }) {
       <p style={{ color: '#666', fontSize: '13px', marginBottom: '15px' }}>
         Share this code with others so they can join your league and view live scores.
       </p>
+
+      {/* Clone to Test League - Admin only */}
+      {isAdmin && (
+        <div style={{
+          background: '#e3f2fd',
+          padding: '15px',
+          borderRadius: '8px',
+          marginBottom: '15px',
+          border: '1px solid #90caf9'
+        }}>
+          <h4 style={{ marginBottom: '10px', fontSize: '14px' }}>Clone to Test League</h4>
+          <p style={{ color: '#666', fontSize: '13px', marginBottom: '10px' }}>
+            Create a copy of this league for testing. All players, history, and settings will be copied.
+          </p>
+
+          {showCloneForm ? (
+            <div>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                  Test League Code (optional)
+                </label>
+                <input
+                  type="text"
+                  value={testCode}
+                  onChange={(e) => setTestCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                  placeholder={`Default: TEST${leagueId}`}
+                  maxLength={20}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px'
+                  }}
+                />
+              </div>
+
+              {cloneStatus.error && (
+                <div style={{
+                  background: '#ffebee',
+                  color: '#c62828',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  marginBottom: '10px',
+                  fontSize: '13px'
+                }}>
+                  {cloneStatus.error}
+                </div>
+              )}
+
+              {cloneStatus.success && (
+                <div style={{
+                  background: '#e8f5e9',
+                  color: '#2e7d32',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  marginBottom: '10px',
+                  fontSize: '13px'
+                }}>
+                  {cloneStatus.success}
+                  <br />
+                  <span style={{ fontSize: '12px' }}>Leave this league and join the test code to access it.</span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowCloneForm(false)
+                    setTestCode('')
+                    setCloneStatus({ loading: false, error: '', success: '' })
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleCloneToTest}
+                  disabled={cloneStatus.loading}
+                >
+                  {cloneStatus.loading ? 'Creating...' : 'Create Test League'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowCloneForm(true)}
+              style={{ width: '100%' }}
+            >
+              Clone to Test League
+            </button>
+          )}
+        </div>
+      )}
 
       {showLeaveConfirm ? (
         <div style={{
@@ -1595,6 +1714,7 @@ function SettingsPage() {
     adminLogin,
     adminLogout,
     leaveLeague,
+    cloneLeagueToTest,
     payoutFormats,
     setPayoutFormats,
     holeInOnePot,
@@ -1673,6 +1793,8 @@ function SettingsPage() {
       <LeagueInfoSection
         leagueId={leagueId}
         onLeave={leaveLeague}
+        onCloneToTest={cloneLeagueToTest}
+        isAdmin={isAdmin}
       />
 
       <RoundSettingsSection

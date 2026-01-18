@@ -2,9 +2,14 @@ import { useState } from 'react'
 import { useLeague } from '../context/LeagueContext'
 
 function LeagueSetup() {
-  const { createNewLeague, joinExistingLeague } = useLeague()
+  const { createNewLeague, joinExistingLeague, checkLeagueCodeAvailable } = useLeague()
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState('')
+  const [showCustomCode, setShowCustomCode] = useState(false)
+  const [customCode, setCustomCode] = useState('')
+  const [customCodeError, setCustomCodeError] = useState('')
+  const [isChecking, setIsChecking] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
 
   const handleJoin = async () => {
     if (!joinCode.trim()) {
@@ -15,6 +20,35 @@ function LeagueSetup() {
     const success = await joinExistingLeague(joinCode)
     if (!success) {
       setError('League code not found. Please check the code and try again.')
+    }
+  }
+
+  const handleCreateLeague = async (useCustomCode = false) => {
+    setIsCreating(true)
+    setCustomCodeError('')
+
+    try {
+      const result = await createNewLeague(useCustomCode ? customCode : null)
+      if (!result.success) {
+        setCustomCodeError(result.error)
+      }
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const handleCustomCodeChange = async (value) => {
+    const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    setCustomCode(normalized)
+    setCustomCodeError('')
+
+    if (normalized.length >= 3) {
+      setIsChecking(true)
+      const result = await checkLeagueCodeAvailable(normalized)
+      setIsChecking(false)
+      if (!result.available) {
+        setCustomCodeError(result.error)
+      }
     }
   }
 
@@ -39,17 +73,114 @@ function LeagueSetup() {
             <p style={{ marginBottom: '20px', opacity: 0.9 }}>
               Start a new league and invite your friends with the league code.
             </p>
-            <button
-              className="btn"
-              onClick={createNewLeague}
-              style={{
-                background: 'white',
-                color: '#27ae60',
-                fontWeight: '600'
-              }}
-            >
-              Create League
-            </button>
+
+            {!showCustomCode ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <button
+                  className="btn"
+                  onClick={() => handleCreateLeague(false)}
+                  disabled={isCreating}
+                  style={{
+                    background: 'white',
+                    color: '#27ae60',
+                    fontWeight: '600'
+                  }}
+                >
+                  {isCreating ? 'Creating...' : 'Create League (Auto Code)'}
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => setShowCustomCode(true)}
+                  style={{
+                    background: 'transparent',
+                    color: 'white',
+                    border: '2px solid white',
+                    fontWeight: '600'
+                  }}
+                >
+                  Use Custom Code
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p style={{ marginBottom: '10px', fontSize: '14px', opacity: 0.9 }}>
+                  Enter a memorable code (letters & numbers only):
+                </p>
+                <input
+                  type="text"
+                  value={customCode}
+                  onChange={(e) => handleCustomCodeChange(e.target.value)}
+                  placeholder="e.g. GUNPOWDER"
+                  maxLength={20}
+                  style={{
+                    textAlign: 'center',
+                    fontSize: '20px',
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                    marginBottom: '10px',
+                    width: '100%',
+                    padding: '12px'
+                  }}
+                />
+                {isChecking && (
+                  <div style={{ fontSize: '14px', marginBottom: '10px' }}>Checking availability...</div>
+                )}
+                {customCodeError && (
+                  <div style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    padding: '8px',
+                    borderRadius: '5px',
+                    marginBottom: '10px',
+                    fontSize: '14px'
+                  }}>
+                    {customCodeError}
+                  </div>
+                )}
+                {customCode.length >= 3 && !customCodeError && !isChecking && (
+                  <div style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    padding: '8px',
+                    borderRadius: '5px',
+                    marginBottom: '10px',
+                    fontSize: '14px'
+                  }}>
+                    ✓ "{customCode}" is available!
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      setShowCustomCode(false)
+                      setCustomCode('')
+                      setCustomCodeError('')
+                    }}
+                    style={{
+                      background: 'transparent',
+                      color: 'white',
+                      border: '2px solid white',
+                      flex: 1
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => handleCreateLeague(true)}
+                    disabled={customCode.length < 3 || !!customCodeError || isChecking || isCreating}
+                    style={{
+                      background: 'white',
+                      color: '#27ae60',
+                      fontWeight: '600',
+                      flex: 1,
+                      opacity: (customCode.length < 3 || !!customCodeError || isChecking) ? 0.5 : 1
+                    }}
+                  >
+                    {isCreating ? 'Creating...' : 'Create'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{
@@ -60,7 +191,7 @@ function LeagueSetup() {
           }}>
             <h3 style={{ marginBottom: '15px', color: '#333' }}>Join Existing League</h3>
             <p style={{ marginBottom: '20px', color: '#666' }}>
-              Enter the 6-character code from your league organizer.
+              Enter the league code from your organizer.
             </p>
 
             <div className="input-group" style={{ marginBottom: '15px' }}>
@@ -68,15 +199,15 @@ function LeagueSetup() {
                 type="text"
                 value={joinCode}
                 onChange={(e) => {
-                  setJoinCode(e.target.value.toUpperCase())
+                  setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
                   setError('')
                 }}
                 placeholder="Enter league code"
-                maxLength={6}
+                maxLength={20}
                 style={{
                   textAlign: 'center',
-                  fontSize: '24px',
-                  letterSpacing: '3px',
+                  fontSize: '20px',
+                  letterSpacing: '2px',
                   textTransform: 'uppercase'
                 }}
               />

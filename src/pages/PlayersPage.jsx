@@ -8,15 +8,19 @@ import {
   getScopeLabel,
   recalculatePlayerHandicaps,
   getCourseHandicapForTee,
+  getEffectiveHandicap,
   DEFAULT_COURSE_TEES
 } from '../utils/handicapCalculation'
 
 function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapScope, leagueId, courseTees, handicapSettings }) {
-  // Calculate all three handicaps for display
+  // Calculate all three handicaps for display (these are always calculated from rounds)
   const handicaps = getAllHandicaps(player, leagueId, courseTees, handicapSettings?.maxHandicap || 54, handicapSettings)
 
-  // Helper to get the active handicap based on scope
-  const getActiveHandicap = () => {
+  // Get the effective handicap (respects manual mode and uses manual fallback when needed)
+  const effectiveHandicap = getEffectiveHandicap(player, handicapSettings, leagueId, courseTees)
+
+  // Helper to get the calculated handicap based on scope (for informational display)
+  const getCalculatedHandicap = () => {
     switch (handicapScope) {
       case 'league': return handicaps.leagueHandicap
       case 'gunpowder': return handicaps.gunpowderHandicap
@@ -25,7 +29,11 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
     }
   }
 
-  const activeHandicap = getActiveHandicap()
+  // Use effective handicap for main display (respects manual mode / fallback)
+  // Effective handicap is always for the configured scope
+  const activeHandicap = effectiveHandicap
+  const calculatedForScope = getCalculatedHandicap()
+  const isUsingManual = effectiveHandicap !== calculatedForScope && effectiveHandicap === player.handicap
   const playerTee = player.defaultTee || 'blue'
   const courseHandicap = getCourseHandicapForTee(activeHandicap, playerTee, courseTees)
 
@@ -54,11 +62,11 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
               padding: '3px 8px',
               borderRadius: '4px',
               fontSize: '12px',
-              background: '#27ae60',
+              background: isUsingManual ? '#e67e22' : '#27ae60',
               color: 'white',
               fontWeight: '600'
             }}>
-              Index: {formatHandicap(activeHandicap)}
+              Index: {formatHandicap(activeHandicap)}{isUsingManual ? ' (M)' : ''}
             </span>
             <span style={{
               padding: '3px 8px',

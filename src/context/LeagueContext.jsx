@@ -334,19 +334,107 @@ export function LeagueProvider({ children }) {
   }, [leagueId, liveRound?.id])
 
   // League actions
-  const createNewLeague = () => {
-    const newLeagueId = CloudStorage.generateLeagueId()
+  const checkLeagueCodeAvailable = async (code) => {
+    const normalizedCode = code.toUpperCase().trim().replace(/[^A-Z0-9]/g, '')
+    if (normalizedCode.length < 3) return { available: false, error: 'Code must be at least 3 characters' }
+    if (normalizedCode.length > 20) return { available: false, error: 'Code must be 20 characters or less' }
+
+    const existingData = await CloudStorage.loadData(normalizedCode)
+    if (existingData) {
+      return { available: false, error: 'This code is already taken' }
+    }
+    return { available: true, normalizedCode }
+  }
+
+  const createNewLeague = async (customCode = null) => {
+    let newLeagueId
+
+    if (customCode) {
+      const check = await checkLeagueCodeAvailable(customCode)
+      if (!check.available) {
+        return { success: false, error: check.error }
+      }
+      newLeagueId = check.normalizedCode
+    } else {
+      newLeagueId = CloudStorage.generateLeagueId()
+    }
+
+    // Reset all state to defaults for new league
+    setPlayers([])
+    setTeams([])
+    setHistory([])
+    setLiveRound(null)
+    setPairingRequests([])
+    setLeagueSettings({
+      contactInfoVisibility: 'admin',
+      nextRoundDate: '',
+      nextRoundTime: '',
+      nextRoundMessage: ''
+    })
+    setPendingPlayerRequests([])
+    setPayoutFormats({})
+    setHoleInOnePot({ amount: 0, history: [] })
+    setMoneyVisibility('admin')
+    setDefaultStartingHole(1)
+    setPlayerMoneyRecords({})
+    setSkinsMatch(null)
+    setQuickSkinsHistory([])
+    setQuickSkinsMode(false)
+    setHandicapSettings(DEFAULT_HANDICAP_SETTINGS)
+    setCourseTees(DEFAULT_COURSE_TEES)
+    setCheckedInPlayers([])
+    setManualTeams([])
+
     setLeagueId(newLeagueId)
     CloudStorage.setLeagueId(newLeagueId)
     setIsSetup(true)
     hasLoadedData.current = true
-    CloudStorage.saveData(newLeagueId, {
+    await CloudStorage.saveData(newLeagueId, {
       players: [],
       history: [],
       pairingRequests: [],
       liveRound: null,
       teams: []
     })
+    return { success: true, leagueId: newLeagueId }
+  }
+
+  const cloneLeagueToTest = async (testCode = null) => {
+    // Generate test code if not provided
+    const baseTestCode = testCode || `TEST-${leagueId}`
+    const check = await checkLeagueCodeAvailable(baseTestCode)
+
+    if (!check.available) {
+      return { success: false, error: check.error }
+    }
+
+    const testLeagueId = check.normalizedCode
+
+    // Clone all current data to the test league
+    const clonedData = {
+      players: JSON.parse(JSON.stringify(players)),
+      history: JSON.parse(JSON.stringify(history)),
+      pairingRequests: JSON.parse(JSON.stringify(pairingRequests)),
+      liveRound: liveRound ? JSON.parse(JSON.stringify(liveRound)) : null,
+      teams: JSON.parse(JSON.stringify(teams)),
+      leagueSettings: JSON.parse(JSON.stringify(leagueSettings)),
+      pendingPlayerRequests: JSON.parse(JSON.stringify(pendingPlayerRequests)),
+      payoutFormats: JSON.parse(JSON.stringify(payoutFormats)),
+      holeInOnePot: JSON.parse(JSON.stringify(holeInOnePot)),
+      moneyVisibility,
+      defaultStartingHole,
+      playerMoneyRecords: JSON.parse(JSON.stringify(playerMoneyRecords)),
+      quickSkinsHistory: JSON.parse(JSON.stringify(quickSkinsHistory)),
+      quickSkinsMode,
+      handicapSettings: JSON.parse(JSON.stringify(handicapSettings)),
+      courseTees: JSON.parse(JSON.stringify(courseTees)),
+      isTestLeague: true,
+      sourceLeagueId: leagueId
+    }
+
+    await CloudStorage.saveData(testLeagueId, clonedData)
+
+    return { success: true, testLeagueId }
   }
 
   const joinExistingLeague = async (code) => {
@@ -419,6 +507,8 @@ export function LeagueProvider({ children }) {
     createNewLeague,
     joinExistingLeague,
     leaveLeague,
+    checkLeagueCodeAvailable,
+    cloneLeagueToTest,
 
     // Admin
     isAdmin,
