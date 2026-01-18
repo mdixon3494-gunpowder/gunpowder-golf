@@ -1,7 +1,27 @@
 /**
  * Team Generation Algorithm
- * Creates balanced teams based on skill ratings
+ * Creates balanced teams based on handicap (preferred) or skill ratings (fallback)
  */
+
+/**
+ * Get the rating value to use for team balancing
+ * Prioritizes handicap (inverted since lower handicap = better player)
+ * Falls back to skillRating for backwards compatibility
+ */
+function getPlayerRating(player) {
+  // If player has an effectiveHandicap (set during generation), use it
+  if (player.effectiveHandicap !== undefined && player.effectiveHandicap !== null) {
+    // Invert handicap: lower handicap = higher skill, so we subtract from a base
+    // Use 36 as base (max typical handicap) so a 0 handicap = 36, 36 handicap = 0
+    return Math.max(0, 36 - player.effectiveHandicap)
+  }
+  // If player has a handicap set, use it (inverted)
+  if (player.handicap !== undefined && player.handicap !== null) {
+    return Math.max(0, 36 - player.handicap)
+  }
+  // Fallback to skillRating (1-10 scale)
+  return player.skillRating || 5
+}
 
 export function generateTeams(activePlayers, pairingRequests = [], manualTeams = []) {
   // Start with manual teams
@@ -30,9 +50,9 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     }
   })
 
-  // Get unpaired players and sort by skill
+  // Get unpaired players and sort by rating (highest first)
   const unpairedPlayers = remainingPlayers.filter(p => !paired.has(p.id))
-  unpairedPlayers.sort((a, b) => b.skillRating - a.skillRating)
+  unpairedPlayers.sort((a, b) => getPlayerRating(b) - getPlayerRating(a))
 
   // Smart auto-fill: Fill 3-person manual teams to 4 if it creates better balance
   const threePersonManualTeams = finalTeams.filter(team => team.length === 3)
@@ -46,15 +66,15 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
       let bestVariance = Infinity
 
       for (const team of threePersonManualTeams) {
-        const teamSkill = team.reduce((sum, p) => sum + p.skillRating, 0)
+        const teamSkill = team.reduce((sum, p) => sum + getPlayerRating(p), 0)
 
         for (let i = 0; i < unpairedPlayers.length; i++) {
           const player = unpairedPlayers[i]
-          const newTeamSkill = teamSkill + player.skillRating
+          const newTeamSkill = teamSkill + getPlayerRating(player)
 
           const allTeamSkills = finalTeams.map(t => {
             if (t === team) return newTeamSkill
-            return t.reduce((sum, p) => sum + p.skillRating, 0)
+            return t.reduce((sum, p) => sum + getPlayerRating(p), 0)
           })
 
           const remainingAfter = unpairedPlayers.length - 1
@@ -101,17 +121,17 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
 
   // Place paired players first
   mustBeTogether.sort((a, b) => {
-    const skillA = a.reduce((sum, p) => sum + p.skillRating, 0)
-    const skillB = b.reduce((sum, p) => sum + p.skillRating, 0)
+    const skillA = a.reduce((sum, p) => sum + getPlayerRating(p), 0)
+    const skillB = b.reduce((sum, p) => sum + getPlayerRating(p), 0)
     return skillB - skillA
   })
 
   mustBeTogether.forEach(pair => {
     let lowestSkillTeamIdx = 0
-    let lowestSkill = newTeams[0].reduce((sum, p) => sum + p.skillRating, 0)
+    let lowestSkill = newTeams[0].reduce((sum, p) => sum + getPlayerRating(p), 0)
 
     for (let i = 1; i < newTeams.length; i++) {
-      const teamSkill = newTeams[i].reduce((sum, p) => sum + p.skillRating, 0)
+      const teamSkill = newTeams[i].reduce((sum, p) => sum + getPlayerRating(p), 0)
       if (teamSkill < lowestSkill) {
         lowestSkill = teamSkill
         lowestSkillTeamIdx = i
@@ -128,7 +148,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
 
     for (let i = 0; i < newTeams.length; i++) {
       if (newTeams[i].length < newTeamSizes[i]) {
-        const teamSkill = newTeams[i].reduce((sum, p) => sum + p.skillRating, 0)
+        const teamSkill = newTeams[i].reduce((sum, p) => sum + getPlayerRating(p), 0)
 
         const recentTeammateCount = newTeams[i].filter(p =>
           player.recentTeammates && player.recentTeammates.includes(p.id)
@@ -174,7 +194,7 @@ export function getTeamName(team) {
 
 export function calculateTeamSkill(team) {
   if (!team || team.length === 0) return 0
-  return team.reduce((sum, p) => sum + (p.skillRating || 5), 0)
+  return team.reduce((sum, p) => sum + getPlayerRating(p), 0)
 }
 
 export function calculateTeamBalance(teams) {

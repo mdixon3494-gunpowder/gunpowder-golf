@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
+import {
+  DEFAULT_HANDICAP_SETTINGS,
+  DEFAULT_COURSE_TEES,
+  getScopeLabel,
+  calculateLockedHandicaps,
+  isDateInFreezePeriod
+} from '../utils/handicapCalculation'
 
 function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
   const [pin, setPin] = useState('')
@@ -1082,6 +1089,504 @@ function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
   )
 }
 
+function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTees, onUpdateTees, isAdmin, players, leagueId }) {
+  const settings = { ...DEFAULT_HANDICAP_SETTINGS, ...handicapSettings }
+  const tees = { ...DEFAULT_COURSE_TEES, ...courseTees }
+
+  const [showTeeEditor, setShowTeeEditor] = useState(false)
+  const [newTeeKey, setNewTeeKey] = useState('')
+  const [newTeeName, setNewTeeName] = useState('')
+  const [newTeeRating, setNewTeeRating] = useState('72')
+  const [newTeeSlope, setNewTeeSlope] = useState('113')
+
+  const MONTHS = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' }
+  ]
+
+  // Check if today is in freeze period
+  const todayInFreeze = isDateInFreezePeriod(new Date().toISOString(), settings)
+
+  // Handle manual recalculation for monthly mode
+  const handleRecalculateAll = () => {
+    if (!confirm('Recalculate and lock handicaps for all players? This will update the locked handicaps used for team generation.')) {
+      return
+    }
+    const newLockedHandicaps = calculateLockedHandicaps(players, leagueId, tees, settings)
+    onUpdateHandicap({
+      ...settings,
+      lockedHandicaps: newLockedHandicaps,
+      lastUpdateDate: new Date().toISOString()
+    })
+    alert(`Handicaps recalculated for ${Object.keys(newLockedHandicaps).length} players`)
+  }
+
+  const handleAddTee = () => {
+    if (!newTeeKey.trim() || !newTeeName.trim()) {
+      alert('Please enter a tee key and name')
+      return
+    }
+    const key = newTeeKey.toLowerCase().replace(/\s+/g, '_')
+    if (tees[key]) {
+      alert('A tee with this key already exists')
+      return
+    }
+    const updatedTees = {
+      ...tees,
+      [key]: {
+        name: newTeeName.trim(),
+        courseRating: parseFloat(newTeeRating) || 72,
+        slopeRating: parseFloat(newTeeSlope) || 113
+      }
+    }
+    onUpdateTees(updatedTees)
+    setNewTeeKey('')
+    setNewTeeName('')
+    setNewTeeRating('72')
+    setNewTeeSlope('113')
+  }
+
+  const handleDeleteTee = (key) => {
+    if (Object.keys(tees).length <= 1) {
+      alert('Must have at least one tee option')
+      return
+    }
+    if (!confirm(`Delete ${tees[key].name} tee?`)) return
+    const updatedTees = { ...tees }
+    delete updatedTees[key]
+    onUpdateTees(updatedTees)
+  }
+
+  const handleUpdateTee = (key, field, value) => {
+    const updatedTees = {
+      ...tees,
+      [key]: {
+        ...tees[key],
+        [field]: field === 'name' ? value : parseFloat(value) || 0
+      }
+    }
+    onUpdateTees(updatedTees)
+  }
+
+  return (
+    <div style={{
+      background: 'white',
+      padding: '20px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      border: '1px solid #e0e0e0'
+    }}>
+      <h3 style={{ marginBottom: '15px', color: '#27ae60' }}>Handicap Settings</h3>
+
+      {/* Handicap Scope */}
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+          Handicap Scope for Team Generation
+        </label>
+        <p style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>
+          Choose which handicap to use when balancing teams
+        </p>
+        <select
+          value={settings.handicapScope}
+          onChange={(e) => onUpdateHandicap({ ...settings, handicapScope: e.target.value })}
+          disabled={!isAdmin}
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: '6px',
+            border: '1px solid #ddd',
+            fontSize: '14px'
+          }}
+        >
+          <option value="true">True Handicap (All rounds from all courses)</option>
+          <option value="league">League Handicap (Only rounds from this league)</option>
+          <option value="gunpowder">Gunpowder Handicap (Only Gunpowder rounds)</option>
+        </select>
+      </div>
+
+      {/* Calculation Mode */}
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+          Calculation Mode
+        </label>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => isAdmin && onUpdateHandicap({ ...settings, calculationMode: 'auto' })}
+            disabled={!isAdmin}
+            style={{
+              flex: 1,
+              padding: '12px',
+              borderRadius: '6px',
+              border: settings.calculationMode === 'auto' ? '2px solid #27ae60' : '2px solid #ddd',
+              background: settings.calculationMode === 'auto' ? '#e8f5e9' : 'white',
+              fontWeight: settings.calculationMode === 'auto' ? '600' : 'normal',
+              cursor: isAdmin ? 'pointer' : 'not-allowed',
+              opacity: isAdmin ? 1 : 0.7
+            }}
+          >
+            Auto-Calculate
+          </button>
+          <button
+            onClick={() => isAdmin && onUpdateHandicap({ ...settings, calculationMode: 'manual' })}
+            disabled={!isAdmin}
+            style={{
+              flex: 1,
+              padding: '12px',
+              borderRadius: '6px',
+              border: settings.calculationMode === 'manual' ? '2px solid #27ae60' : '2px solid #ddd',
+              background: settings.calculationMode === 'manual' ? '#e8f5e9' : 'white',
+              fontWeight: settings.calculationMode === 'manual' ? '600' : 'normal',
+              cursor: isAdmin ? 'pointer' : 'not-allowed',
+              opacity: isAdmin ? 1 : 0.7
+            }}
+          >
+            Manual Only
+          </button>
+        </div>
+        <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+          {settings.calculationMode === 'auto'
+            ? 'Handicaps auto-calculate after each round (falls back to manual if not enough rounds)'
+            : 'Only manually entered handicaps will be used'}
+        </p>
+      </div>
+
+      {/* Update Cycle Mode */}
+      {settings.calculationMode === 'auto' && (
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+            Update Cycle
+          </label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => isAdmin && onUpdateHandicap({ ...settings, updateMode: 'immediate' })}
+              disabled={!isAdmin}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '6px',
+                border: settings.updateMode === 'immediate' ? '2px solid #27ae60' : '2px solid #ddd',
+                background: settings.updateMode === 'immediate' ? '#e8f5e9' : 'white',
+                fontWeight: settings.updateMode === 'immediate' ? '600' : 'normal',
+                cursor: isAdmin ? 'pointer' : 'not-allowed',
+                opacity: isAdmin ? 1 : 0.7
+              }}
+            >
+              Immediate
+            </button>
+            <button
+              onClick={() => isAdmin && onUpdateHandicap({ ...settings, updateMode: 'monthly' })}
+              disabled={!isAdmin}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '6px',
+                border: settings.updateMode === 'monthly' ? '2px solid #27ae60' : '2px solid #ddd',
+                background: settings.updateMode === 'monthly' ? '#e8f5e9' : 'white',
+                fontWeight: settings.updateMode === 'monthly' ? '600' : 'normal',
+                cursor: isAdmin ? 'pointer' : 'not-allowed',
+                opacity: isAdmin ? 1 : 0.7
+              }}
+            >
+              Monthly Lock
+            </button>
+          </div>
+          <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+            {settings.updateMode === 'immediate'
+              ? 'Handicaps update after every round'
+              : 'Handicaps are locked at the start of each month. Use the button below to recalculate.'}
+          </p>
+          {settings.updateMode === 'monthly' && isAdmin && (
+            <div style={{ marginTop: '10px' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={handleRecalculateAll}
+              >
+                Recalculate & Lock All Handicaps Now
+              </button>
+              {settings.lastUpdateDate && (
+                <p style={{ fontSize: '11px', color: '#888', marginTop: '5px' }}>
+                  Last updated: {new Date(settings.lastUpdateDate).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Freeze Period Settings */}
+      {settings.calculationMode === 'auto' && (
+        <div style={{ marginBottom: '20px', padding: '15px', background: settings.freezeEnabled ? '#fff3e0' : '#f8f9fa', borderRadius: '8px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={settings.freezeEnabled}
+              onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, freezeEnabled: e.target.checked })}
+              disabled={!isAdmin}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ fontWeight: '600' }}>Enable Seasonal Freeze Period</span>
+          </label>
+          <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+            Rounds played during the freeze period will not count toward handicap calculation.
+            Useful for excluding winter rounds when conditions cause inflated scores.
+          </p>
+
+          {settings.freezeEnabled && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                    Freeze Start
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <select
+                      value={settings.freezeStartMonth}
+                      onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, freezeStartMonth: parseInt(e.target.value) })}
+                      disabled={!isAdmin}
+                      style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    >
+                      {MONTHS.map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={settings.freezeStartDay}
+                      onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, freezeStartDay: parseInt(e.target.value) || 1 })}
+                      disabled={!isAdmin}
+                      min="1"
+                      max="31"
+                      style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                    Freeze End
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <select
+                      value={settings.freezeEndMonth}
+                      onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, freezeEndMonth: parseInt(e.target.value) })}
+                      disabled={!isAdmin}
+                      style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    >
+                      {MONTHS.map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={settings.freezeEndDay}
+                      onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, freezeEndDay: parseInt(e.target.value) || 1 })}
+                      disabled={!isAdmin}
+                      min="1"
+                      max="31"
+                      style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                  </div>
+                </div>
+              </div>
+              {todayInFreeze && (
+                <div style={{
+                  marginTop: '12px',
+                  padding: '10px',
+                  background: '#ffebee',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  color: '#c62828'
+                }}>
+                  Currently in freeze period - rounds played now will not affect handicaps
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Min Rounds & Max Handicap */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+            Min Rounds for Auto
+          </label>
+          <input
+            type="number"
+            value={settings.minRoundsForAuto}
+            onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, minRoundsForAuto: parseInt(e.target.value) || 3 })}
+            disabled={!isAdmin}
+            min="1"
+            max="20"
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid #ddd'
+            }}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+            Maximum Handicap
+          </label>
+          <input
+            type="number"
+            value={settings.maxHandicap}
+            onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, maxHandicap: parseInt(e.target.value) || 54 })}
+            disabled={!isAdmin}
+            min="18"
+            max="54"
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid #ddd'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Course Tees Section */}
+      <div style={{ borderTop: '1px solid #eee', paddingTop: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h4 style={{ margin: 0 }}>Course Tees</h4>
+          {isAdmin && (
+            <button
+              className="btn btn-small btn-secondary"
+              onClick={() => setShowTeeEditor(!showTeeEditor)}
+            >
+              {showTeeEditor ? 'Hide Editor' : 'Edit Tees'}
+            </button>
+          )}
+        </div>
+
+        {/* Tee List */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '15px' }}>
+          {Object.entries(tees).map(([key, tee]) => (
+            <div
+              key={key}
+              style={{
+                background: '#f8f9fa',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '13px'
+              }}
+            >
+              <strong>{tee.name}</strong>: {tee.courseRating}/{tee.slopeRating}
+            </div>
+          ))}
+        </div>
+
+        {/* Tee Editor */}
+        {showTeeEditor && isAdmin && (
+          <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px' }}>
+            <h5 style={{ marginBottom: '15px' }}>Edit Tees</h5>
+
+            {/* Existing Tees */}
+            {Object.entries(tees).map(([key, tee]) => (
+              <div
+                key={key}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 80px 80px auto',
+                  gap: '10px',
+                  alignItems: 'center',
+                  marginBottom: '10px'
+                }}
+              >
+                <input
+                  type="text"
+                  value={tee.name}
+                  onChange={(e) => handleUpdateTee(key, 'name', e.target.value)}
+                  placeholder="Name"
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+                <input
+                  type="number"
+                  value={tee.courseRating}
+                  onChange={(e) => handleUpdateTee(key, 'courseRating', e.target.value)}
+                  placeholder="Rating"
+                  step="0.1"
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+                <input
+                  type="number"
+                  value={tee.slopeRating}
+                  onChange={(e) => handleUpdateTee(key, 'slopeRating', e.target.value)}
+                  placeholder="Slope"
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+                <button
+                  onClick={() => handleDeleteTee(key)}
+                  style={{
+                    background: '#e74c3c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '8px 12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  X
+                </button>
+              </div>
+            ))}
+
+            {/* Add New Tee */}
+            <div style={{ borderTop: '1px solid #ddd', paddingTop: '15px', marginTop: '15px' }}>
+              <h6 style={{ marginBottom: '10px' }}>Add New Tee</h6>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 80px', gap: '10px', marginBottom: '10px' }}>
+                <input
+                  type="text"
+                  value={newTeeKey}
+                  onChange={(e) => setNewTeeKey(e.target.value)}
+                  placeholder="Key (e.g. white)"
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+                <input
+                  type="text"
+                  value={newTeeName}
+                  onChange={(e) => setNewTeeName(e.target.value)}
+                  placeholder="Display Name"
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+                <input
+                  type="number"
+                  value={newTeeRating}
+                  onChange={(e) => setNewTeeRating(e.target.value)}
+                  placeholder="Rating"
+                  step="0.1"
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+                <input
+                  type="number"
+                  value={newTeeSlope}
+                  onChange={(e) => setNewTeeSlope(e.target.value)}
+                  placeholder="Slope"
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+              </div>
+              <button className="btn btn-primary btn-small" onClick={handleAddTee}>
+                Add Tee
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SettingsPage() {
   const navigate = useNavigate()
   const {
@@ -1100,7 +1605,11 @@ function SettingsPage() {
     setSkinsMatch,
     setQuickSkinsMode,
     defaultStartingHole,
-    setDefaultStartingHole
+    setDefaultStartingHole,
+    handicapSettings,
+    setHandicapSettings,
+    courseTees,
+    setCourseTees
   } = useLeague()
 
   const handleStartQuickSkins = ({ players: qsPlayers, teams, skinsSettings, greenieSettings }) => {
@@ -1170,6 +1679,16 @@ function SettingsPage() {
         defaultStartingHole={defaultStartingHole}
         onUpdate={setDefaultStartingHole}
         isAdmin={isAdmin}
+      />
+
+      <HandicapSettingsSection
+        handicapSettings={handicapSettings}
+        onUpdateHandicap={setHandicapSettings}
+        courseTees={courseTees}
+        onUpdateTees={setCourseTees}
+        isAdmin={isAdmin}
+        players={players}
+        leagueId={leagueId}
       />
 
       <HoleInOnePotSection

@@ -1,8 +1,30 @@
 import { useState } from 'react'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
+import {
+  getAllHandicaps,
+  formatHandicap,
+  getScopeLabel,
+  recalculatePlayerHandicaps,
+  DEFAULT_COURSE_TEES
+} from '../utils/handicapCalculation'
 
-function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin }) {
+function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapScope, leagueId, courseTees, handicapSettings }) {
+  // Calculate all three handicaps for display
+  const handicaps = getAllHandicaps(player, leagueId, courseTees, handicapSettings?.maxHandicap || 54, handicapSettings)
+
+  // Helper to get the active handicap based on scope
+  const getActiveHandicap = () => {
+    switch (handicapScope) {
+      case 'league': return handicaps.leagueHandicap
+      case 'gunpowder': return handicaps.gunpowderHandicap
+      case 'true':
+      default: return handicaps.trueHandicap
+    }
+  }
+
+  const activeHandicap = getActiveHandicap()
+
   return (
     <div className="player-card">
       <div className="player-info">
@@ -22,9 +44,49 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin }) {
           )}
         </div>
         <div className="player-skill">
-          Skill Rating: {player.skillRating?.toFixed(1) || '5.0'} |
-          Games: {player.gamesPlayed || 0}
-          {player.avgTotal > 0 && ` | Avg: ${player.avgTotal.toFixed(1)}`}
+          {/* Handicap display - show all three with active one highlighted */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              background: handicapScope === 'true' ? '#27ae60' : '#e0e0e0',
+              color: handicapScope === 'true' ? 'white' : '#666'
+            }}>
+              True: {formatHandicap(handicaps.trueHandicap)}
+            </span>
+            <span style={{
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              background: handicapScope === 'league' ? '#27ae60' : '#e0e0e0',
+              color: handicapScope === 'league' ? 'white' : '#666'
+            }}>
+              League: {formatHandicap(handicaps.leagueHandicap)}
+            </span>
+            <span style={{
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              background: handicapScope === 'gunpowder' ? '#27ae60' : '#e0e0e0',
+              color: handicapScope === 'gunpowder' ? 'white' : '#666'
+            }}>
+              Gunpowder: {formatHandicap(handicaps.gunpowderHandicap)}
+            </span>
+            <span style={{ color: '#666', fontSize: '12px' }}>
+              | Games: {player.gamesPlayed || 0}
+            </span>
+            {player.avgTotal > 0 && (
+              <span style={{ color: '#666', fontSize: '12px' }}>
+                | Avg: {player.avgTotal.toFixed(1)}
+              </span>
+            )}
+          </div>
+          {player.defaultTee && (
+            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+              Default Tee: {courseTees?.[player.defaultTee]?.name || player.defaultTee}
+            </div>
+          )}
         </div>
       </div>
       <div className="player-actions">
@@ -57,9 +119,11 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin }) {
   )
 }
 
-function AddPlayerForm({ onAdd, onCancel }) {
+function AddPlayerForm({ onAdd, onCancel, courseTees }) {
   const [name, setName] = useState('')
   const [skillRating, setSkillRating] = useState('5')
+  const [handicap, setHandicap] = useState('')
+  const [defaultTee, setDefaultTee] = useState('blue')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [emergencyName, setEmergencyName] = useState('')
@@ -76,6 +140,10 @@ function AddPlayerForm({ onAdd, onCancel }) {
       id: Date.now(),
       name: name.trim(),
       skillRating: parseFloat(skillRating) || 5,
+      handicap: handicap ? parseFloat(handicap) : null,
+      handicapSource: handicap ? 'manual' : null,
+      defaultTee: defaultTee,
+      externalRounds: [],
       phone: phone.trim(),
       email: email.trim(),
       emergencyName: emergencyName.trim(),
@@ -112,7 +180,31 @@ function AddPlayerForm({ onAdd, onCancel }) {
             />
           </div>
           <div className="input-group" style={{ marginBottom: '0' }}>
-            <label>Skill Rating (1-10)</label>
+            <label>Starting Handicap (estimated)</label>
+            <input
+              type="number"
+              value={handicap}
+              onChange={(e) => setHandicap(e.target.value)}
+              placeholder="e.g. 18"
+              min="0"
+              max="54"
+              step="0.1"
+            />
+          </div>
+          <div className="input-group" style={{ marginBottom: '0' }}>
+            <label>Default Tee</label>
+            <select
+              value={defaultTee}
+              onChange={(e) => setDefaultTee(e.target.value)}
+              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+            >
+              {Object.entries(courseTees || DEFAULT_COURSE_TEES).map(([key, tee]) => (
+                <option key={key} value={key}>{tee.name} ({tee.courseRating}/{tee.slopeRating})</option>
+              ))}
+            </select>
+          </div>
+          <div className="input-group" style={{ marginBottom: '0' }}>
+            <label>Skill Rating (1-10, legacy)</label>
             <input
               type="number"
               value={skillRating}
@@ -168,15 +260,20 @@ function AddPlayerForm({ onAdd, onCancel }) {
   )
 }
 
-function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin }) {
+function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTees, leagueId, handicapSettings }) {
   const [name, setName] = useState(player.name)
   const [skillRating, setSkillRating] = useState(player.skillRating?.toString() || '5')
+  const [handicap, setHandicap] = useState(player.handicap?.toString() || '')
+  const [defaultTee, setDefaultTee] = useState(player.defaultTee || 'blue')
   const [phone, setPhone] = useState(player.phone || '')
   const [email, setEmail] = useState(player.email || '')
   const [emergencyName, setEmergencyName] = useState(player.emergencyName || '')
   const [emergencyPhone, setEmergencyPhone] = useState(player.emergencyPhone || '')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletePin, setDeletePin] = useState('')
+
+  // Calculate current handicaps for display
+  const calculatedHandicaps = getAllHandicaps(player, leagueId, courseTees, handicapSettings?.maxHandicap || 54, handicapSettings)
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -188,11 +285,23 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin }) {
       ...player,
       name: name.trim(),
       skillRating: parseFloat(skillRating) || 5,
+      handicap: handicap ? parseFloat(handicap) : null,
+      handicapSource: handicap ? 'manual' : player.handicapSource,
+      defaultTee: defaultTee,
       phone: phone.trim(),
       email: email.trim(),
       emergencyName: emergencyName.trim(),
       emergencyPhone: emergencyPhone.trim()
     })
+  }
+
+  const handleRecalculateHandicap = () => {
+    const updated = recalculatePlayerHandicaps(player, leagueId, courseTees)
+    if (updated.handicap !== null) {
+      setHandicap(updated.handicap.toString())
+    } else {
+      alert('Not enough rounds to calculate handicap (minimum 3 required)')
+    }
   }
 
   const handleDelete = () => {
@@ -240,6 +349,23 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin }) {
             </div>
           ) : (
             <>
+              {/* Handicap Info Box */}
+              <div style={{
+                background: '#e8f5e9',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '15px'
+              }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '13px' }}>
+                  Calculated Handicaps
+                </div>
+                <div style={{ display: 'flex', gap: '15px', fontSize: '12px' }}>
+                  <span>True: <strong>{formatHandicap(calculatedHandicaps.trueHandicap)}</strong></span>
+                  <span>League: <strong>{formatHandicap(calculatedHandicaps.leagueHandicap)}</strong></span>
+                  <span>Gunpowder: <strong>{formatHandicap(calculatedHandicaps.gunpowderHandicap)}</strong></span>
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div className="input-group" style={{ marginBottom: '0' }}>
                   <label>Name *</label>
@@ -250,7 +376,42 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin }) {
                   />
                 </div>
                 <div className="input-group" style={{ marginBottom: '0' }}>
-                  <label>Skill Rating (1-10)</label>
+                  <label>Manual Handicap Override</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="number"
+                      value={handicap}
+                      onChange={(e) => setHandicap(e.target.value)}
+                      placeholder="Auto-calculated"
+                      min="0"
+                      max="54"
+                      step="0.1"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-small btn-secondary"
+                      onClick={handleRecalculateHandicap}
+                      title="Recalculate from scores"
+                    >
+                      Calc
+                    </button>
+                  </div>
+                </div>
+                <div className="input-group" style={{ marginBottom: '0' }}>
+                  <label>Default Tee</label>
+                  <select
+                    value={defaultTee}
+                    onChange={(e) => setDefaultTee(e.target.value)}
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                  >
+                    {Object.entries(courseTees || DEFAULT_COURSE_TEES).map(([key, tee]) => (
+                      <option key={key} value={key}>{tee.name} ({tee.courseRating}/{tee.slopeRating})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="input-group" style={{ marginBottom: '0' }}>
+                  <label>Skill Rating (1-10, legacy)</label>
                   <input
                     type="number"
                     value={skillRating}
@@ -1010,14 +1171,81 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
   )
 }
 
-function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin }) {
+function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees, leagueId, handicapSettings }) {
   const history = player.scoreHistory || []
+  const externalRounds = player.externalRounds || []
   const [statFilter, setStatFilter] = useState('all')
   const [filterYear, setFilterYear] = useState(new Date().getFullYear())
   const [filterLastX, setFilterLastX] = useState(5)
   const [filterStartDate, setFilterStartDate] = useState('')
   const [filterEndDate, setFilterEndDate] = useState('')
   const [viewingRound, setViewingRound] = useState(null)
+  const [showExternalRounds, setShowExternalRounds] = useState(false)
+  const [showAddExternal, setShowAddExternal] = useState(false)
+  const [externalForm, setExternalForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    courseName: '',
+    tee: '',
+    courseRating: '72',
+    slopeRating: '113',
+    score: '',
+    notes: ''
+  })
+
+  // Calculate handicaps for display
+  const calculatedHandicaps = getAllHandicaps(player, leagueId, courseTees, handicapSettings?.maxHandicap || 54, handicapSettings)
+
+  // Handle adding external round
+  const handleAddExternalRound = () => {
+    if (!externalForm.score || !externalForm.courseName) {
+      alert('Please enter course name and score')
+      return
+    }
+
+    const newExternal = {
+      id: Date.now(),
+      date: externalForm.date,
+      courseName: externalForm.courseName.trim(),
+      tee: externalForm.tee.trim() || undefined,
+      courseRating: parseFloat(externalForm.courseRating) || 72,
+      slopeRating: parseFloat(externalForm.slopeRating) || 113,
+      score: parseInt(externalForm.score),
+      notes: externalForm.notes.trim() || undefined
+    }
+
+    const updatedExternalRounds = [...(player.externalRounds || []), newExternal]
+    const updatedPlayer = recalculatePlayerHandicaps(
+      { ...player, externalRounds: updatedExternalRounds },
+      leagueId,
+      courseTees
+    )
+
+    onUpdatePlayer(updatedPlayer)
+    setExternalForm({
+      date: new Date().toISOString().split('T')[0],
+      courseName: '',
+      tee: '',
+      courseRating: '72',
+      slopeRating: '113',
+      score: '',
+      notes: ''
+    })
+    setShowAddExternal(false)
+  }
+
+  // Handle deleting external round
+  const handleDeleteExternalRound = (roundId) => {
+    if (!confirm('Delete this external round?')) return
+
+    const updatedExternalRounds = (player.externalRounds || []).filter(r => r.id !== roundId)
+    const updatedPlayer = recalculatePlayerHandicaps(
+      { ...player, externalRounds: updatedExternalRounds },
+      leagueId,
+      courseTees
+    )
+
+    onUpdatePlayer(updatedPlayer)
+  }
 
   // Get available years from history
   const availableYears = [...new Set(history.map(r => new Date(r.date).getFullYear()))].sort((a, b) => b - a)
@@ -1426,8 +1654,203 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin }) {
                 </div>
               )}
 
+              {/* Handicap Summary */}
+              <div style={{
+                background: 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)',
+                color: 'white',
+                padding: '15px',
+                borderRadius: '10px',
+                marginBottom: '20px'
+              }}>
+                <h4 style={{ marginBottom: '10px', fontSize: '14px' }}>Handicap Summary</h4>
+                <div style={{ display: 'flex', gap: '20px', fontSize: '13px' }}>
+                  <div>
+                    <div style={{ opacity: 0.8 }}>True</div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatHandicap(calculatedHandicaps.trueHandicap)}</div>
+                  </div>
+                  <div>
+                    <div style={{ opacity: 0.8 }}>League</div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatHandicap(calculatedHandicaps.leagueHandicap)}</div>
+                  </div>
+                  <div>
+                    <div style={{ opacity: 0.8 }}>Gunpowder</div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{formatHandicap(calculatedHandicaps.gunpowderHandicap)}</div>
+                  </div>
+                </div>
+                {player.defaultTee && (
+                  <div style={{ marginTop: '10px', fontSize: '12px', opacity: 0.9 }}>
+                    Default Tee: {courseTees?.[player.defaultTee]?.name || player.defaultTee}
+                  </div>
+                )}
+              </div>
+
+              {/* External Rounds Section */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '10px'
+                }}>
+                  <h4 style={{ margin: 0 }}>
+                    External Rounds ({externalRounds.length})
+                  </h4>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {externalRounds.length > 0 && (
+                      <button
+                        className="btn btn-small btn-secondary"
+                        onClick={() => setShowExternalRounds(!showExternalRounds)}
+                      >
+                        {showExternalRounds ? 'Hide' : 'Show'}
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button
+                        className="btn btn-small btn-primary"
+                        onClick={() => setShowAddExternal(true)}
+                      >
+                        + Add
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Add External Round Form */}
+                {showAddExternal && (
+                  <div style={{
+                    background: '#f8f9fa',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    marginBottom: '15px'
+                  }}>
+                    <h5 style={{ marginBottom: '12px' }}>Add External Round</h5>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="input-group" style={{ marginBottom: '0' }}>
+                        <label>Date</label>
+                        <input
+                          type="date"
+                          value={externalForm.date}
+                          onChange={(e) => setExternalForm({ ...externalForm, date: e.target.value })}
+                        />
+                      </div>
+                      <div className="input-group" style={{ marginBottom: '0' }}>
+                        <label>Course Name *</label>
+                        <input
+                          type="text"
+                          value={externalForm.courseName}
+                          onChange={(e) => setExternalForm({ ...externalForm, courseName: e.target.value })}
+                          placeholder="e.g. Pine Valley"
+                        />
+                      </div>
+                      <div className="input-group" style={{ marginBottom: '0' }}>
+                        <label>Tee (optional)</label>
+                        <input
+                          type="text"
+                          value={externalForm.tee}
+                          onChange={(e) => setExternalForm({ ...externalForm, tee: e.target.value })}
+                          placeholder="e.g. Blue"
+                        />
+                      </div>
+                      <div className="input-group" style={{ marginBottom: '0' }}>
+                        <label>Score *</label>
+                        <input
+                          type="number"
+                          value={externalForm.score}
+                          onChange={(e) => setExternalForm({ ...externalForm, score: e.target.value })}
+                          placeholder="e.g. 85"
+                        />
+                      </div>
+                      <div className="input-group" style={{ marginBottom: '0' }}>
+                        <label>Course Rating</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={externalForm.courseRating}
+                          onChange={(e) => setExternalForm({ ...externalForm, courseRating: e.target.value })}
+                        />
+                      </div>
+                      <div className="input-group" style={{ marginBottom: '0' }}>
+                        <label>Slope Rating</label>
+                        <input
+                          type="number"
+                          value={externalForm.slopeRating}
+                          onChange={(e) => setExternalForm({ ...externalForm, slopeRating: e.target.value })}
+                        />
+                      </div>
+                      <div className="input-group" style={{ marginBottom: '0', gridColumn: 'span 2' }}>
+                        <label>Notes (optional)</label>
+                        <input
+                          type="text"
+                          value={externalForm.notes}
+                          onChange={(e) => setExternalForm({ ...externalForm, notes: e.target.value })}
+                          placeholder="Any notes about this round"
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                      <button className="btn btn-primary" onClick={handleAddExternalRound}>
+                        Add Round
+                      </button>
+                      <button className="btn btn-secondary" onClick={() => setShowAddExternal(false)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* External Rounds List */}
+                {showExternalRounds && externalRounds.length > 0 && (
+                  <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                    {externalRounds.slice().reverse().map((round, idx) => (
+                      <div
+                        key={round.id || idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          background: idx % 2 === 0 ? '#f0f7ff' : '#e3f2fd',
+                          borderRadius: '6px',
+                          marginBottom: '4px',
+                          fontSize: '13px'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: '600' }}>{round.courseName}</div>
+                          <div style={{ fontSize: '11px', color: '#666' }}>
+                            {new Date(round.date).toLocaleDateString()} |
+                            {round.tee && ` ${round.tee} |`}
+                            Rating: {round.courseRating}/{round.slopeRating}
+                            {round.notes && ` | ${round.notes}`}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <strong style={{ fontSize: '16px' }}>{round.score}</strong>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteExternalRound(round.id)}
+                              style={{
+                                background: '#e74c3c',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                fontSize: '11px'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Round history */}
-              <h4 style={{ marginBottom: '10px' }}>Round History ({filteredRounds.length})</h4>
+              <h4 style={{ marginBottom: '10px' }}>League Round History ({filteredRounds.length})</h4>
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {filteredRounds.length === 0 ? (
                   <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>No rounds found for this filter</p>
@@ -1493,11 +1916,13 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin }) {
 }
 
 function PlayersPage() {
-  const { players, setPlayers, isAdmin, leagueSettings } = useLeague()
+  const { players, setPlayers, isAdmin, leagueSettings, handicapSettings, courseTees, leagueId } = useLeague()
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingPlayer, setEditingPlayer] = useState(null)
   const [viewingPlayer, setViewingPlayer] = useState(null)
   const [filter, setFilter] = useState('active') // 'all', 'active', 'inactive'
+
+  const handicapScope = handicapSettings?.handicapScope || 'true'
 
   const filteredPlayers = players.filter(player => {
     if (filter === 'active') return player.isActive !== false
@@ -1572,6 +1997,7 @@ function PlayersPage() {
         <AddPlayerForm
           onAdd={handleAddPlayer}
           onCancel={() => setShowAddForm(false)}
+          courseTees={courseTees}
         />
       )}
 
@@ -1595,6 +2021,10 @@ function PlayersPage() {
               onView={setViewingPlayer}
               onToggleActive={handleToggleActive}
               isAdmin={isAdmin}
+              handicapScope={handicapScope}
+              leagueId={leagueId}
+              courseTees={courseTees}
+              handicapSettings={handicapSettings}
             />
           ))}
         </div>
@@ -1608,6 +2038,9 @@ function PlayersPage() {
           onClose={() => setEditingPlayer(null)}
           onDelete={handleDeletePlayer}
           isAdmin={isAdmin}
+          courseTees={courseTees}
+          leagueId={leagueId}
+          handicapSettings={handicapSettings}
         />
       )}
 
@@ -1621,6 +2054,9 @@ function PlayersPage() {
             setViewingPlayer(updatedPlayer)
           }}
           isAdmin={isAdmin}
+          courseTees={courseTees}
+          leagueId={leagueId}
+          handicapSettings={handicapSettings}
         />
       )}
     </div>

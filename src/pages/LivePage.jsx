@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
+import {
+  recalculatePlayerHandicaps,
+  DEFAULT_COURSE_TEES,
+  shouldUpdateHandicaps,
+  isDateInFreezePeriod
+} from '../utils/handicapCalculation'
 
 // Calculate team score for a 9-hole range
 function calculateTeamScore(team, startHole, endHole) {
@@ -5720,7 +5726,10 @@ function LivePage() {
     setQuickSkinsMode,
     quickSkinsHistory,
     setQuickSkinsHistory,
-    defaultStartingHole
+    defaultStartingHole,
+    handicapSettings,
+    courseTees,
+    leagueId
   } = useLeague()
 
   // Leaderboard view state - defaults based on starting hole (front if 1-9, back if 10-18)
@@ -6070,6 +6079,9 @@ function LivePage() {
         }
       })
 
+      // Get player's tee for this round (from liveRound player data or player's default)
+      const teeUsed = roundPlayer.tee || player.defaultTee || 'blue'
+
       const newScoreHistory = [
         ...(player.scoreHistory || []),
         {
@@ -6086,7 +6098,8 @@ function LivePage() {
           breakdown: scoreBreakdown,
           greeniesWon: greeniesWon,
           isComplete: hasAllHoles,
-          holesCompleted: holesCompleted
+          holesCompleted: holesCompleted,
+          tee: teeUsed
         }
       ]
 
@@ -6103,7 +6116,8 @@ function LivePage() {
         ? validRounds.reduce((sum, r) => sum + (r.backNineScore || r.backNine || 0), 0) / validRounds.length
         : player.avgBackNine || 0
 
-      return {
+      // Build updated player with new stats
+      let updatedPlayer = {
         ...player,
         gamesPlayed: newGamesPlayed,
         scoreHistory: newScoreHistory,
@@ -6111,6 +6125,31 @@ function LivePage() {
         avgFrontNine: avgFront,
         avgBackNine: avgBack
       }
+
+      // Recalculate handicaps if auto mode is enabled and conditions are met
+      if (handicapSettings?.calculationMode === 'auto') {
+        const teesConfig = courseTees || DEFAULT_COURSE_TEES
+
+        // Check if this round is in the freeze period
+        const roundDate = liveRound.date
+        const isInFreezePeriod = isDateInFreezePeriod(roundDate, handicapSettings)
+
+        // Check if we should update handicaps (immediate mode or monthly mode with new month)
+        const shouldUpdate = shouldUpdateHandicaps(handicapSettings)
+
+        // Only recalculate if not in freeze period and update mode allows it
+        if (!isInFreezePeriod && shouldUpdate) {
+          updatedPlayer = recalculatePlayerHandicaps(
+            updatedPlayer,
+            leagueId,
+            teesConfig,
+            handicapSettings?.maxHandicap || 54,
+            handicapSettings
+          )
+        }
+      }
+
+      return updatedPlayer
     })
 
     setPlayers(updatedPlayers)

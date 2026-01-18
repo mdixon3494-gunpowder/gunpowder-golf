@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { DEFAULT_HANDICAP_SETTINGS, DEFAULT_COURSE_TEES } from '../utils/handicapCalculation'
 
 const LeagueContext = createContext(null)
 
@@ -119,6 +120,10 @@ export function LeagueProvider({ children }) {
   const [playerMoneyRecords, setPlayerMoneyRecords] = useState([])
   const [pendingPlayerRequests, setPendingPlayerRequests] = useState([])
 
+  // Handicap settings
+  const [handicapSettings, setHandicapSettings] = useState(DEFAULT_HANDICAP_SETTINGS)
+  const [courseTees, setCourseTees] = useState(DEFAULT_COURSE_TEES)
+
   // Skins
   const [skinsMatch, setSkinsMatch] = useState(null)
   const [quickSkinsMode, setQuickSkinsMode] = useState(false)
@@ -183,6 +188,8 @@ export function LeagueProvider({ children }) {
           if (data.playerMoneyRecords) setPlayerMoneyRecords(data.playerMoneyRecords)
           if (data.quickSkinsHistory) setQuickSkinsHistory(data.quickSkinsHistory)
           if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
+          if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
+          if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
           setIsSetup(true)
         }
       }
@@ -216,7 +223,9 @@ export function LeagueProvider({ children }) {
           playerMoneyRecords,
           skinsMatch,
           quickSkinsHistory,
-          quickSkinsMode
+          quickSkinsMode,
+          handicapSettings,
+          courseTees
         },
         () => setSaveStatus('saving'),
         (success) => setSaveStatus(success ? 'saved' : 'error')
@@ -224,7 +233,8 @@ export function LeagueProvider({ children }) {
     }
   }, [players, history, pairingRequests, liveRound, teams, leagueId, isSetup,
       leagueSettings, pendingPlayerRequests, payoutFormats, holeInOnePot,
-      moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, quickSkinsHistory, quickSkinsMode])
+      moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, quickSkinsHistory, quickSkinsMode,
+      handicapSettings, courseTees])
 
   // Mark data as loaded
   useEffect(() => {
@@ -365,6 +375,8 @@ export function LeagueProvider({ children }) {
       if (data.playerMoneyRecords) setPlayerMoneyRecords(data.playerMoneyRecords)
       if (data.quickSkinsHistory) setQuickSkinsHistory(data.quickSkinsHistory)
       if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
+      if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
+      if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
       setIsSetup(true)
       hasLoadedData.current = true
       return true
@@ -454,6 +466,12 @@ export function LeagueProvider({ children }) {
     setCheckedInPlayers,
     manualTeams,
     setManualTeams,
+
+    // Handicap settings
+    handicapSettings,
+    setHandicapSettings,
+    courseTees,
+    setCourseTees,
 
     // Utilities
     normalizeRound

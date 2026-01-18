@@ -2,10 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { getTeamName, calculateTeamSkill, calculateTeamBalance } from '../utils/teamGeneration'
+import { formatHandicap } from '../utils/handicapCalculation'
 
 function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin }) {
   const teamSkill = calculateTeamSkill(team)
   const avgSkill = team.length > 0 ? teamSkill / team.length : 0
+  // Calculate average handicap for display
+  const playersWithHandicap = team.filter(p => p.handicap !== undefined && p.handicap !== null)
+  const avgHandicap = playersWithHandicap.length > 0
+    ? playersWithHandicap.reduce((sum, p) => sum + p.handicap, 0) / playersWithHandicap.length
+    : null
 
   return (
     <div className="team-container" style={{ position: 'relative', marginBottom: '15px' }}>
@@ -64,11 +70,14 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin }) {
         }}>
           #{index + 1}
         </span>
-        {getTeamName(team)} ({team.length}) - Avg Skill: {avgSkill.toFixed(1)}
+        {getTeamName(team)} ({team.length})
+        {avgHandicap !== null ? ` - Avg HCP: ${avgHandicap.toFixed(1)}` : ` - Avg Skill: ${avgSkill.toFixed(1)}`}
       </div>
       {team.map(player => (
         <div key={player.id} className="team-member">
-          {player.name} ({player.skillRating?.toFixed(1) || '5.0'})
+          {player.name} ({player.handicap !== undefined && player.handicap !== null
+            ? `HCP ${formatHandicap(player.handicap)}`
+            : player.skillRating?.toFixed(1) || '5.0'})
         </div>
       ))}
     </div>
@@ -434,17 +443,19 @@ function TeamsPage() {
         id: idx,
         name: getTeamName(team),
         players: team.map(p => {
-          // Get the full player data to include avgTotal
+          // Get the full player data to include avgTotal and defaultTee
           const fullPlayer = players.find(fp => fp.id === p.id) || p
           return {
             id: p.id,
             name: p.name,
             skillRating: p.skillRating || fullPlayer.skillRating,
+            handicap: p.handicap || fullPlayer.handicap,
             avgTotal: p.avgTotal || fullPlayer.avgTotal || 0,
             scores: {},
             isDNF: false,
             includeInTeamScore: true,
-            joinedLate: false
+            joinedLate: false,
+            tee: fullPlayer.defaultTee || 'blue'
           }
         }),
         totalScore: 0,

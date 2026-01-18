@@ -2,8 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { generateTeams } from '../utils/teamGeneration'
+import { formatHandicap, getEffectiveHandicap } from '../utils/handicapCalculation'
 
 function PlayerCheckInCard({ player, isSelected, isInManualTeam, onToggle, showSkill }) {
+  const displayRating = player.handicap !== undefined && player.handicap !== null
+    ? `HCP: ${formatHandicap(player.handicap)}`
+    : `Skill: ${player.skillRating?.toFixed(1) || '5.0'}`
+
   return (
     <div
       style={{
@@ -43,7 +48,7 @@ function PlayerCheckInCard({ player, isSelected, isInManualTeam, onToggle, showS
         </div>
         {showSkill && (
           <div style={{ fontSize: '13px', color: '#333', fontWeight: '500' }}>
-            Skill: {player.skillRating?.toFixed(1) || '5.0'}
+            {displayRating}
           </div>
         )}
       </div>
@@ -125,7 +130,9 @@ function CreateManualTeamForm({ availablePlayers, onSave, onCancel }) {
             onChange={() => {}}
             style={{ marginRight: '8px' }}
           />
-          {player.name} ({player.skillRating?.toFixed(1) || '5.0'})
+          {player.name} ({player.handicap !== undefined && player.handicap !== null
+            ? `HCP ${formatHandicap(player.handicap)}`
+            : player.skillRating?.toFixed(1) || '5.0'})
         </div>
       ))}
       <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
@@ -411,7 +418,10 @@ function GeneratePage() {
     checkedInPlayers,
     setCheckedInPlayers,
     manualTeams,
-    setManualTeams
+    setManualTeams,
+    handicapSettings,
+    courseTees,
+    leagueId
   } = useLeague()
 
   const [creatingManualTeam, setCreatingManualTeam] = useState(false)
@@ -504,7 +514,16 @@ function GeneratePage() {
   }
 
   const handleGenerateTeams = () => {
-    const selectedPlayerObjects = activePlayers.filter(p => selectedPlayers.includes(p.id))
+    // Get selected players and compute their effective handicaps for team generation
+    const selectedPlayerObjects = activePlayers.filter(p => selectedPlayers.includes(p.id)).map(p => {
+      // Calculate effective handicap based on league settings
+      const effectiveHandicap = getEffectiveHandicap(p, handicapSettings, leagueId, courseTees)
+      return {
+        ...p,
+        effectiveHandicap
+      }
+    })
+
     const generated = generateTeams(selectedPlayerObjects, pairingRequests, manualTeams)
 
     // Save teams to context and navigate to Teams page
