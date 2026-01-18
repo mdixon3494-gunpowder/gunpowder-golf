@@ -607,6 +607,18 @@ function SkinsResults({ round }) {
           }
         }
       }
+
+      // Handle dual winner scenario - carryovers won by different players
+      if (result.carryoverWinners?.length > 0) {
+        result.carryoverWinners.forEach(cw => {
+          const coPlayerId = String(cw.playerId)
+          if (summary[coPlayerId]) {
+            summary[coPlayerId].skinsWon += cw.count
+            summary[coPlayerId].totalValue += cw.count
+            totalSkinsWon += cw.count
+          }
+        })
+      }
     })
 
     const numParticipants = skinsPlayers.length
@@ -1337,12 +1349,960 @@ function DeleteConfirmModal({ round, onConfirm, onCancel }) {
   )
 }
 
+// Quick Skins Card for history list
+function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
+  const date = new Date(record.date)
+  const formattedDate = date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+
+  const skinsMatch = record.skinsMatch
+  const players = record.players || []
+  const numPlayers = skinsMatch?.participants?.length || players.length
+
+  // Calculate quick summary of skins won
+  const getQuickSummary = () => {
+    if (!skinsMatch) return null
+    const summary = {}
+    const allHoles = [...GUNPOWDER_SCORECARD.front9, ...GUNPOWDER_SCORECARD.back9]
+
+    players.filter(p => skinsMatch.participants?.includes(String(p.id))).forEach(p => {
+      summary[p.id] = { name: p.name, totalValue: 0 }
+    })
+
+    let carryoverCount = 0
+    allHoles.forEach(holeInfo => {
+      const hole = holeInfo.hole
+      const par = holeInfo.par
+      const skinsPlayers = players.filter(p => skinsMatch.participants?.includes(String(p.id)))
+
+      const playerScores = []
+      skinsPlayers.forEach(player => {
+        const score = player.scores?.[hole]
+        if (score !== undefined && score !== null && score !== '' && score !== 'X') {
+          playerScores.push({ playerId: player.id, score: parseInt(score) })
+        }
+      })
+
+      if (playerScores.length === 0) return
+
+      const minScore = Math.min(...playerScores.map(p => p.score))
+      const playersWithMin = playerScores.filter(p => p.score === minScore)
+
+      if (playersWithMin.length === 1) {
+        const winner = playersWithMin[0]
+        const meetsParRequirement = !skinsMatch.settings.parOrBetterRequired || winner.score <= par
+        if (meetsParRequirement && summary[winner.playerId]) {
+          let skinValue = 1
+          if (skinsMatch.settings.birdieDoubleEagleTriple) {
+            const diff = winner.score - par
+            if (diff === -1) skinValue = 2
+            else if (diff <= -2) skinValue = 3
+          }
+          summary[winner.playerId].totalValue += skinValue + carryoverCount
+          carryoverCount = 0
+        } else if (skinsMatch.settings.carryovers) {
+          carryoverCount++
+        }
+      } else if (skinsMatch.settings.carryovers) {
+        carryoverCount++
+      }
+    })
+
+    return Object.values(summary).filter(s => s.totalValue > 0).sort((a, b) => b.totalValue - a.totalValue)
+  }
+
+  const winners = getQuickSummary() || []
+  const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '12px',
+      marginBottom: '12px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      overflow: 'hidden'
+    }}>
+      {/* Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+        padding: '12px 15px',
+        color: 'white',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: '600' }}>Quick Skins</div>
+          <div style={{ fontSize: '12px', opacity: 0.9 }}>{formattedDate}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '14px', fontWeight: '600' }}>${cost}/skin</div>
+          <div style={{ fontSize: '12px', opacity: 0.9 }}>{numPlayers} players</div>
+        </div>
+      </div>
+
+      {/* Winners Preview */}
+      <div style={{ padding: '12px 15px' }}>
+        {winners.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+            {winners.slice(0, 3).map((w, idx) => (
+              <div key={idx} style={{
+                background: idx === 0 ? '#fff3cd' : '#f8f9fa',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '13px'
+              }}>
+                <span style={{ fontWeight: '600' }}>{w.name}</span>
+                <span style={{ color: '#27ae60', marginLeft: '5px' }}>+${w.totalValue * cost * (numPlayers - 1)}</span>
+              </div>
+            ))}
+            {winners.length > 3 && (
+              <div style={{ color: '#666', fontSize: '12px', alignSelf: 'center' }}>
+                +{winners.length - 3} more
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ color: '#666', fontSize: '13px', marginBottom: '10px' }}>No skins won</div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => onView(record)}
+            style={{
+              flex: 1,
+              padding: '10px',
+              background: '#f39c12',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            View Details
+          </button>
+          {isAdmin && (
+            <button
+              onClick={() => onDelete(record)}
+              style={{
+                padding: '10px 16px',
+                background: '#fff',
+                color: '#e74c3c',
+                border: '2px solid #e74c3c',
+                borderRadius: '6px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Quick Skins Detail Modal
+function QuickSkinsDetailModal({ record, onClose }) {
+  const [skinsView, setSkinsView] = useState('front')
+
+  if (!record || !record.skinsMatch) return null
+
+  const skinsMatch = record.skinsMatch
+  const players = record.players || []
+  const skinsPlayers = players.filter(p => skinsMatch.participants?.includes(String(p.id)))
+
+  const frontHoles = GUNPOWDER_SCORECARD.front9
+  const backHoles = GUNPOWDER_SCORECARD.back9
+  const allHoles = [...frontHoles, ...backHoles]
+  const displayHoles = skinsView === 'front' ? frontHoles : skinsView === 'back' ? backHoles : allHoles
+
+  // Helper: Get active players for a specific hole (respects join/leave holes)
+  const getActivePlayersForHole = (hole) => {
+    const participantDetails = skinsMatch?.participantDetails || {}
+    return skinsPlayers.filter(player => {
+      const details = participantDetails[String(player.id)]
+      if (!details) return true  // Backwards compat: assume active for all holes
+
+      const joinedOnHole = details.joinedOnHole || 1
+      const leftOnHole = details.leftOnHole || 18
+
+      return hole >= joinedOnHole && hole <= leftOnHole
+    })
+  }
+
+  // Calculate skins results (with player eligibility tracking like live version)
+  const calculateSkins = () => {
+    if (!skinsMatch || skinsPlayers.length < 2) return {}
+
+    const results = {}
+    // Track pending carryovers with their eligible player IDs
+    let pendingCarryovers = []  // Array of { fromHole, eligiblePlayerIds }
+
+    allHoles.forEach(holeInfo => {
+      const hole = holeInfo.hole
+      const par = holeInfo.par
+
+      const activePlayers = getActivePlayersForHole(hole)
+      const activePlayerIds = activePlayers.map(p => String(p.id))
+
+      // Get scores for active players on this hole
+      const playerScores = []
+      let allScored = true
+
+      activePlayers.forEach(player => {
+        const score = player.scores?.[hole]
+        if (score === undefined || score === null || score === '') {
+          allScored = false
+        } else if (score !== 'X') {
+          playerScores.push({ playerId: player.id, score: parseInt(score), name: player.name })
+        }
+      })
+
+      results[hole] = {
+        winner: null,
+        winnerName: null,
+        isTie: false,
+        allScored,
+        carryoverCount: 0,
+        carryoverFromHoles: [],
+        skinValue: 1,
+        activePlayers: activePlayerIds
+      }
+
+      if (playerScores.length === 0) {
+        return
+      }
+
+      const minScore = Math.min(...playerScores.map(p => p.score))
+      const playersWithMin = playerScores.filter(p => p.score === minScore)
+
+      let holeWinner = null
+
+      if (playersWithMin.length > 1) {
+        // Tie - no winner
+        results[hole].isTie = true
+        results[hole].minScore = minScore
+        if (skinsMatch.settings.carryovers) {
+          pendingCarryovers.push({ fromHole: hole, eligiblePlayerIds: [...activePlayerIds] })
+        }
+      } else {
+        const winner = playersWithMin[0]
+
+        if (skinsMatch.settings.parOrBetterRequired && winner.score > par) {
+          // Par not met - no winner
+          results[hole].parNotMet = true
+          if (skinsMatch.settings.carryovers) {
+            pendingCarryovers.push({ fromHole: hole, eligiblePlayerIds: [...activePlayerIds] })
+          }
+        } else {
+          // We have a winner
+          holeWinner = winner
+          let skinValue = 1
+          if (skinsMatch.settings.birdieDoubleEagleTriple) {
+            const diff = winner.score - par
+            if (diff === -1) skinValue = 2
+            else if (diff <= -2) skinValue = 3
+          }
+
+          results[hole].winner = winner.playerId
+          results[hole].winnerName = winner.name
+          results[hole].score = winner.score
+          results[hole].skinValue = skinValue
+        }
+      }
+
+      // Process pending carryovers - find winner among eligible players
+      // IMPORTANT: Process even when current hole is a tie - eligible players can still win carryovers
+      if (skinsMatch.settings.carryovers && pendingCarryovers.length > 0) {
+        // Get carryovers that existed BEFORE this hole (exclude current hole if it was just added)
+        const carryoversToProcess = pendingCarryovers.filter(co => co.fromHole !== hole)
+
+        if (carryoversToProcess.length > 0) {
+          // Group carryovers by eligible player sets
+          const carryoversByEligibility = {}
+          carryoversToProcess.forEach(co => {
+            const key = [...co.eligiblePlayerIds].sort().join(',')
+            if (!carryoversByEligibility[key]) {
+              carryoversByEligibility[key] = { eligiblePlayerIds: co.eligiblePlayerIds, holes: [] }
+            }
+            carryoversByEligibility[key].holes.push(co.fromHole)
+          })
+
+          Object.values(carryoversByEligibility).forEach(group => {
+            // Find the best score among eligible players on this hole
+            const eligibleScores = playerScores.filter(ps =>
+              group.eligiblePlayerIds.includes(String(ps.playerId))
+            )
+
+            if (eligibleScores.length === 0) {
+              // No eligible players scored - carryovers stay pending (already in list)
+              return
+            }
+
+            const eligibleMinScore = Math.min(...eligibleScores.map(s => s.score))
+            const eligibleWinners = eligibleScores.filter(s => s.score === eligibleMinScore)
+
+            // Check if there's a single winner among eligible players
+            const eligibleValidWin = eligibleWinners.length === 1 &&
+              (!skinsMatch.settings.parOrBetterRequired || eligibleWinners[0].score <= par)
+
+            if (eligibleValidWin) {
+              const coWinner = eligibleWinners[0]
+
+              // Track carryover win (may be same as hole winner or different)
+              if (holeWinner && String(coWinner.playerId) === String(holeWinner.playerId)) {
+                // Same as hole winner - add to regular carryover count
+                results[hole].carryoverCount = (results[hole].carryoverCount || 0) + group.holes.length
+                results[hole].carryoverFromHoles = [
+                  ...(results[hole].carryoverFromHoles || []),
+                  ...group.holes
+                ]
+              } else {
+                // Different winner for carryovers (or no hole winner - dual winner scenario)
+                if (!results[hole].carryoverWinners) {
+                  results[hole].carryoverWinners = []
+                }
+                results[hole].carryoverWinners.push({
+                  playerId: coWinner.playerId,
+                  playerName: coWinner.name,
+                  count: group.holes.length,
+                  fromHoles: group.holes
+                })
+              }
+
+              // Remove these from pending
+              group.holes.forEach(h => {
+                pendingCarryovers = pendingCarryovers.filter(c => c.fromHole !== h)
+              })
+            }
+            // If tie among eligible players, carryovers stay pending (no action needed)
+          })
+        }
+      }
+    })
+
+    // Handle wrap unwon skins
+    if (skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && pendingCarryovers.length > 0) {
+      const wrapToFront = skinsMatch.settings.wrapTo === 'front'
+      const searchHoles = wrapToFront ? [1,2,3,4,5,6,7,8,9] : [10,11,12,13,14,15,16,17,18]
+
+      // Group remaining carryovers by eligibility
+      const carryoversByEligibility = {}
+      pendingCarryovers.forEach(co => {
+        const key = [...co.eligiblePlayerIds].sort().join(',')
+        if (!carryoversByEligibility[key]) {
+          carryoversByEligibility[key] = { eligiblePlayerIds: co.eligiblePlayerIds, holes: [] }
+        }
+        carryoversByEligibility[key].holes.push(co.fromHole)
+      })
+
+      Object.values(carryoversByEligibility).forEach(group => {
+        // Find first winner in wrap range who is eligible
+        for (const hole of searchHoles) {
+          if (!results[hole]?.winner) continue
+
+          // Check if hole winner is eligible
+          if (group.eligiblePlayerIds.includes(String(results[hole].winner))) {
+            results[hole].carryoverCount = (results[hole].carryoverCount || 0) + group.holes.length
+            results[hole].carryoverFromHoles = [
+              ...(results[hole].carryoverFromHoles || []),
+              ...group.holes
+            ]
+            results[hole].hasWrappedCarryovers = true
+            break
+          }
+
+          // Check carryover winners on this hole too
+          const eligibleCoWinner = results[hole].carryoverWinners?.find(cw =>
+            group.eligiblePlayerIds.includes(String(cw.playerId))
+          )
+          if (eligibleCoWinner) {
+            eligibleCoWinner.count += group.holes.length
+            eligibleCoWinner.fromHoles = [...eligibleCoWinner.fromHoles, ...group.holes]
+            results[hole].hasWrappedCarryovers = true
+            break
+          }
+        }
+      })
+    }
+
+    return results
+  }
+
+  // Get skins summary per player (eligibility-aware)
+  const getSkinsSummary = (results) => {
+    const participantDetails = skinsMatch?.participantDetails || {}
+    const summary = {}
+    skinsPlayers.forEach(p => {
+      const details = participantDetails[String(p.id)] || {}
+      summary[String(p.id)] = {
+        name: p.name,
+        skinsWon: 0,
+        totalValue: 0,
+        holes: [],
+        amountWon: 0,
+        amountPaid: 0,
+        joinedOnHole: details.joinedOnHole || 1,
+        leftOnHole: details.leftOnHole || 18,
+        isSettled: details.isSettled || false
+      }
+    })
+
+    let totalSkinsWon = 0
+    const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+
+    // Track all skin wins with their active players for payment calculation
+    const skinWins = []
+
+    Object.entries(results).forEach(([hole, result]) => {
+      const holeNum = parseInt(hole)
+      const activePlayerIds = result.activePlayers || skinsPlayers.map(p => String(p.id))
+
+      if (result.winner) {
+        const playerId = String(result.winner)
+        const skinValue = result.skinValue || 1
+        if (summary[playerId]) {
+          summary[playerId].skinsWon += 1
+          summary[playerId].totalValue += skinValue
+          summary[playerId].holes.push(holeNum)
+          totalSkinsWon += 1
+
+          // Winner collects from other active players on this hole
+          const otherActivePlayers = activePlayerIds.filter(id => id !== playerId)
+          summary[playerId].amountWon += skinValue * cost * otherActivePlayers.length
+
+          // Track for payment calculation
+          skinWins.push({ winnerId: playerId, value: skinValue, activePlayerIds, hole: holeNum })
+
+          if (result.carryoverCount > 0) {
+            summary[playerId].skinsWon += result.carryoverCount
+            summary[playerId].totalValue += result.carryoverCount
+            totalSkinsWon += result.carryoverCount
+            // Carryover wins also collect from active players
+            summary[playerId].amountWon += result.carryoverCount * cost * otherActivePlayers.length
+            skinWins.push({ winnerId: playerId, value: result.carryoverCount, activePlayerIds, hole: holeNum, isCarryover: true })
+          }
+        }
+      }
+
+      // Handle dual winner scenario - carryovers won by different players
+      if (result.carryoverWinners?.length > 0) {
+        result.carryoverWinners.forEach(cw => {
+          const coPlayerId = String(cw.playerId)
+          if (summary[coPlayerId]) {
+            summary[coPlayerId].skinsWon += cw.count
+            summary[coPlayerId].totalValue += cw.count
+            totalSkinsWon += cw.count
+            // Carryover winner collects from other active players
+            const otherActivePlayers = activePlayerIds.filter(id => id !== coPlayerId)
+            summary[coPlayerId].amountWon += cw.count * cost * otherActivePlayers.length
+            skinWins.push({ winnerId: coPlayerId, value: cw.count, activePlayerIds, hole: holeNum, isCarryover: true })
+          }
+        })
+      }
+    })
+
+    // Calculate payments - each player pays for skins won by others on holes where they were active
+    Object.keys(summary).forEach(playerId => {
+      let totalPayments = 0
+      skinWins.forEach(sw => {
+        // Only pay if this player was active on that hole AND is not the winner
+        if (sw.activePlayerIds.includes(playerId) && sw.winnerId !== playerId) {
+          totalPayments += sw.value * cost
+        }
+      })
+      summary[playerId].amountPaid = totalPayments
+      summary[playerId].netAmount = summary[playerId].amountWon - totalPayments
+    })
+
+    return { playerSummary: summary, totalSkinsWon }
+  }
+
+  // Calculate greenies if enabled (eligibility-aware)
+  const calculateGreenies = () => {
+    // Check if greenies are enabled - check both skinsMatch settings and Quick Skins settings
+    const quickSkinsGreenies = record.quickSkinsGreenieSettings
+    const greeniesEnabled = skinsMatch?.settings?.greeniesEnabled || !!quickSkinsGreenies
+
+    if (!greeniesEnabled) return null
+
+    const settings = {
+      enabled: true,
+      costPerHole: skinsMatch?.settings?.greeniesCostPerHole ||
+        (quickSkinsGreenies ? parseFloat(quickSkinsGreenies.costPerGreenie) || 1 : 1),
+      carryover: skinsMatch?.settings?.greeniesCarryover ?? quickSkinsGreenies?.carryovers ?? true
+    }
+
+    const par3Holes = [4, 8, 12, 17]
+    const results = {}
+    let carryover = 0
+    let carryoverActivePlayerIds = []
+
+    par3Holes.forEach(hole => {
+      // Get active players for this hole
+      const activePlayers = getActivePlayersForHole(hole)
+      const activePlayerIds = activePlayers.map(p => String(p.id))
+
+      // Look for greenie data in team.greenies (greenies are stored per team)
+      let greenieData = null
+      record.teams?.forEach(team => {
+        if (team.greenies?.[hole]) {
+          greenieData = team.greenies[hole]
+        }
+      })
+
+      // Pot is based on active players, not total
+      const pot = activePlayers.length * settings.costPerHole
+
+      if (greenieData?.playerId) {
+        results[hole] = {
+          winner: greenieData.playerId,
+          winnerName: greenieData.playerName,
+          distance: greenieData.distance,
+          pot: pot + carryover,
+          activePlayerIds,
+          carryoverActivePlayerIds: carryover > 0 ? [...carryoverActivePlayerIds] : []
+        }
+        carryover = 0
+        carryoverActivePlayerIds = []
+      } else {
+        results[hole] = { winner: null, pot, activePlayerIds }
+        if (settings.carryover) {
+          carryover += pot
+          // Track who contributed to this carryover
+          carryoverActivePlayerIds = [...new Set([...carryoverActivePlayerIds, ...activePlayerIds])]
+        }
+      }
+    })
+
+    // Calculate greenie summary (eligibility-aware)
+    const summary = {}
+    skinsPlayers.forEach(p => {
+      summary[p.id] = { name: p.name, greeniesWon: 0, amountWon: 0, amountPaid: 0 }
+    })
+
+    // Calculate payments - each player pays for par 3s they were active on
+    par3Holes.forEach(hole => {
+      const result = results[hole]
+      const activePlayerIds = result.activePlayerIds || []
+
+      // Each active player pays costPerHole
+      activePlayerIds.forEach(playerId => {
+        if (summary[playerId]) {
+          summary[playerId].amountPaid += settings.costPerHole
+        }
+      })
+    })
+
+    // Calculate winnings
+    Object.entries(results).forEach(([hole, result]) => {
+      if (result.winner && summary[result.winner]) {
+        summary[result.winner].greeniesWon++
+        summary[result.winner].amountWon += result.pot
+      }
+    })
+
+    // Calculate net
+    Object.keys(summary).forEach(playerId => {
+      summary[playerId].netAmount = summary[playerId].amountWon - summary[playerId].amountPaid
+    })
+
+    return { results, summary, settings }
+  }
+
+  const skinsResults = calculateSkins()
+  const { playerSummary, totalSkinsWon } = getSkinsSummary(skinsResults)
+  const greenieData = calculateGreenies()
+
+  const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+  const date = new Date(record.date)
+  const formattedDate = date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)', color: 'white' }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Quick Skins Results</h3>
+            <div style={{ fontSize: '14px', opacity: 0.9, marginTop: '4px' }}>{formattedDate}</div>
+          </div>
+          <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
+        </div>
+
+        <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {/* Settings Summary */}
+          <div style={{ background: '#fff8e1', padding: '10px 15px', borderRadius: '8px', marginBottom: '15px', fontSize: '12px', color: '#666' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+              <span><strong>${cost}</strong> per skin</span>
+              <span><strong>{skinsPlayers.length}</strong> players</span>
+              {skinsMatch.settings.carryovers && <span>Carryovers enabled</span>}
+              {skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && (
+                <span>Wrap to {skinsMatch.settings.wrapTo === 'front' ? 'Front 9' : 'Back 9'}</span>
+              )}
+              {skinsMatch.settings.parOrBetterRequired && <span>Par or better required</span>}
+              {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie 2x / Eagle 3x</span>}
+            </div>
+            {/* Show player eligibility if participantDetails exists */}
+            {skinsMatch.participantDetails && Object.keys(skinsMatch.participantDetails).length > 0 && (
+              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #ffe0b2' }}>
+                <div style={{ fontWeight: '600', marginBottom: '5px' }}>Player Eligibility:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {skinsPlayers.map(player => {
+                    const details = skinsMatch.participantDetails[String(player.id)] || {}
+                    const joinHole = details.joinedOnHole || 1
+                    const leftHole = details.leftOnHole
+                    const isSettled = details.isSettled
+                    if (joinHole === 1 && !leftHole) return null  // Default - don't show
+                    return (
+                      <span key={player.id} style={{
+                        padding: '2px 8px',
+                        background: isSettled ? '#ffebee' : '#e3f2fd',
+                        borderRadius: '4px',
+                        fontSize: '11px'
+                      }}>
+                        {player.name}: h{joinHole}{leftHole ? `-${leftHole}` : '-18'}
+                        {isSettled && ' (settled)'}
+                      </span>
+                    )
+                  }).filter(Boolean)}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Settlements History */}
+          {skinsMatch.settlements?.length > 0 && (
+            <div style={{ background: '#fff3e0', padding: '10px 15px', borderRadius: '8px', marginBottom: '15px' }}>
+              <div style={{ fontWeight: '600', fontSize: '14px', color: '#e65100', marginBottom: '10px' }}>
+                Early Settlements
+              </div>
+              {skinsMatch.settlements.map((settlement, idx) => {
+                const player = skinsPlayers.find(p => String(p.id) === settlement.playerId)
+                return (
+                  <div key={idx} style={{
+                    background: 'white',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    marginBottom: idx < skinsMatch.settlements.length - 1 ? '8px' : 0,
+                    fontSize: '12px'
+                  }}>
+                    <div style={{ fontWeight: '600', marginBottom: '5px' }}>
+                      {player?.name || 'Unknown'} - Settled on hole {settlement.settledOnHole}
+                    </div>
+                    {settlement.resolvedTransactions?.map((tx, txIdx) => {
+                      const otherPlayer = skinsPlayers.find(p => String(p.id) === tx.withPlayerId)
+                      return (
+                        <div key={txIdx} style={{ color: '#666', fontSize: '11px', marginLeft: '10px' }}>
+                          {tx.direction === 'owed' ? (
+                            <span>Owed {otherPlayer?.name}: <span style={{ color: '#e74c3c' }}>${tx.amount.toFixed(2)}</span></span>
+                          ) : (
+                            <span>Collected from {otherPlayer?.name}: <span style={{ color: '#27ae60' }}>${tx.amount.toFixed(2)}</span></span>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {settlement.carryoverCollection && (
+                      <div style={{ color: '#e65100', fontSize: '11px', marginLeft: '10px', marginTop: '4px' }}>
+                        Prepaid ${settlement.carryoverCollection.amount.toFixed(2)} for carryovers
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* View Toggle */}
+          <div style={{ display: 'flex', gap: '5px', marginBottom: '15px', justifyContent: 'center' }}>
+            {['front', 'back', 'overall'].map(view => (
+              <button
+                key={view}
+                onClick={() => setSkinsView(view)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  border: skinsView === view ? '2px solid #f39c12' : '1px solid #ddd',
+                  background: skinsView === view ? '#f39c12' : 'white',
+                  color: skinsView === view ? 'white' : '#333',
+                  fontSize: '12px',
+                  fontWeight: skinsView === view ? '600' : 'normal',
+                  cursor: 'pointer'
+                }}
+              >
+                {view === 'front' ? 'Front 9' : view === 'back' ? 'Back 9' : 'All 18'}
+              </button>
+            ))}
+          </div>
+
+          {/* Skins Scoreboard */}
+          <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px', border: '1px solid #eee' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', minWidth: skinsView === 'overall' ? '600px' : '400px' }}>
+                <thead>
+                  <tr style={{ background: '#f39c12', color: 'white' }}>
+                    <th style={{ padding: '8px 6px', textAlign: 'left', position: 'sticky', left: 0, background: '#f39c12', zIndex: 1, minWidth: '70px' }}>Player</th>
+                    {displayHoles.map(h => (
+                      <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
+                    ))}
+                    <th style={{ padding: '8px 6px', textAlign: 'center', background: '#e67e22', minWidth: '40px' }}>Skins</th>
+                  </tr>
+                  <tr style={{ background: '#ffe0b2' }}>
+                    <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: '#ffe0b2', zIndex: 1 }}>Par</td>
+                    {displayHoles.map(h => (
+                      <td key={h.hole} style={{ padding: '4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
+                    ))}
+                    <td style={{ background: '#ffcc80' }}></td>
+                  </tr>
+                </thead>
+                <tbody>
+                  {skinsPlayers.map((player, idx) => {
+                    const pSummary = playerSummary[String(player.id)] || { skinsWon: 0 }
+                    return (
+                      <tr key={player.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                        <td style={{ padding: '8px 6px', fontWeight: '600', position: 'sticky', left: 0, background: idx % 2 === 0 ? '#fff' : '#f9f9f9', zIndex: 1, whiteSpace: 'nowrap' }}>
+                          {player.name.split(' ')[0]}
+                        </td>
+                        {displayHoles.map(holeInfo => {
+                          const h = holeInfo.hole
+                          const score = player.scores?.[h]
+                          const result = skinsResults[h]
+                          const isWinner = result?.winner === player.id
+
+                          // Determine highlight color (matching live skins styling)
+                          let bgColor = 'transparent'
+                          let borderColor = 'transparent'
+                          let isCarryoverWin = false
+
+                          // Check if this player won this hole outright
+                          if (isWinner) {
+                            bgColor = '#d4edda'  // Solid green for outright win
+                            borderColor = '#28a745'
+                          } else {
+                            // Check if this hole was won via carryover by this player
+                            for (const [otherHole, otherResult] of Object.entries(skinsResults)) {
+                              if (otherResult.winner === player.id &&
+                                  otherResult.carryoverFromHoles &&
+                                  otherResult.carryoverFromHoles.includes(h)) {
+                                bgColor = '#e8f5e9'  // Lighter green for carryover win
+                                borderColor = '#81c784'
+                                isCarryoverWin = true
+                                break
+                              }
+                            }
+                          }
+
+                          // Check if this hole is a push (tied, not claimed via carryover)
+                          if (bgColor === 'transparent' && result?.isTie) {
+                            let claimedViaCarryover = false
+                            for (const [otherHole, otherResult] of Object.entries(skinsResults)) {
+                              if (otherResult.carryoverFromHoles &&
+                                  otherResult.carryoverFromHoles.includes(h)) {
+                                claimedViaCarryover = true
+                                break
+                              }
+                            }
+                            if (!claimedViaCarryover) {
+                              bgColor = '#ffebee'  // Light red/pink for pushed hole
+                              borderColor = '#ef9a9a'
+                            }
+                          }
+
+                          return (
+                            <td key={h} style={{
+                              padding: '6px 4px',
+                              textAlign: 'center',
+                              background: isCarryoverWin
+                                ? `repeating-linear-gradient(45deg, ${bgColor}, ${bgColor} 3px, #c8e6c9 3px, #c8e6c9 6px)`
+                                : bgColor,
+                              border: borderColor !== 'transparent' ? `2px solid ${borderColor}` : 'none',
+                              borderRadius: '4px',
+                              fontWeight: isWinner ? '700' : 'normal'
+                            }}>
+                              {score === 'X' ? 'X' : score || '-'}
+                              {isWinner && result.carryoverCount > 0 && (
+                                <div style={{ fontSize: '8px', color: '#2e7d32', marginTop: '1px' }}>+{result.carryoverCount}</div>
+                              )}
+                            </td>
+                          )
+                        })}
+                        <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#fff3cd' }}>
+                          {pSummary.skinsWon}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Payout Summary */}
+          <div style={{ background: '#f8f9fa', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Payout Summary</h4>
+            <div style={{ display: 'grid', gap: '8px' }}>
+              {Object.entries(playerSummary)
+                .sort((a, b) => {
+                  const aTotal = a[1].netAmount + (greenieData?.summary?.[a[0]]?.netAmount || 0)
+                  const bTotal = b[1].netAmount + (greenieData?.summary?.[b[0]]?.netAmount || 0)
+                  return bTotal - aTotal
+                })
+                .map(([playerId, summary]) => {
+                  const greenieNet = greenieData?.summary?.[playerId]?.netAmount || 0
+                  const totalNet = summary.netAmount + greenieNet
+                  const greeniesWon = greenieData?.summary?.[playerId]?.greeniesWon || 0
+                  const holesInfo = summary.isSettled
+                    ? ` (h${summary.joinedOnHole}-${summary.leftOnHole})`
+                    : summary.joinedOnHole > 1 || summary.leftOnHole < 18
+                      ? ` (h${summary.joinedOnHole}-${summary.leftOnHole})`
+                      : ''
+                  return (
+                    <div key={playerId} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 12px',
+                      background: summary.isSettled ? '#fff8e1' : 'white',
+                      borderRadius: '6px'
+                    }}>
+                      <span style={{ fontWeight: '600' }}>
+                        {summary.name}
+                        <span style={{ fontSize: '11px', color: '#999', fontWeight: 'normal' }}>{holesInfo}</span>
+                      </span>
+                      <div style={{ display: 'flex', gap: '15px', fontSize: '13px' }}>
+                        <span style={{ color: '#666' }}>
+                          {summary.skinsWon} skins
+                          {greeniesWon > 0 && `, ${greeniesWon} greenies`}
+                        </span>
+                        <span style={{
+                          fontWeight: '700',
+                          color: totalNet > 0 ? '#27ae60' : totalNet < 0 ? '#e74c3c' : '#666'
+                        }}>
+                          {totalNet > 0 ? '+' : ''}${totalNet.toFixed(0)}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+
+          {/* Greenies Section (if enabled) */}
+          {greenieData && (
+            <div style={{ background: '#e8f5e9', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#2e7d32' }}>Greenies</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                {[4, 8, 12, 17].map(hole => {
+                  const result = greenieData.results[hole]
+                  return (
+                    <div key={hole} style={{
+                      background: 'white',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ fontWeight: '600' }}>Hole {hole}</span>
+                      <span style={{ color: result?.winner ? '#27ae60' : '#666' }}>
+                        {result?.winnerName || 'No winner'}
+                        {result?.winner && <span style={{ marginLeft: '5px' }}>${result.pot}</span>}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                ${greenieData.settings.costPerHole}/hole - {greenieData.settings.carryover ? 'Carryovers enabled' : 'No carryovers'}
+              </div>
+            </div>
+          )}
+
+          {/* Who Owes Who */}
+          <div style={{ background: 'white', borderRadius: '10px', padding: '15px', border: '1px solid #eee' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Who Owes Who</h4>
+            {(() => {
+              const settlements = []
+              const balances = {}
+
+              // Calculate total balances including greenies
+              Object.entries(playerSummary).forEach(([playerId, summary]) => {
+                let total = summary.netAmount
+                if (greenieData?.summary?.[playerId]) {
+                  total += greenieData.summary[playerId].netAmount
+                }
+                balances[playerId] = { name: summary.name, balance: total }
+              })
+
+              const debtors = Object.entries(balances).filter(([_, b]) => b.balance < 0).sort((a, b) => a[1].balance - b[1].balance)
+              const creditors = Object.entries(balances).filter(([_, b]) => b.balance > 0).sort((a, b) => b[1].balance - a[1].balance)
+
+              let dIdx = 0, cIdx = 0
+              const remaining = {}
+              debtors.forEach(([id, b]) => remaining[id] = Math.abs(b.balance))
+              creditors.forEach(([id, b]) => remaining[id] = b.balance)
+
+              while (dIdx < debtors.length && cIdx < creditors.length) {
+                const [dId, dInfo] = debtors[dIdx]
+                const [cId, cInfo] = creditors[cIdx]
+                const amount = Math.min(remaining[dId], remaining[cId])
+
+                if (amount > 0) {
+                  settlements.push({ from: dInfo.name, to: cInfo.name, amount })
+                }
+
+                remaining[dId] -= amount
+                remaining[cId] -= amount
+
+                if (remaining[dId] <= 0) dIdx++
+                if (remaining[cId] <= 0) cIdx++
+              }
+
+              if (settlements.length === 0) {
+                return <div style={{ color: '#666', textAlign: 'center' }}>No settlements needed</div>
+              }
+
+              return settlements.map((s, idx) => (
+                <div key={idx} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 0',
+                  borderBottom: idx < settlements.length - 1 ? '1px solid #eee' : 'none'
+                }}>
+                  <span><strong>{s.from}</strong> owes <strong>{s.to}</strong></span>
+                  <span style={{ fontWeight: '700', color: '#e74c3c' }}>${s.amount.toFixed(0)}</span>
+                </div>
+              ))
+            })()}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function HistoryPage() {
-  const { history, setHistory, isAdmin, payoutFormats, holeInOnePot } = useLeague()
+  const { history, setHistory, isAdmin, payoutFormats, holeInOnePot, quickSkinsHistory, setQuickSkinsHistory } = useLeague()
   const [viewingRound, setViewingRound] = useState(null)
   const [deletingRound, setDeletingRound] = useState(null)
+  const [viewingQuickSkins, setViewingQuickSkins] = useState(null)
+  const [deletingQuickSkins, setDeletingQuickSkins] = useState(null)
 
   // Filter state
+  const [historyType, setHistoryType] = useState('all') // 'all', 'league', 'quickSkins'
   const [historyFilter, setHistoryFilter] = useState('all')
   const [historyFilterYear, setHistoryFilterYear] = useState(new Date().getFullYear())
   const [historyFilterStartDate, setHistoryFilterStartDate] = useState('')
@@ -1352,6 +2312,11 @@ function HistoryPage() {
   const handleDeleteRound = (roundId) => {
     setHistory(history.filter(r => r.id !== roundId))
     setDeletingRound(null)
+  }
+
+  const handleDeleteQuickSkins = (recordId) => {
+    setQuickSkinsHistory((quickSkinsHistory || []).filter(r => r.id !== recordId))
+    setDeletingQuickSkins(null)
   }
 
   // Get available years from history
@@ -1384,14 +2349,63 @@ function HistoryPage() {
     <div>
       <h2 style={{ marginBottom: '20px' }}>Round History</h2>
 
-      {history.length === 0 ? (
+      {/* Type Filter Tabs */}
+      <div style={{ display: 'flex', gap: '0', marginBottom: '20px' }}>
+        <button
+          onClick={() => setHistoryType('all')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: historyType === 'all' ? '#1a472a' : '#e0e0e0',
+            color: historyType === 'all' ? 'white' : '#666',
+            fontWeight: '600',
+            cursor: 'pointer',
+            borderRadius: '8px 0 0 8px',
+            fontSize: '14px'
+          }}
+        >
+          All ({history.length + (quickSkinsHistory?.length || 0)})
+        </button>
+        <button
+          onClick={() => setHistoryType('league')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: historyType === 'league' ? '#1a472a' : '#e0e0e0',
+            color: historyType === 'league' ? 'white' : '#666',
+            fontWeight: '600',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          League Rounds ({history.length})
+        </button>
+        <button
+          onClick={() => setHistoryType('quickSkins')}
+          style={{
+            padding: '10px 20px',
+            border: 'none',
+            background: historyType === 'quickSkins' ? '#f39c12' : '#e0e0e0',
+            color: historyType === 'quickSkins' ? 'white' : '#666',
+            fontWeight: '600',
+            cursor: 'pointer',
+            borderRadius: '0 8px 8px 0',
+            fontSize: '14px'
+          }}
+        >
+          Quick Skins ({quickSkinsHistory?.length || 0})
+        </button>
+      </div>
+
+      {history.length === 0 && (!quickSkinsHistory || quickSkinsHistory.length === 0) ? (
         <div className="empty-state">
           <h3>No Rounds Yet</h3>
           <p>Completed rounds will appear here with full scoring details.</p>
         </div>
       ) : (
         <>
-          {/* Filter Bar */}
+          {/* Filter Bar - only show for league rounds */}
+          {(historyType === 'all' || historyType === 'league') && history.length > 0 && (
           <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
               <select
@@ -1449,25 +2463,75 @@ function HistoryPage() {
               )}
 
               <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#666' }}>
-                Showing {filteredHistory.length} of {history.length} round{history.length !== 1 ? 's' : ''}
+                Showing {filteredHistory.length} of {history.length} league round{history.length !== 1 ? 's' : ''}
               </span>
             </div>
           </div>
+          )}
 
-          {filteredHistory.length === 0 ? (
-            <div className="alert alert-info">
-              No rounds match the selected filter.
+          {/* League Rounds */}
+          {(historyType === 'all' || historyType === 'league') && (
+            <>
+              {historyType === 'all' && history.length > 0 && (
+                <h3 style={{ marginBottom: '15px', marginTop: historyType === 'all' ? '0' : '20px' }}>
+                  <span style={{
+                    background: '#1a472a',
+                    color: 'white',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}>League Rounds</span>
+                </h3>
+              )}
+              {filteredHistory.length === 0 && historyType === 'league' ? (
+                <div className="alert alert-info">
+                  No league rounds match the selected filter.
+                </div>
+              ) : (
+                filteredHistory.map(round => (
+                  <RoundCard
+                    key={round.id}
+                    round={round}
+                    onView={setViewingRound}
+                    onDelete={setDeletingRound}
+                    isAdmin={isAdmin}
+                  />
+                ))
+              )}
+            </>
+          )}
+
+          {/* Quick Skins History */}
+          {(historyType === 'all' || historyType === 'quickSkins') && quickSkinsHistory && quickSkinsHistory.length > 0 && (
+            <div style={{ marginTop: historyType === 'all' ? '30px' : '0' }}>
+              {historyType === 'all' && (
+                <h3 style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+                    color: 'white',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}>Quick Skins</span>
+                </h3>
+              )}
+              {quickSkinsHistory.map(record => (
+                <QuickSkinsCard
+                  key={record.id}
+                  record={record}
+                  onView={setViewingQuickSkins}
+                  onDelete={setDeletingQuickSkins}
+                  isAdmin={isAdmin}
+                />
+              ))}
             </div>
-          ) : (
-            filteredHistory.map(round => (
-              <RoundCard
-                key={round.id}
-                round={round}
-                onView={setViewingRound}
-                onDelete={setDeletingRound}
-                isAdmin={isAdmin}
-              />
-            ))
+          )}
+
+          {/* Show empty state for Quick Skins only view */}
+          {historyType === 'quickSkins' && (!quickSkinsHistory || quickSkinsHistory.length === 0) && (
+            <div className="alert alert-info">
+              No Quick Skins matches yet.
+            </div>
           )}
         </>
       )}
@@ -1489,6 +2553,39 @@ function HistoryPage() {
           onConfirm={handleDeleteRound}
           onCancel={() => setDeletingRound(null)}
         />
+      )}
+
+      {/* Quick Skins Detail Modal */}
+      {viewingQuickSkins && (
+        <QuickSkinsDetailModal
+          record={viewingQuickSkins}
+          onClose={() => setViewingQuickSkins(null)}
+        />
+      )}
+
+      {/* Quick Skins Delete Confirm */}
+      {deletingQuickSkins && (
+        <div className="modal-overlay" onClick={() => setDeletingQuickSkins(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Delete Quick Skins Record?</h3>
+              <button className="modal-close" onClick={() => setDeletingQuickSkins(null)}>&times;</button>
+            </div>
+            <div className="modal-body" style={{ textAlign: 'center' }}>
+              <p style={{ marginBottom: '20px', color: '#666' }}>
+                This will permanently delete this Quick Skins match record.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                <button className="btn btn-danger" onClick={() => handleDeleteQuickSkins(deletingQuickSkins.id)}>
+                  Delete
+                </button>
+                <button className="btn btn-secondary" onClick={() => setDeletingQuickSkins(null)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

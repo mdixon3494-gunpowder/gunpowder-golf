@@ -1123,7 +1123,14 @@ function SettingsPage() {
     }
 
     const quickSkinsMatchData = {
-      settings: { ...skinsSettings, playerHandicaps: {} },
+      settings: {
+        ...skinsSettings,
+        playerHandicaps: {},
+        // Include greenie settings so settlement calculations work
+        greeniesEnabled: greenieSettings.enabled,
+        greeniesCostPerHole: greenieSettings.enabled ? parseFloat(greenieSettings.costPerGreenie) || 1 : 0,
+        greeniesCarryover: greenieSettings.carryovers
+      },
       participants: qsPlayers.map(p => String(p.id)),
       results: {}
     }

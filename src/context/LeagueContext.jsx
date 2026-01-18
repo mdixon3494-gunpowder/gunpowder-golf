@@ -122,6 +122,7 @@ export function LeagueProvider({ children }) {
   // Skins
   const [skinsMatch, setSkinsMatch] = useState(null)
   const [quickSkinsMode, setQuickSkinsMode] = useState(false)
+  const [quickSkinsHistory, setQuickSkinsHistory] = useState([])
 
   // Check-in state (persists across navigation)
   const [checkedInPlayers, setCheckedInPlayers] = useState([])
@@ -180,6 +181,8 @@ export function LeagueProvider({ children }) {
           if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
           if (data.defaultStartingHole) setDefaultStartingHole(data.defaultStartingHole)
           if (data.playerMoneyRecords) setPlayerMoneyRecords(data.playerMoneyRecords)
+          if (data.quickSkinsHistory) setQuickSkinsHistory(data.quickSkinsHistory)
+          if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
           setIsSetup(true)
         }
       }
@@ -211,7 +214,9 @@ export function LeagueProvider({ children }) {
           moneyVisibility,
           defaultStartingHole,
           playerMoneyRecords,
-          skinsMatch
+          skinsMatch,
+          quickSkinsHistory,
+          quickSkinsMode
         },
         () => setSaveStatus('saving'),
         (success) => setSaveStatus(success ? 'saved' : 'error')
@@ -219,7 +224,7 @@ export function LeagueProvider({ children }) {
     }
   }, [players, history, pairingRequests, liveRound, teams, leagueId, isSetup,
       leagueSettings, pendingPlayerRequests, payoutFormats, holeInOnePot,
-      moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch])
+      moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, quickSkinsHistory, quickSkinsMode])
 
   // Mark data as loaded
   useEffect(() => {
@@ -266,6 +271,12 @@ export function LeagueProvider({ children }) {
             setLiveRound(null)
             setTimeout(() => { isUpdatingFromRealtime.current = false }, 100)
             return
+          }
+
+          // Update quickSkinsMode if changed
+          if (parsedNewData.quickSkinsMode !== undefined && parsedNewData.quickSkinsMode !== quickSkinsMode) {
+            console.log('Quick Skins mode changed on another device')
+            setQuickSkinsMode(parsedNewData.quickSkinsMode)
           }
 
           // Update live round if changed
@@ -352,6 +363,8 @@ export function LeagueProvider({ children }) {
       if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
       if (data.defaultStartingHole) setDefaultStartingHole(data.defaultStartingHole)
       if (data.playerMoneyRecords) setPlayerMoneyRecords(data.playerMoneyRecords)
+      if (data.quickSkinsHistory) setQuickSkinsHistory(data.quickSkinsHistory)
+      if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
       setIsSetup(true)
       hasLoadedData.current = true
       return true
@@ -433,6 +446,8 @@ export function LeagueProvider({ children }) {
     setSkinsMatch,
     quickSkinsMode,
     setQuickSkinsMode,
+    quickSkinsHistory,
+    setQuickSkinsHistory,
 
     // Check-in state
     checkedInPlayers,

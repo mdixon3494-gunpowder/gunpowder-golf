@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
@@ -1331,12 +1331,23 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 }
 
 // Greenies Component
-function GreeniesTracker({ liveRound, onUpdateGreenie }) {
+function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
   const [selectedHole, setSelectedHole] = useState(PAR_3_HOLES[0])
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [markAsFinal, setMarkAsFinal] = useState(false)
 
   const allPlayers = liveRound.teams.flatMap(t => t.players.filter(p => !p.isDNF))
+
+  // Get players eligible for a specific hole (filters out players who left before this hole)
+  const getEligiblePlayersForHole = (hole) => {
+    if (!skinsMatch?.participantDetails) return allPlayers
+    return allPlayers.filter(p => {
+      const details = skinsMatch.participantDetails[String(p.id)]
+      if (!details?.isSettled) return true  // Not settled, still eligible
+      // Settled - only eligible if they played this hole (leftOnHole >= hole)
+      return (details.leftOnHole || 18) >= hole
+    })
+  }
 
   const getCurrentGreenie = (hole) => {
     for (const team of liveRound.teams) {
@@ -1348,13 +1359,15 @@ function GreeniesTracker({ liveRound, onUpdateGreenie }) {
   }
 
   const getPlayersCompleted = (hole) => {
-    return allPlayers.filter(p => {
+    const eligible = getEligiblePlayersForHole(hole)
+    return eligible.filter(p => {
       const score = p.scores?.[hole]
       return score !== undefined && score !== null && score !== ''
     }).length
   }
 
-  const totalPlayers = allPlayers.length
+  const eligiblePlayersForHole = getEligiblePlayersForHole(selectedHole)
+  const totalPlayers = eligiblePlayersForHole.length
   const currentGreenie = getCurrentGreenie(selectedHole)
   const playersCompleted = getPlayersCompleted(selectedHole)
 
@@ -1432,9 +1445,10 @@ function GreeniesTracker({ liveRound, onUpdateGreenie }) {
               {PAR_3_HOLES.map(hole => {
                 const greenie = getCurrentGreenie(hole)
                 const completed = getPlayersCompleted(hole)
+                const eligibleForHole = getEligiblePlayersForHole(hole).length
                 return (
                   <option key={hole} value={hole}>
-                    Hole {hole} {greenie?.playerId ? `- ${greenie.playerName}` : ''} ({completed}/{totalPlayers})
+                    Hole {hole} {greenie?.playerId ? `- ${greenie.playerName}` : ''} ({completed}/{eligibleForHole})
                   </option>
                 )
               })}
@@ -1596,15 +1610,23 @@ function GreeniesTracker({ liveRound, onUpdateGreenie }) {
               }}
             >
               <option value="">-- Select Player --</option>
-              {liveRound.teams.map(team => (
-                <optgroup key={team.id} label={team.name}>
-                  {team.players.filter(p => !p.isDNF).map(player => (
-                    <option key={player.id} value={player.id}>
-                      {player.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+              {(() => {
+                const eligiblePlayers = getEligiblePlayersForHole(selectedHole)
+                const eligibleIds = new Set(eligiblePlayers.map(p => String(p.id)))
+                return liveRound.teams.map(team => {
+                  const teamEligiblePlayers = team.players.filter(p => !p.isDNF && eligibleIds.has(String(p.id)))
+                  if (teamEligiblePlayers.length === 0) return null
+                  return (
+                    <optgroup key={team.id} label={team.name}>
+                      {teamEligiblePlayers.map(player => (
+                        <option key={player.id} value={player.id}>
+                          {player.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )
+                })
+              })()}
             </select>
           </div>
 
@@ -1960,7 +1982,7 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, isAdmin }) {
 }
 
 // Skins Game Component
-function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
+function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAdmin, leaguePlayers }) {
   const [showSetup, setShowSetup] = useState(false)
   const [showEditSettings, setShowEditSettings] = useState(false)
   const [skinsView, setSkinsView] = useState('front')
@@ -1985,8 +2007,33 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
   const [cancelPinInput, setCancelPinInput] = useState('')
 
+  // Mid-round join/leave modal state
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false)
+  const [addPlayerJoinHole, setAddPlayerJoinHole] = useState(1)
+  const [selectedPlayerToAdd, setSelectedPlayerToAdd] = useState(null)
+  const [addPlayerMode, setAddPlayerMode] = useState('existing') // 'existing' or 'guest'
+  const [guestPlayerName, setGuestPlayerName] = useState('')
+  const [selectedTeamToAdd, setSelectedTeamToAdd] = useState(null)
+  const [showSettleModal, setShowSettleModal] = useState(false)
+  const [settlePlayer, setSettlePlayer] = useState(null)
+  const [settleLastHole, setSettleLastHole] = useState(9)
+  const [settleStep, setSettleStep] = useState(1)
+  const [carryoverHandling, setCarryoverHandling] = useState('pay')
+  const [carryoverCollector, setCarryoverCollector] = useState(null)
+
   const allPlayers = liveRound.teams.flatMap(t => t.players.filter(p => !p.isDNF))
-  const skinsPlayers = skinsMatch ? allPlayers.filter(p => skinsMatch.participants.includes(String(p.id))) : []
+  // Get skins players - players from teams who are participants
+  // (includes both league players and guests since they're added to teams)
+  const skinsPlayers = skinsMatch
+    ? allPlayers.filter(p => skinsMatch.participants.includes(String(p.id)))
+    : []
+
+  // Check if greenies are enabled - check both skinsMatch settings and Quick Skins settings
+  const quickSkinsGreenies = liveRound?.quickSkinsGreenieSettings
+  const greeniesEnabled = skinsMatch?.settings?.greeniesEnabled || !!quickSkinsGreenies
+  const greeniesCostPerHole = skinsMatch?.settings?.greeniesCostPerHole ||
+    (quickSkinsGreenies ? parseFloat(quickSkinsGreenies.costPerGreenie) || 1 : 0)
+  const greeniesCarryover = skinsMatch?.settings?.greeniesCarryover ?? quickSkinsGreenies?.carryovers ?? true
 
   const frontHoles = GUNPOWDER_SCORECARD.front9
   const backHoles = GUNPOWDER_SCORECARD.back9
@@ -1996,7 +2043,9 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
   const setupSkinsMatch = () => {
     setSkinsMatch({
       settings: { ...settings },
-      participants: []
+      participants: [],
+      participantDetails: {},  // Track join/leave hole per player
+      settlements: []          // Track early settlements
     })
     setShowSetup(false)
   }
@@ -2012,11 +2061,38 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
 
   const confirmToggleParticipant = () => {
     if (pinInput === '1234' && pendingPlayerId !== null) {
-      const isIn = skinsMatch.participants.includes(String(pendingPlayerId))
-      const newParticipants = isIn
-        ? skinsMatch.participants.filter(id => id !== String(pendingPlayerId))
-        : [...skinsMatch.participants, String(pendingPlayerId)]
-      setSkinsMatch({ ...skinsMatch, participants: newParticipants })
+      const playerId = String(pendingPlayerId)
+      const isIn = skinsMatch.participants.includes(playerId)
+
+      if (isIn) {
+        // Removing player - update participants list
+        const newParticipants = skinsMatch.participants.filter(id => id !== playerId)
+        const newDetails = { ...skinsMatch.participantDetails }
+        delete newDetails[playerId]
+        setSkinsMatch({
+          ...skinsMatch,
+          participants: newParticipants,
+          participantDetails: newDetails
+        })
+      } else {
+        // Adding player - initialize participantDetails with joinedOnHole: 1 (default for initial setup)
+        const newParticipants = [...skinsMatch.participants, playerId]
+        const newDetails = {
+          ...(skinsMatch.participantDetails || {}),
+          [playerId]: {
+            joinedOnHole: 1,
+            leftOnHole: null,
+            isSettled: false,
+            settledOnHole: null
+          }
+        }
+        setSkinsMatch({
+          ...skinsMatch,
+          participants: newParticipants,
+          participantDetails: newDetails
+        })
+      }
+
       setShowPinPrompt(false)
       setPinInput('')
       setPendingPlayerId(null)
@@ -2026,30 +2102,79 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
     }
   }
 
-  // Calculate skins results with all the features from legacy
+  // Helper: Get active players for a specific hole
+  const getActivePlayersForHole = (hole, players) => {
+    const participantDetails = skinsMatch?.participantDetails || {}
+    return players.filter(player => {
+      const details = participantDetails[String(player.id)]
+      if (!details) return true  // Backwards compat: assume active for all holes
+
+      const joinedOnHole = details.joinedOnHole || 1
+      const leftOnHole = details.leftOnHole || 18
+
+      return hole >= joinedOnHole && hole <= leftOnHole
+    })
+  }
+
+  // Helper: Get active (non-settled) skins players
+  const getActiveSkinsPlayers = () => {
+    const participantDetails = skinsMatch?.participantDetails || {}
+    return skinsPlayers.filter(player => {
+      const details = participantDetails[String(player.id)]
+      return !details?.isSettled
+    })
+  }
+
+  // Calculate skins results with all the features from legacy + eligibility tracking
   const calculateSkins = () => {
     if (!skinsMatch || skinsPlayers.length < 2) return {}
 
+    const participantDetails = skinsMatch.participantDetails || {}
     const results = {}
-    let carryoverCount = 0
-    let carryoverFromHoles = []
+
+    // Track pending carryovers with eligibility info
+    // Each carryover knows which players were active when it was created
+    let pendingCarryovers = []  // Array of { fromHole, eligiblePlayerIds }
 
     for (let hole = 1; hole <= 18; hole++) {
       const holeInfo = getHoleInfo(hole)
+      const activePlayers = getActivePlayersForHole(hole, skinsPlayers)
+      const activePlayerIds = activePlayers.map(p => String(p.id))
 
-      // Get scores for all skins players on this hole
+      // Get scores for active skins players on this hole
+      // Two-pass approach for smarter X score handling
       const holeScores = []
+      const xScorePlayers = []
       let allScored = true
 
-      skinsPlayers.forEach(player => {
+      // First pass: collect non-X scores and identify X score players
+      activePlayers.forEach(player => {
         const rawScore = player.scores?.[hole]
         if (rawScore === undefined || rawScore === null || rawScore === '') {
           allScored = false
+        } else if (rawScore === 'X') {
+          xScorePlayers.push(player)
         } else {
-          const score = rawScore === 'X' ? 99 : parseInt(rawScore)
-          holeScores.push({ playerId: player.id, playerName: player.name, score })
+          holeScores.push({ playerId: player.id, playerName: player.name, score: parseInt(rawScore) })
         }
       })
+
+      // Second pass: calculate X scores as double/triple bogey
+      // X scores are marked with isXScore: true and cannot win outright
+      // This applies to both par-or-better and non-par-or-better modes
+      if (xScorePlayers.length > 0) {
+        const par = holeInfo.par
+
+        xScorePlayers.forEach(player => {
+          // League player with handicap < 18: double bogey (par + 2)
+          // League player with handicap >= 18 or guest: triple bogey (par + 3)
+          const isGuest = String(player.id).startsWith('guest_')
+          const handicap = player.handicap || 0
+          const xScore = (isGuest || handicap >= 18) ? par + 3 : par + 2
+
+          holeScores.push({ playerId: player.id, playerName: player.name, score: xScore, isXScore: true })
+        })
+      }
 
       results[hole] = {
         allScored,
@@ -2058,7 +2183,10 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
         isCarryover: false,
         carryoverCount: 0,
         skinValue: 1,
-        currentLeader: null
+        currentLeader: null,
+        activePlayers: activePlayerIds,
+        // Track carryover winners separately from hole winner
+        carryoverWinners: []
       }
 
       if (holeScores.length === 0) {
@@ -2069,143 +2197,377 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
       const winners = holeScores.filter(s => s.score === minScore)
 
       if (!allScored) {
-        // Find current leader
-        if (winners.length === 1 && winners[0].score < 99) {
+        // Find current leader (must not be an X score)
+        if (winners.length === 1 && !winners[0].isXScore) {
           results[hole].currentLeader = winners[0].playerId
         }
         continue
       }
 
-      // All scored - determine winner
-      if (winners.length > 1 || winners[0].score >= 99) {
-        // Tie or everyone X'd
+      // All active players scored - determine winner
+      // Winner must not be an X score, and must meet par requirement if enabled
+      const isValidWin = winners.length === 1 && !winners[0].isXScore &&
+        (!skinsMatch.settings.parOrBetterRequired || winners[0].score <= holeInfo.par)
+
+      let holeWinner = null
+      if (!isValidWin) {
+        // Tie or doesn't meet requirements - add to pending carryovers
         results[hole].isTie = true
         if (skinsMatch.settings.carryovers) {
-          carryoverCount++
-          carryoverFromHoles.push(hole)
+          pendingCarryovers.push({
+            fromHole: hole,
+            eligiblePlayerIds: [...activePlayerIds]
+          })
         }
       } else {
-        // Single winner
-        const winner = winners[0]
+        // Single winner for this hole
+        holeWinner = winners[0]
+        results[hole].winner = holeWinner.playerId
+        results[hole].winnerName = holeWinner.playerName
+        results[hole].winningScore = holeWinner.score
 
-        // Check par or better requirement
-        if (skinsMatch.settings.parOrBetterRequired && winner.score > holeInfo.par) {
-          results[hole].isTie = true
-          if (skinsMatch.settings.carryovers) {
-            carryoverCount++
-            carryoverFromHoles.push(hole)
-          }
-        } else {
-          results[hole].winner = winner.playerId
-          results[hole].winnerName = winner.playerName
-          results[hole].winningScore = winner.score
+        // Calculate skin value with birdie/eagle multiplier
+        let skinValue = 1
+        if (skinsMatch.settings.birdieDoubleEagleTriple) {
+          const scoreToPar = holeWinner.score - holeInfo.par
+          if (scoreToPar === -1) skinValue = 2
+          else if (scoreToPar <= -2) skinValue = 3
+        }
+        results[hole].skinValue = skinValue
+      }
 
-          // Calculate skin value with birdie/eagle multiplier
-          let skinValue = 1
-          if (skinsMatch.settings.birdieDoubleEagleTriple) {
-            const scoreToPar = winner.score - holeInfo.par
-            if (scoreToPar === -1) skinValue = 2
-            else if (scoreToPar <= -2) skinValue = 3
-          }
-          results[hole].skinValue = skinValue
+      // Process pending carryovers - may have different winners based on eligibility
+      // IMPORTANT: Process even when current hole is a tie - eligible players can still win carryovers
+      if (skinsMatch.settings.carryovers && pendingCarryovers.length > 0) {
+        // Get carryovers that existed BEFORE this hole (exclude current hole if it was just added)
+        const carryoversToProcess = pendingCarryovers.filter(co => co.fromHole !== hole)
 
-          // Apply carryovers
-          if (skinsMatch.settings.carryovers && carryoverCount > 0) {
-            results[hole].carryoverCount = carryoverCount
-            results[hole].carryoverFromHoles = [...carryoverFromHoles]
-          }
-          carryoverCount = 0
-          carryoverFromHoles = []
+        if (carryoversToProcess.length > 0) {
+          // Group carryovers by eligibility set
+          const carryoversByEligibility = {}
+
+          carryoversToProcess.forEach(co => {
+            const key = [...co.eligiblePlayerIds].sort().join(',')
+            if (!carryoversByEligibility[key]) {
+              carryoversByEligibility[key] = {
+                eligiblePlayerIds: co.eligiblePlayerIds,
+                holes: []
+              }
+            }
+            carryoversByEligibility[key].holes.push(co.fromHole)
+          })
+
+          // For each eligibility group, find winner among eligible players
+          Object.values(carryoversByEligibility).forEach(group => {
+            const eligibleScores = holeScores.filter(s =>
+              group.eligiblePlayerIds.includes(String(s.playerId))
+            )
+
+            if (eligibleScores.length === 0) {
+              // No eligible players scored - carryovers remain pending (already in list)
+              return
+            }
+
+            const eligibleMinScore = Math.min(...eligibleScores.map(s => s.score))
+            const eligibleWinners = eligibleScores.filter(s => s.score === eligibleMinScore)
+
+            // Check if there's a single winner among eligible players (must not be X score)
+            const eligibleValidWin = eligibleWinners.length === 1 && !eligibleWinners[0].isXScore &&
+              (!skinsMatch.settings.parOrBetterRequired || eligibleWinners[0].score <= holeInfo.par)
+
+            if (eligibleValidWin) {
+              const coWinner = eligibleWinners[0]
+
+              // Check if carryover winner is same as hole winner (if there is one)
+              if (holeWinner && String(coWinner.playerId) === String(holeWinner.playerId)) {
+                // Same winner - add to regular carryovers
+                results[hole].carryoverCount = (results[hole].carryoverCount || 0) + group.holes.length
+                results[hole].carryoverFromHoles = [
+                  ...(results[hole].carryoverFromHoles || []),
+                  ...group.holes
+                ]
+              } else {
+                // Different winner for carryovers (or no hole winner - dual winner scenario)
+                results[hole].carryoverWinners.push({
+                  playerId: coWinner.playerId,
+                  playerName: coWinner.playerName,
+                  count: group.holes.length,
+                  fromHoles: group.holes,
+                  eligiblePlayerIds: group.eligiblePlayerIds
+                })
+              }
+
+              // Remove these from pending
+              group.holes.forEach(h => {
+                pendingCarryovers = pendingCarryovers.filter(c => c.fromHole !== h)
+              })
+            }
+            // If tie among eligible players, carryovers stay pending (no action needed)
+          })
         }
       }
     }
 
     // Handle wrap unwon skins - if carryovers remain after hole 18, wrap to first winner
-    if (skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && carryoverCount > 0) {
+    if (skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && pendingCarryovers.length > 0) {
       const wrapToFront = skinsMatch.settings.wrapTo === 'front'
       const searchHoles = wrapToFront ? [1,2,3,4,5,6,7,8,9] : [10,11,12,13,14,15,16,17,18]
 
-      // Find the first hole with a winner on the target nine
-      for (const hole of searchHoles) {
-        if (results[hole]?.winner) {
-          // Add the wrapped carryovers to this winner
-          results[hole].carryoverCount = (results[hole].carryoverCount || 0) + carryoverCount
-          results[hole].carryoverFromHoles = [
-            ...(results[hole].carryoverFromHoles || []),
-            ...carryoverFromHoles
-          ]
-          results[hole].hasWrappedCarryovers = true
-          carryoverCount = 0
-          carryoverFromHoles = []
-          break
+      // Group carryovers by eligibility
+      const carryoversByEligibility = {}
+      pendingCarryovers.forEach(co => {
+        const key = [...co.eligiblePlayerIds].sort().join(',')
+        if (!carryoversByEligibility[key]) {
+          carryoversByEligibility[key] = {
+            eligiblePlayerIds: co.eligiblePlayerIds,
+            holes: []
+          }
         }
-      }
+        carryoversByEligibility[key].holes.push(co.fromHole)
+      })
+
+      // For each eligibility group, find the first winner among eligible players in wrap range
+      Object.values(carryoversByEligibility).forEach(group => {
+        for (const hole of searchHoles) {
+          if (!results[hole]?.winner) continue
+
+          // Check if hole winner is eligible for these carryovers
+          const holeWinnerId = String(results[hole].winner)
+          if (group.eligiblePlayerIds.includes(holeWinnerId)) {
+            // Winner is eligible - give them the carryovers
+            results[hole].carryoverCount = (results[hole].carryoverCount || 0) + group.holes.length
+            results[hole].carryoverFromHoles = [
+              ...(results[hole].carryoverFromHoles || []),
+              ...group.holes
+            ]
+            results[hole].hasWrappedCarryovers = true
+            break
+          }
+
+          // Check carryover winners on this hole too
+          const eligibleCoWinner = results[hole].carryoverWinners?.find(cw =>
+            group.eligiblePlayerIds.includes(String(cw.playerId))
+          )
+          if (eligibleCoWinner) {
+            eligibleCoWinner.count += group.holes.length
+            eligibleCoWinner.fromHoles = [...eligibleCoWinner.fromHoles, ...group.holes]
+            break
+          }
+
+          // Winner not eligible - check if any eligible player won on this hole
+          // (need to recalculate based on eligibility)
+          const activePlayers = getActivePlayersForHole(hole, skinsPlayers)
+          const eligiblePlayers = activePlayers.filter(p =>
+            group.eligiblePlayerIds.includes(String(p.id))
+          )
+
+          if (eligiblePlayers.length > 0) {
+            const holeInfo = getHoleInfo(hole)
+
+            // Collect scores, converting X to double/triple bogey
+            const eligibleScores = []
+
+            eligiblePlayers.forEach(player => {
+              const rawScore = player.scores?.[hole]
+              if (rawScore === undefined || rawScore === null || rawScore === '') return
+
+              if (rawScore === 'X') {
+                // X = double bogey for low handicap, triple bogey for guests/high handicap
+                const isGuest = String(player.id).startsWith('guest_')
+                const handicap = player.handicap || 0
+                const xScore = (isGuest || handicap >= 18) ? holeInfo.par + 3 : holeInfo.par + 2
+                eligibleScores.push({ playerId: player.id, playerName: player.name, score: xScore, isXScore: true })
+              } else {
+                eligibleScores.push({ playerId: player.id, playerName: player.name, score: parseInt(rawScore), isXScore: false })
+              }
+            })
+
+            if (eligibleScores.length > 0) {
+              const minScore = Math.min(...eligibleScores.map(s => s.score))
+              const winners = eligibleScores.filter(s => s.score === minScore)
+
+              if (winners.length === 1 && !winners[0].isXScore &&
+                  (!skinsMatch.settings.parOrBetterRequired || winners[0].score <= holeInfo.par)) {
+                const coWinner = winners[0]
+
+                // Add as carryover winner
+                const existingCoWinner = results[hole].carryoverWinners?.find(
+                  cw => String(cw.playerId) === String(coWinner.playerId)
+                )
+                if (existingCoWinner) {
+                  existingCoWinner.count += group.holes.length
+                  existingCoWinner.fromHoles = [...existingCoWinner.fromHoles, ...group.holes]
+                } else {
+                  results[hole].carryoverWinners = results[hole].carryoverWinners || []
+                  results[hole].carryoverWinners.push({
+                    playerId: coWinner.playerId,
+                    playerName: coWinner.playerName,
+                    count: group.holes.length,
+                    fromHoles: group.holes,
+                    eligiblePlayerIds: group.eligiblePlayerIds,
+                    hasWrappedCarryovers: true
+                  })
+                }
+                break
+              }
+            }
+          }
+        }
+      })
     }
+
+    // Store remaining pending carryovers info for display
+    results.pendingCarryovers = pendingCarryovers
 
     return results
   }
 
-  // Get skins summary per player
+  // Get skins summary per player (with eligibility-aware payouts)
   const getSkinsSummary = (results) => {
+    const participantDetails = skinsMatch?.participantDetails || {}
+    const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+
     const summary = {}
     skinsPlayers.forEach(p => {
-      summary[String(p.id)] = { skinsWon: 0, totalValue: 0, holes: [] }
+      const details = participantDetails[String(p.id)] || {}
+      summary[String(p.id)] = {
+        skinsWon: 0,
+        totalValue: 0,
+        holes: [],
+        carryoverWins: [],  // Wins from carryover eligibility
+        joinedOnHole: details.joinedOnHole || 1,
+        leftOnHole: details.leftOnHole || 18,
+        isSettled: details.isSettled || false
+      }
     })
 
     let totalSkinsWon = 0
-    const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+
+    // Track wins with eligibility info for payout calculation
+    const skinWins = []  // Array of { hole, winnerId, value, activePlayerIds, isCarryover, eligiblePlayerIds }
 
     Object.entries(results).forEach(([holeNum, result]) => {
+      if (holeNum === 'pendingCarryovers') return  // Skip metadata
+      const hole = parseInt(holeNum)
+
+      // Handle direct hole winner
       if (result.winner) {
         const playerId = String(result.winner)
         if (summary[playerId]) {
           summary[playerId].skinsWon += 1
           summary[playerId].totalValue += result.skinValue
-          summary[playerId].holes.push({ hole: parseInt(holeNum), value: result.skinValue })
+          summary[playerId].holes.push({ hole, value: result.skinValue })
           totalSkinsWon += 1
 
+          skinWins.push({
+            hole,
+            winnerId: playerId,
+            value: result.skinValue,
+            activePlayerIds: result.activePlayers || skinsPlayers.map(p => String(p.id)),
+            isCarryover: false
+          })
+
+          // Handle carryovers won by hole winner
           if (result.carryoverCount > 0) {
             summary[playerId].skinsWon += result.carryoverCount
             summary[playerId].totalValue += result.carryoverCount
             totalSkinsWon += result.carryoverCount
+
+            // Each carried over hole has value of 1
+            result.carryoverFromHoles?.forEach(coHole => {
+              const coResult = results[coHole]
+              skinWins.push({
+                hole: coHole,
+                winnerId: playerId,
+                value: 1,
+                activePlayerIds: coResult?.activePlayers || result.activePlayers || skinsPlayers.map(p => String(p.id)),
+                isCarryover: true,
+                wonOnHole: hole
+              })
+            })
           }
         }
       }
+
+      // Handle carryover winners (dual winner scenario)
+      if (result.carryoverWinners?.length > 0) {
+        result.carryoverWinners.forEach(cw => {
+          const playerId = String(cw.playerId)
+          if (summary[playerId]) {
+            summary[playerId].skinsWon += cw.count
+            summary[playerId].totalValue += cw.count
+            summary[playerId].carryoverWins.push({
+              wonOnHole: hole,
+              fromHoles: cw.fromHoles,
+              count: cw.count
+            })
+            totalSkinsWon += cw.count
+
+            // Track each carryover win for payout calculation
+            cw.fromHoles?.forEach(coHole => {
+              skinWins.push({
+                hole: coHole,
+                winnerId: playerId,
+                value: 1,
+                activePlayerIds: cw.eligiblePlayerIds || [],
+                isCarryover: true,
+                wonOnHole: hole
+              })
+            })
+          }
+        })
+      }
     })
 
-    // Calculate payouts
-    const numParticipants = skinsPlayers.length
+    // Calculate payouts with eligibility-aware logic
+    // Each skin: winner receives cost from each other ELIGIBLE player
+    // Each player pays cost for each skin won on holes they were ACTIVE
     Object.keys(summary).forEach(pId => {
       const playerSummary = summary[pId]
-      // Per skin: each skin = cost from each other player
-      playerSummary.amountWon = playerSummary.totalValue * cost * (numParticipants - 1)
+      let amountWon = 0
+      let amountPaid = 0
 
-      // Calculate amount paid (cost * skins won by others)
-      const totalValueWon = Object.values(summary).reduce((sum, s) => sum + s.totalValue, 0)
-      const othersValue = totalValueWon - playerSummary.totalValue
-      playerSummary.amountPaid = othersValue * cost
-      playerSummary.netAmount = playerSummary.amountWon - playerSummary.amountPaid
+      // Amount won: for each skin this player won, they receive from each other eligible player
+      skinWins.filter(sw => sw.winnerId === pId).forEach(sw => {
+        const otherEligible = sw.activePlayerIds.filter(id => id !== pId)
+        amountWon += sw.value * cost * otherEligible.length
+      })
+
+      // Amount paid: for each skin won by others, if this player was active, they pay
+      skinWins.filter(sw => sw.winnerId !== pId).forEach(sw => {
+        if (sw.activePlayerIds.includes(pId)) {
+          amountPaid += sw.value * cost
+        }
+      })
+
+      playerSummary.amountWon = amountWon
+      playerSummary.amountPaid = amountPaid
+      playerSummary.netAmount = amountWon - amountPaid
     })
 
-    return { playerSummary: summary, totalSkinsWon }
+    return { playerSummary: summary, totalSkinsWon, skinWins }
   }
 
-  // Calculate greenies for Quick Skins
+  // Calculate greenies for Quick Skins (with eligibility tracking)
   const PAR_3_HOLES = [4, 8, 12, 17]
 
   const calculateGreenies = () => {
-    if (!skinsMatch?.settings?.greeniesEnabled || skinsPlayers.length < 2) return {}
+    if (!greeniesEnabled || skinsPlayers.length < 2) return {}
 
+    const participantDetails = skinsMatch.participantDetails || {}
     const results = {}
-    let carryoverCount = 0
-    let carryoverFromHoles = []
+
+    // Track pending carryovers with eligibility info
+    let pendingCarryovers = []  // Array of { fromHole, eligiblePlayerIds }
 
     PAR_3_HOLES.forEach(hole => {
-      // Check if any player hit the green and has an odometer reading
-      // For Quick Skins, we track greenies via the team greenies data
+      const activePlayers = getActivePlayersForHole(hole, skinsPlayers)
+      const activePlayerIds = activePlayers.map(p => String(p.id))
+
+      // Check if any ACTIVE player hit the green
       const greenieData = liveRound.teams
         .flatMap(t => t.greenies?.[hole] ? [{ ...t.greenies[hole], teamId: t.id }] : [])
-        .filter(g => g && g.playerId && skinsMatch.participants.includes(String(g.playerId)))
+        .filter(g => g && g.playerId && activePlayerIds.includes(String(g.playerId)))
         .sort((a, b) => (a.distance || 999) - (b.distance || 999))[0]
 
       results[hole] = {
@@ -2214,87 +2576,250 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
         distance: null,
         carryoverCount: 0,
         carryoverFromHoles: [],
-        pot: skinsMatch.settings.greeniesCostPerHole * skinsPlayers.length
+        pot: greeniesCostPerHole * activePlayers.length,
+        activePlayers: activePlayerIds,
+        carryoverWinners: []  // For dual winner scenarios
       }
 
-      if (greenieData?.playerId && greenieData?.distance) {
-        // We have a winner
+      if (greenieData?.playerId) {
+        // We have a winner (distance is optional)
         results[hole].winner = greenieData.playerId
         results[hole].winnerName = greenieData.playerName || skinsPlayers.find(p => String(p.id) === String(greenieData.playerId))?.name
-        results[hole].distance = greenieData.distance
+        results[hole].distance = greenieData.distance || null
 
-        // Apply carryovers
-        if (skinsMatch.settings.greeniesCarryover && carryoverCount > 0) {
-          results[hole].carryoverCount = carryoverCount
-          results[hole].carryoverFromHoles = [...carryoverFromHoles]
+        // Process pending carryovers - check eligibility
+        if (greeniesCarryover && pendingCarryovers.length > 0) {
+          const carryoversByEligibility = {}
+          pendingCarryovers.forEach(co => {
+            const key = [...co.eligiblePlayerIds].sort().join(',')
+            if (!carryoversByEligibility[key]) {
+              carryoversByEligibility[key] = { eligiblePlayerIds: co.eligiblePlayerIds, holes: [] }
+            }
+            carryoversByEligibility[key].holes.push(co.fromHole)
+          })
+
+          Object.values(carryoversByEligibility).forEach(group => {
+            // Check if winner is eligible for these carryovers
+            if (group.eligiblePlayerIds.includes(String(greenieData.playerId))) {
+              // Winner is eligible - give them the carryovers
+              results[hole].carryoverCount = (results[hole].carryoverCount || 0) + group.holes.length
+              results[hole].carryoverFromHoles = [
+                ...(results[hole].carryoverFromHoles || []),
+                ...group.holes
+              ]
+            } else {
+              // Winner not eligible - find closest eligible player
+              const eligibleGreenies = liveRound.teams
+                .flatMap(t => t.greenies?.[hole] ? [{ ...t.greenies[hole], teamId: t.id }] : [])
+                .filter(g => g && g.playerId && group.eligiblePlayerIds.includes(String(g.playerId)))
+                .sort((a, b) => (a.distance || 999) - (b.distance || 999))
+
+              if (eligibleGreenies.length > 0 && eligibleGreenies[0].playerId) {
+                const coWinner = eligibleGreenies[0]
+                results[hole].carryoverWinners.push({
+                  playerId: coWinner.playerId,
+                  playerName: coWinner.playerName || skinsPlayers.find(p => String(p.id) === String(coWinner.playerId))?.name,
+                  count: group.holes.length,
+                  fromHoles: group.holes,
+                  eligiblePlayerIds: group.eligiblePlayerIds
+                })
+              } else {
+                // No eligible player with greenie - carryovers stay pending
+                group.holes.forEach(h => {
+                  pendingCarryovers.push({ fromHole: h, eligiblePlayerIds: group.eligiblePlayerIds })
+                })
+              }
+            }
+          })
+
+          // Clear processed carryovers
+          const wonHoles = new Set([
+            ...(results[hole].carryoverFromHoles || []),
+            ...results[hole].carryoverWinners.flatMap(cw => cw.fromHoles)
+          ])
+          pendingCarryovers = pendingCarryovers.filter(co => !wonHoles.has(co.fromHole))
         }
-        carryoverCount = 0
-        carryoverFromHoles = []
       } else {
-        // No winner on this hole
-        if (skinsMatch.settings.greeniesCarryover) {
-          carryoverCount++
-          carryoverFromHoles.push(hole)
+        // No winner on this hole - add to pending carryovers
+        if (greeniesCarryover) {
+          pendingCarryovers.push({ fromHole: hole, eligiblePlayerIds: [...activePlayerIds] })
         }
       }
     })
 
-    // If carryovers remain after hole 17, wrap to first par 3 winner
-    if (skinsMatch.settings.greeniesCarryover && carryoverCount > 0) {
-      for (const hole of PAR_3_HOLES) {
-        if (results[hole]?.winner) {
-          results[hole].carryoverCount = (results[hole].carryoverCount || 0) + carryoverCount
-          results[hole].carryoverFromHoles = [
-            ...(results[hole].carryoverFromHoles || []),
-            ...carryoverFromHoles
-          ]
-          break
+    // If carryovers remain after ALL par 3 holes have been played, wrap to first par 3 winner
+    // Only wrap if all par 3 holes have been completed (have scores for all active players)
+    const allPar3Completed = PAR_3_HOLES.every(hole => {
+      const activePlayers = getActivePlayersForHole(hole, skinsPlayers)
+      return activePlayers.every(player => {
+        const score = player.scores?.[hole]
+        return score !== undefined && score !== null && score !== ''
+      })
+    })
+
+    if (greeniesCarryover && pendingCarryovers.length > 0 && allPar3Completed) {
+      const carryoversByEligibility = {}
+      pendingCarryovers.forEach(co => {
+        const key = [...co.eligiblePlayerIds].sort().join(',')
+        if (!carryoversByEligibility[key]) {
+          carryoversByEligibility[key] = { eligiblePlayerIds: co.eligiblePlayerIds, holes: [] }
         }
-      }
+        carryoversByEligibility[key].holes.push(co.fromHole)
+      })
+
+      Object.values(carryoversByEligibility).forEach(group => {
+        for (const hole of PAR_3_HOLES) {
+          if (!results[hole]?.winner) continue
+
+          if (group.eligiblePlayerIds.includes(String(results[hole].winner))) {
+            results[hole].carryoverCount = (results[hole].carryoverCount || 0) + group.holes.length
+            results[hole].carryoverFromHoles = [
+              ...(results[hole].carryoverFromHoles || []),
+              ...group.holes
+            ]
+            break
+          }
+
+          // Check carryover winners
+          const coWinner = results[hole].carryoverWinners?.find(cw =>
+            group.eligiblePlayerIds.includes(String(cw.playerId))
+          )
+          if (coWinner) {
+            coWinner.count += group.holes.length
+            coWinner.fromHoles = [...coWinner.fromHoles, ...group.holes]
+            break
+          }
+        }
+      })
     }
 
+    results.pendingCarryovers = pendingCarryovers
     return results
   }
 
   const getGreeniesSummary = (results) => {
+    const participantDetails = skinsMatch?.participantDetails || {}
+    const cost = greeniesCostPerHole
+
     const summary = {}
     skinsPlayers.forEach(p => {
-      summary[String(p.id)] = { greeniesWon: 0, totalPot: 0, holes: [] }
+      const details = participantDetails[String(p.id)] || {}
+      summary[String(p.id)] = {
+        greeniesWon: 0,
+        totalPot: 0,
+        holes: [],
+        carryoverWins: [],
+        joinedOnHole: details.joinedOnHole || 1,
+        leftOnHole: details.leftOnHole || 18,
+        isSettled: details.isSettled || false
+      }
     })
 
-    const cost = parseFloat(skinsMatch?.settings?.greeniesCostPerHole) || 0
-    const potPerHole = cost * skinsPlayers.length
     let totalGreeniesWon = 0
+    const greenieWins = []  // Track wins for eligibility-aware payout
 
-    Object.entries(results).forEach(([hole, result]) => {
+    Object.entries(results).forEach(([holeStr, result]) => {
+      if (holeStr === 'pendingCarryovers') return
+      const hole = parseInt(holeStr)
+      const activePlayers = result.activePlayers || skinsPlayers.map(p => String(p.id))
+
       if (result.winner) {
         const playerId = String(result.winner)
         if (summary[playerId]) {
           summary[playerId].greeniesWon += 1
-          summary[playerId].totalPot += potPerHole
-          summary[playerId].holes.push(parseInt(hole))
+          summary[playerId].totalPot += cost * activePlayers.length
+          summary[playerId].holes.push(hole)
           totalGreeniesWon += 1
+
+          greenieWins.push({
+            hole,
+            winnerId: playerId,
+            activePlayerIds: activePlayers,
+            isCarryover: false
+          })
 
           if (result.carryoverCount > 0) {
             summary[playerId].greeniesWon += result.carryoverCount
-            summary[playerId].totalPot += result.carryoverCount * potPerHole
             totalGreeniesWon += result.carryoverCount
+
+            result.carryoverFromHoles?.forEach(coHole => {
+              const coResult = results[coHole]
+              const coActivePlayers = coResult?.activePlayers || activePlayers
+              summary[playerId].totalPot += cost * coActivePlayers.length
+              greenieWins.push({
+                hole: coHole,
+                winnerId: playerId,
+                activePlayerIds: coActivePlayers,
+                isCarryover: true,
+                wonOnHole: hole
+              })
+            })
           }
         }
       }
+
+      // Handle carryover winners
+      if (result.carryoverWinners?.length > 0) {
+        result.carryoverWinners.forEach(cw => {
+          const playerId = String(cw.playerId)
+          if (summary[playerId]) {
+            summary[playerId].greeniesWon += cw.count
+            summary[playerId].carryoverWins.push({
+              wonOnHole: hole,
+              fromHoles: cw.fromHoles,
+              count: cw.count
+            })
+            totalGreeniesWon += cw.count
+
+            cw.fromHoles?.forEach(coHole => {
+              const coResult = results[coHole]
+              const coActivePlayers = coResult?.activePlayers || cw.eligiblePlayerIds
+              summary[playerId].totalPot += cost * coActivePlayers.length
+              greenieWins.push({
+                hole: coHole,
+                winnerId: playerId,
+                activePlayerIds: coActivePlayers,
+                isCarryover: true,
+                wonOnHole: hole
+              })
+            })
+          }
+        })
+      }
     })
 
-    // Calculate net amounts
-    const numParticipants = skinsPlayers.length
-    const totalPotCollected = 4 * potPerHole // 4 par 3 holes
+    // Calculate net amounts with eligibility-aware logic
     Object.keys(summary).forEach(playerId => {
       const playerSummary = summary[playerId]
-      playerSummary.amountWon = playerSummary.totalPot
-      playerSummary.amountPaid = totalPotCollected / numParticipants
-      playerSummary.netAmount = playerSummary.amountWon - playerSummary.amountPaid
+      let amountWon = playerSummary.totalPot
+      let amountPaid = 0
+
+      // Amount paid: cost for each greenie hole the player was active
+      greenieWins.forEach(gw => {
+        if (gw.winnerId !== playerId && gw.activePlayerIds.includes(playerId)) {
+          amountPaid += cost
+        }
+      })
+
+      // Also pay for holes where player was active but no winner yet
+      PAR_3_HOLES.forEach(hole => {
+        const activePlayers = results[hole]?.activePlayers || []
+        if (activePlayers.includes(playerId)) {
+          // Already counted in greenieWins if there was a winner
+          const hasWinner = greenieWins.some(gw => gw.hole === hole && !gw.isCarryover)
+          if (!hasWinner && !results[hole]?.winner) {
+            // No winner on this hole, player still contributed to pot
+            // This will be resolved later (carryover or pending)
+          }
+        }
+      })
+
+      playerSummary.amountWon = amountWon
+      playerSummary.amountPaid = amountPaid
+      playerSummary.netAmount = amountWon - amountPaid
     })
 
-    return { playerSummary: summary, totalGreeniesWon }
+    return { playerSummary: summary, totalGreeniesWon, greenieWins }
   }
 
   const skinsResults = skinsMatch ? calculateSkins() : {}
@@ -2302,10 +2827,161 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
     ? getSkinsSummary(skinsResults)
     : { playerSummary: {}, totalSkinsWon: 0 }
 
-  const greenieResults = skinsMatch?.settings?.greeniesEnabled ? calculateGreenies() : {}
-  const { playerSummary: greeniePlayerSummary, totalGreeniesWon } = skinsMatch?.settings?.greeniesEnabled && skinsPlayers.length >= 2
+  const greenieResults = greeniesEnabled ? calculateGreenies() : {}
+  const { playerSummary: greeniePlayerSummary, totalGreeniesWon } = greeniesEnabled && skinsPlayers.length >= 2
     ? getGreeniesSummary(greenieResults)
     : { playerSummary: {}, totalGreeniesWon: 0 }
+
+  // Helper function to finalize settlement when a player leaves
+  const finalizeSettlement = () => {
+    if (!settlePlayer) return
+
+    const playerId = String(settlePlayer.id)
+    const skinsCost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+    const greenieCost = greeniesCostPerHole
+
+    // Calculate resolved transactions
+    const resolvedTransactions = []
+
+    // Get skinWins for payout calculation
+    const { skinWins } = getSkinsSummary(skinsResults)
+
+    // For each other player, calculate what's owed (greeniesEnabled is defined at component level)
+    const { greenieWins } = greeniesEnabled ? getGreeniesSummary(greenieResults) : { greenieWins: [] }
+
+    skinsPlayers.filter(p => String(p.id) !== playerId && !playerSummary[String(p.id)]?.isSettled).forEach(otherPlayer => {
+      const otherId = String(otherPlayer.id)
+      let skinsOwedToOther = 0
+      let skinsOwedFromOther = 0
+      let greeniesOwedToOther = 0
+      let greeniesOwedFromOther = 0
+
+      // This player owes other for skins other won where this player was active
+      skinWins.filter(sw => sw.winnerId === otherId && sw.activePlayerIds.includes(playerId)).forEach(sw => {
+        skinsOwedToOther += sw.value * skinsCost
+      })
+
+      // Other owes this player for skins this player won where other was active
+      skinWins.filter(sw => sw.winnerId === playerId && sw.activePlayerIds.includes(otherId)).forEach(sw => {
+        skinsOwedFromOther += sw.value * skinsCost
+      })
+
+      // Similar for greenies if enabled
+      if (greeniesEnabled) {
+        greenieWins.filter(gw => gw.winnerId === otherId && gw.activePlayerIds.includes(playerId)).forEach(() => {
+          greeniesOwedToOther += greenieCost
+        })
+        greenieWins.filter(gw => gw.winnerId === playerId && gw.activePlayerIds.includes(otherId)).forEach(() => {
+          greeniesOwedFromOther += greenieCost
+        })
+      }
+
+      const netSkins = skinsOwedFromOther - skinsOwedToOther
+      const netGreenies = greeniesOwedFromOther - greeniesOwedToOther
+      const netOwed = netSkins + netGreenies
+
+      if (Math.abs(netOwed) > 0.01) {
+        resolvedTransactions.push({
+          withPlayerId: otherId,
+          amount: Math.abs(netOwed),
+          direction: netOwed > 0 ? 'collect' : 'owed',
+          skinsAmount: Math.abs(netSkins),
+          greeniesAmount: Math.abs(netGreenies)
+        })
+      }
+    })
+
+    // Calculate carryover collection if paying
+    let carryoverCollectionData = null
+    if (carryoverHandling === 'pay' && carryoverCollector) {
+      const pendingCOs = skinsResults.pendingCarryovers || []
+      const playerDetails = skinsMatch?.participantDetails?.[playerId] || {}
+      const joinHole = playerDetails.joinedOnHole || 1
+      const relevantCOs = pendingCOs.filter(co =>
+        co.eligiblePlayerIds.includes(playerId) &&
+        co.fromHole >= joinHole && co.fromHole <= settleLastHole
+      )
+
+      const prepayAmount = relevantCOs.length * skinsCost
+      carryoverCollectionData = {
+        collectedBy: carryoverCollector,
+        amount: prepayAmount,
+        forHoles: relevantCOs.map(co => co.fromHole)
+      }
+    }
+
+    // Create settlement record
+    const settlementRecord = {
+      id: Date.now(),
+      playerId,
+      settledOnHole: settleLastHole,
+      settledAt: new Date().toISOString(),
+      resolvedTransactions,
+      carryoverHandling,
+      carryoverCollection: carryoverCollectionData
+    }
+
+    // Update skinsMatch
+    const newDetails = {
+      ...(skinsMatch?.participantDetails || {}),
+      [playerId]: {
+        ...(skinsMatch?.participantDetails?.[playerId] || {}),
+        leftOnHole: settleLastHole,
+        isSettled: true,
+        settledOnHole: settleLastHole
+      }
+    }
+
+    const newSettlements = [...(skinsMatch?.settlements || []), settlementRecord]
+
+    // Set X scores for remaining holes for guest players
+    let newGuestPlayers = skinsMatch?.guestPlayers || {}
+    if (newGuestPlayers[playerId]) {
+      const updatedScores = { ...newGuestPlayers[playerId].scores }
+      for (let h = settleLastHole + 1; h <= 18; h++) {
+        updatedScores[h] = 'X'
+      }
+      newGuestPlayers = {
+        ...newGuestPlayers,
+        [playerId]: {
+          ...newGuestPlayers[playerId],
+          scores: updatedScores
+        }
+      }
+    }
+
+    // Set X scores for remaining holes for regular players in liveRound
+    if (liveRound) {
+      const updatedTeams = liveRound.teams.map(team => ({
+        ...team,
+        players: team.players.map(player => {
+          if (String(player.id) === playerId) {
+            const updatedScores = { ...player.scores }
+            for (let h = settleLastHole + 1; h <= 18; h++) {
+              updatedScores[h] = 'X'
+            }
+            return { ...player, scores: updatedScores }
+          }
+          return player
+        })
+      }))
+      setLiveRound({ ...liveRound, teams: updatedTeams })
+    }
+
+    setSkinsMatch({
+      ...skinsMatch,
+      participantDetails: newDetails,
+      settlements: newSettlements,
+      guestPlayers: newGuestPlayers
+    })
+
+    // Reset modal state
+    setShowSettleModal(false)
+    setSettlePlayer(null)
+    setSettleStep(1)
+    setCarryoverHandling('pay')
+    setCarryoverCollector(null)
+  }
 
   if (!skinsMatch) {
     return (
@@ -2441,9 +3117,9 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
           {skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && <span>Wrap to {skinsMatch.settings.wrapTo === 'front' ? 'Front 9' : 'Back 9'}</span>}
           {skinsMatch.settings.parOrBetterRequired && <span>Par or Better</span>}
           {skinsMatch.settings.birdieDoubleEagleTriple && <span>Birdie 2x/Eagle 3x</span>}
-          {skinsMatch.settings.greeniesEnabled && (
+          {greeniesEnabled && (
             <span style={{ color: '#27ae60', fontWeight: '600' }}>
-              Greenies ${skinsMatch.settings.greeniesCostPerHole}/hole {skinsMatch.settings.greeniesCarryover && '(carryovers)'}
+              Greenies ${greeniesCostPerHole}/hole {greeniesCarryover && '(carryovers)'}
             </span>
           )}
           {isAdmin && (
@@ -2473,29 +3149,79 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
       {/* Admin Add/Remove Players */}
       {isAdmin && (
         <div style={{ background: 'white', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
-          <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>
-            Add/Remove Players (Admin - PIN Required)
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontWeight: '600', fontSize: '14px' }}>
+              Manage Players (Admin)
+            </div>
+            <button
+              onClick={() => setShowAddPlayerModal(true)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: '#27ae60',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              + Add Mid-Round
+            </button>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {allPlayers.map(player => {
-              const inSkins = skinsMatch.participants.includes(String(player.id))
+              const playerId = String(player.id)
+              const inSkins = skinsMatch.participants.includes(playerId)
+              const details = skinsMatch.participantDetails?.[playerId] || {}
+              const isSettled = details.isSettled
+              const joinHole = details.joinedOnHole || 1
+              const leftHole = details.leftOnHole
+
               return (
-                <button
-                  key={player.id}
-                  onClick={() => handleToggleParticipant(player.id)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '20px',
-                    border: inSkins ? '2px solid #27ae60' : '2px solid #ddd',
-                    background: inSkins ? '#e8f8f5' : 'white',
-                    color: inSkins ? '#27ae60' : '#666',
-                    fontSize: '12px',
-                    fontWeight: inSkins ? '600' : 'normal',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {inSkins ? '✓ ' : ''}{player.name}
-                </button>
+                <div key={player.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button
+                    onClick={() => !isSettled && handleToggleParticipant(player.id)}
+                    disabled={isSettled}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '20px',
+                      border: isSettled ? '2px solid #95a5a6' : inSkins ? '2px solid #27ae60' : '2px solid #ddd',
+                      background: isSettled ? '#ecf0f1' : inSkins ? '#e8f8f5' : 'white',
+                      color: isSettled ? '#7f8c8d' : inSkins ? '#27ae60' : '#666',
+                      fontSize: '12px',
+                      fontWeight: inSkins ? '600' : 'normal',
+                      cursor: isSettled ? 'not-allowed' : 'pointer',
+                      opacity: isSettled ? 0.7 : 1
+                    }}
+                  >
+                    {inSkins ? '✓ ' : ''}{player.name}
+                    {inSkins && joinHole > 1 && <span style={{ fontSize: '10px', marginLeft: '4px' }}>(h{joinHole}+)</span>}
+                    {isSettled && <span style={{ fontSize: '10px', marginLeft: '4px' }}>(settled h{leftHole})</span>}
+                  </button>
+                  {inSkins && !isSettled && (
+                    <button
+                      onClick={() => {
+                        setSettlePlayer(player)
+                        setSettleLastHole(9)
+                        setSettleStep(1)
+                        setShowSettleModal(true)
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid #e67e22',
+                        background: 'white',
+                        color: '#e67e22',
+                        fontSize: '10px',
+                        cursor: 'pointer'
+                      }}
+                      title="Settle & Leave"
+                    >
+                      Settle
+                    </button>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -2578,11 +3304,22 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
                           borderColor = '#28a745'
                         } else {
                           // Check if this hole was won via carryover by this player
-                          // (i.e., this hole is in another hole's carryoverFromHoles and that hole's winner is this player)
+                          // (i.e., this hole is in another hole's carryoverFromHoles/carryoverWinners)
                           for (const [otherHole, otherResult] of Object.entries(skinsResults)) {
+                            // Check carryoverFromHoles (when hole winner also won carryovers)
                             if (otherResult.winner === player.id &&
                                 otherResult.carryoverFromHoles &&
                                 otherResult.carryoverFromHoles.includes(h.hole)) {
+                              bgColor = '#e8f5e9'  // Lighter green for carryover win
+                              borderColor = '#81c784'
+                              isCarryoverWin = true
+                              break
+                            }
+                            // Check carryoverWinners (dual winner scenario - different player won carryovers)
+                            const coWin = otherResult.carryoverWinners?.find(cw =>
+                              cw.playerId === player.id && cw.fromHoles?.includes(h.hole)
+                            )
+                            if (coWin) {
                               bgColor = '#e8f5e9'  // Lighter green for carryover win
                               borderColor = '#81c784'
                               isCarryoverWin = true
@@ -2603,8 +3340,14 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
                           // Check if this hole has been claimed via carryover by anyone
                           let claimedViaCarryover = false
                           for (const [otherHole, otherResult] of Object.entries(skinsResults)) {
+                            // Check carryoverFromHoles
                             if (otherResult.carryoverFromHoles &&
                                 otherResult.carryoverFromHoles.includes(h.hole)) {
+                              claimedViaCarryover = true
+                              break
+                            }
+                            // Check carryoverWinners (dual winner scenario)
+                            if (otherResult.carryoverWinners?.some(cw => cw.fromHoles?.includes(h.hole))) {
                               claimedViaCarryover = true
                               break
                             }
@@ -2677,7 +3420,7 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
       )}
 
       {/* Greenies Section */}
-      {skinsMatch.settings.greeniesEnabled && skinsPlayers.length >= 2 && (
+      {greeniesEnabled && skinsPlayers.length >= 2 && (
         <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
           <div style={{
             background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
@@ -2691,7 +3434,7 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
           }}>
             <span>Greenies (Par 3s)</span>
             <span style={{ fontSize: '12px', opacity: 0.9 }}>
-              ${skinsMatch.settings.greeniesCostPerHole}/hole × {skinsPlayers.length} players = ${(skinsMatch.settings.greeniesCostPerHole * skinsPlayers.length).toFixed(2)}/pot
+              ${greeniesCostPerHole}/hole × {skinsPlayers.length} players = ${(greeniesCostPerHole * skinsPlayers.length).toFixed(2)}/pot
             </span>
           </div>
           <div style={{ padding: '15px' }}>
@@ -2699,7 +3442,7 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
               {PAR_3_HOLES.map(hole => {
                 const result = greenieResults[hole] || {}
                 const hasCarryover = result.carryoverCount > 0
-                const totalPot = (1 + (result.carryoverCount || 0)) * skinsMatch.settings.greeniesCostPerHole * skinsPlayers.length
+                const totalPot = (1 + (result.carryoverCount || 0)) * greeniesCostPerHole * skinsPlayers.length
                 return (
                   <div key={hole} style={{
                     background: result.winner ? (hasCarryover ? '#e8f5e9' : '#d4edda') : '#f8f9fa',
@@ -2726,7 +3469,7 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
                     ) : (
                       <div style={{ color: '#999', fontSize: '12px' }}>
                         No winner
-                        {skinsMatch.settings.greeniesCarryover && <div style={{ fontSize: '10px' }}>→ carries over</div>}
+                        {greeniesCarryover && <div style={{ fontSize: '10px' }}>→ carries over</div>}
                       </div>
                     )}
                   </div>
@@ -2775,81 +3518,206 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
                 return (bSkinsNet + bGreeniesNet) - (aSkinsNet + aGreeniesNet)
               })
               .map(player => {
-                const skinsSummary = playerSummary[String(player.id)] || {}
-                const greenieSummary = greeniePlayerSummary[String(player.id)] || {}
+                const playerId = String(player.id)
+                const skinsSummary = playerSummary[playerId] || {}
+                const greenieSummary = greeniePlayerSummary[playerId] || {}
                 const skinsNet = skinsSummary.netAmount || 0
                 const greeniesNet = greenieSummary.netAmount || 0
                 const totalNet = skinsNet + greeniesNet
+                const details = skinsMatch.participantDetails?.[playerId] || {}
+                const isSettled = details.isSettled
+                const joinHole = details.joinedOnHole || 1
+                const leftHole = details.leftOnHole
+
                 return (
                   <div key={player.id} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
                     padding: '8px 10px',
-                    borderBottom: '1px solid #eee'
+                    borderBottom: '1px solid #eee',
+                    background: isSettled ? '#f5f5f5' : 'transparent',
+                    opacity: isSettled ? 0.8 : 1
                   }}>
-                    <span>
-                      <strong>{player.name}</strong>
-                      <span style={{ color: '#666', fontSize: '12px', marginLeft: '8px' }}>
-                        ({skinsSummary.skinsWon || 0} skins{skinsMatch.settings.greeniesEnabled && `, ${greenieSummary.greeniesWon || 0} greenies`})
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>
+                        <strong>{player.name}</strong>
+                        {(joinHole > 1 || leftHole) && (
+                          <span style={{ fontSize: '10px', color: '#999', marginLeft: '4px' }}>
+                            (h{joinHole}{leftHole ? `-${leftHole}` : '-18'})
+                          </span>
+                        )}
+                        {isSettled && (
+                          <span style={{ fontSize: '10px', color: '#e67e22', marginLeft: '6px', fontWeight: '600' }}>
+                            SETTLED
+                          </span>
+                        )}
                       </span>
-                    </span>
-                    <span style={{
-                      fontWeight: '700',
-                      color: totalNet > 0 ? '#27ae60' : totalNet < 0 ? '#e74c3c' : '#666'
-                    }}>
-                      {totalNet >= 0 ? '+' : ''}${totalNet.toFixed(2)}
-                    </span>
+                      <span style={{
+                        fontWeight: '700',
+                        color: totalNet > 0 ? '#27ae60' : totalNet < 0 ? '#e74c3c' : '#666'
+                      }}>
+                        {totalNet >= 0 ? '+' : ''}${totalNet.toFixed(2)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666', marginTop: '2px', display: 'flex', gap: '12px' }}>
+                      <span>
+                        Skins: {skinsSummary.skinsWon || 0} won
+                        <span style={{ color: skinsNet >= 0 ? '#27ae60' : '#e74c3c', marginLeft: '4px' }}>
+                          ({skinsNet >= 0 ? '+' : ''}${skinsNet.toFixed(2)})
+                        </span>
+                      </span>
+                      {greeniesEnabled && (
+                        <span>
+                          Greenies: {greenieSummary.greeniesWon || 0} won
+                          <span style={{ color: greeniesNet >= 0 ? '#27ae60' : '#e74c3c', marginLeft: '4px' }}>
+                            ({greeniesNet >= 0 ? '+' : ''}${greeniesNet.toFixed(2)})
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )
               })}
           </div>
 
-          {/* Who Owes Who */}
+          {/* Settled Players Summary */}
+          {skinsMatch.settlements?.length > 0 && (
+            <div style={{
+              borderTop: '2px solid #e67e22',
+              padding: '10px 15px',
+              background: '#fff8e1'
+            }}>
+              <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: '#e67e22' }}>
+                Early Settlements
+              </div>
+              {skinsMatch.settlements.map((settlement, idx) => {
+                const player = skinsPlayers.find(p => String(p.id) === settlement.playerId)
+                return (
+                  <div key={idx} style={{
+                    background: 'white',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    marginBottom: idx < skinsMatch.settlements.length - 1 ? '8px' : 0,
+                    fontSize: '12px'
+                  }}>
+                    <div style={{ fontWeight: '600', marginBottom: '5px' }}>
+                      {player?.name || 'Unknown'} - Settled on hole {settlement.settledOnHole}
+                    </div>
+                    {settlement.resolvedTransactions?.map((tx, txIdx) => {
+                      const otherPlayer = skinsPlayers.find(p => String(p.id) === tx.withPlayerId)
+                      const hasBreakdown = tx.skinsAmount !== undefined || tx.greeniesAmount !== undefined
+                      return (
+                        <div key={txIdx} style={{ color: '#666', fontSize: '11px', marginLeft: '10px' }}>
+                          {tx.direction === 'owed' ? (
+                            <span>Owed {otherPlayer?.name}: <span style={{ color: '#e74c3c' }}>${tx.amount.toFixed(2)}</span></span>
+                          ) : (
+                            <span>Collected from {otherPlayer?.name}: <span style={{ color: '#27ae60' }}>${tx.amount.toFixed(2)}</span></span>
+                          )}
+                          {hasBreakdown && (tx.skinsAmount > 0.01 || tx.greeniesAmount > 0.01) && (
+                            <span style={{ color: '#999', marginLeft: '6px' }}>
+                              ({tx.skinsAmount > 0.01 && `Skins: $${tx.skinsAmount.toFixed(2)}`}
+                              {tx.skinsAmount > 0.01 && tx.greeniesAmount > 0.01 && ', '}
+                              {tx.greeniesAmount > 0.01 && `Greenies: $${tx.greeniesAmount.toFixed(2)}`})
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {settlement.carryoverCollection && (
+                      <div style={{ color: '#e67e22', fontSize: '11px', marginLeft: '10px', marginTop: '4px' }}>
+                        Paid ${settlement.carryoverCollection.amount.toFixed(2)} for carryovers (held by {skinsPlayers.find(p => String(p.id) === settlement.carryoverCollection.collectedBy)?.name})
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Who Owes Who - Only for active (non-settled) players */}
           <div style={{
             borderTop: '2px solid #27ae60',
             padding: '10px 15px',
             background: '#f8fff8'
           }}>
             <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: '#27ae60' }}>
-              Who Owes Who
+              Who Owes Who (Active Players)
             </div>
             {(() => {
               const skinsCost = parseFloat(skinsMatch.settings.costPerSkin) || 0
-              const greenieCost = parseFloat(skinsMatch.settings.greeniesCostPerHole) || 0
-              const greeniesEnabled = skinsMatch.settings.greeniesEnabled
+              const greenieCost = greeniesCostPerHole
               const settlements = []
 
-              for (let i = 0; i < skinsPlayers.length; i++) {
-                for (let j = i + 1; j < skinsPlayers.length; j++) {
-                  const playerA = skinsPlayers[i]
-                  const playerB = skinsPlayers[j]
-                  const skinsSummaryA = playerSummary[String(playerA.id)] || {}
-                  const skinsSummaryB = playerSummary[String(playerB.id)] || {}
-                  const greenieSummaryA = greeniePlayerSummary[String(playerA.id)] || {}
-                  const greenieSummaryB = greeniePlayerSummary[String(playerB.id)] || {}
+              // Get skinWins and greenieWins for eligibility-aware calculations
+              const { skinWins } = getSkinsSummary(skinsResults)
+              const { greenieWins } = greeniesEnabled ? getGreeniesSummary(greenieResults) : { greenieWins: [] }
 
-                  // Skins: A owes B for B's skins wins
-                  let aOwesB = (skinsSummaryB.totalValue || 0) * skinsCost
-                  let bOwesA = (skinsSummaryA.totalValue || 0) * skinsCost
+              // Only consider active (non-settled) players
+              const activePlayers = skinsPlayers.filter(p => !playerSummary[String(p.id)]?.isSettled)
 
-                  // Greenies: Each greenie pot is split among all players, winner takes pot
-                  // For greenies, A owes B = B's greenie pots won (since A contributed to those pots)
+              for (let i = 0; i < activePlayers.length; i++) {
+                for (let j = i + 1; j < activePlayers.length; j++) {
+                  const playerA = activePlayers[i]
+                  const playerB = activePlayers[j]
+                  const playerAId = String(playerA.id)
+                  const playerBId = String(playerB.id)
+
+                  let aOwesBSkins = 0
+                  let bOwesASkins = 0
+                  let aOwesBGreenies = 0
+                  let bOwesAGreenies = 0
+
+                  // Use skinWins for eligibility-aware calculation
+                  skinWins.forEach(sw => {
+                    const aWasActive = sw.activePlayerIds.includes(playerAId)
+                    const bWasActive = sw.activePlayerIds.includes(playerBId)
+
+                    if (sw.winnerId === playerBId && aWasActive) {
+                      aOwesBSkins += sw.value * skinsCost
+                    }
+                    if (sw.winnerId === playerAId && bWasActive) {
+                      bOwesASkins += sw.value * skinsCost
+                    }
+                  })
+
+                  // Use greenieWins for eligibility-aware calculation
                   if (greeniesEnabled) {
-                    const potPerHole = greenieCost * skinsPlayers.length
-                    const aGreeniesValue = (greenieSummaryA.greeniesWon || 0)
-                    const bGreeniesValue = (greenieSummaryB.greeniesWon || 0)
-                    // A contributed greenieCost to each pot B won
-                    aOwesB += bGreeniesValue * greenieCost
-                    bOwesA += aGreeniesValue * greenieCost
+                    greenieWins.forEach(gw => {
+                      const aWasActive = gw.activePlayerIds.includes(playerAId)
+                      const bWasActive = gw.activePlayerIds.includes(playerBId)
+
+                      if (gw.winnerId === playerBId && aWasActive) {
+                        aOwesBGreenies += greenieCost
+                      }
+                      if (gw.winnerId === playerAId && bWasActive) {
+                        bOwesAGreenies += greenieCost
+                      }
+                    })
                   }
 
-                  const netOwed = aOwesB - bOwesA
+                  const netSkins = aOwesBSkins - bOwesASkins
+                  const netGreenies = aOwesBGreenies - bOwesAGreenies
+                  const netOwed = netSkins + netGreenies
 
                   if (Math.abs(netOwed) > 0.001) {
                     if (netOwed > 0) {
-                      settlements.push({ from: playerA.name, to: playerB.name, amount: netOwed })
+                      settlements.push({
+                        from: playerA.name,
+                        to: playerB.name,
+                        amount: netOwed,
+                        skins: Math.abs(netSkins),
+                        greenies: Math.abs(netGreenies),
+                        skinsDirection: netSkins >= 0 ? 'owed' : 'collect',
+                        greeniesDirection: netGreenies >= 0 ? 'owed' : 'collect'
+                      })
                     } else {
-                      settlements.push({ from: playerB.name, to: playerA.name, amount: -netOwed })
+                      settlements.push({
+                        from: playerB.name,
+                        to: playerA.name,
+                        amount: -netOwed,
+                        skins: Math.abs(netSkins),
+                        greenies: Math.abs(netGreenies),
+                        skinsDirection: netSkins <= 0 ? 'owed' : 'collect',
+                        greeniesDirection: netGreenies <= 0 ? 'owed' : 'collect'
+                      })
                     }
                   }
                 }
@@ -2861,18 +3729,22 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
 
               return settlements.map((s, idx) => (
                 <div key={idx} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 0',
+                  padding: '8px 0',
                   borderBottom: idx < settlements.length - 1 ? '1px solid #e8f5e9' : 'none',
                   fontSize: '13px'
                 }}>
-                  <span style={{ color: '#e74c3c', fontWeight: '600' }}>{s.from}</span>
-                  <span style={{ margin: '0 8px', color: '#666' }}>→</span>
-                  <span style={{ color: '#27ae60', fontWeight: '600' }}>{s.to}</span>
-                  <span style={{ marginLeft: 'auto', fontWeight: '700', color: '#333' }}>
-                    ${s.amount.toFixed(2)}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ color: '#e74c3c', fontWeight: '600' }}>{s.from}</span>
+                    <span style={{ margin: '0 8px', color: '#666' }}>→</span>
+                    <span style={{ color: '#27ae60', fontWeight: '600' }}>{s.to}</span>
+                    <span style={{ marginLeft: 'auto', fontWeight: '700', color: '#333' }}>
+                      ${s.amount.toFixed(2)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#888', marginTop: '2px', marginLeft: '20px', display: 'flex', gap: '12px' }}>
+                    {s.skins > 0.001 && <span>Skins: ${s.skins.toFixed(2)}</span>}
+                    {greeniesEnabled && s.greenies > 0.001 && <span>Greenies: ${s.greenies.toFixed(2)}</span>}
+                  </div>
                 </div>
               ))
             })()}
@@ -3234,6 +4106,740 @@ function SkinsTracker({ liveRound, skinsMatch, setSkinsMatch, isAdmin }) {
           </div>
         </div>
       )}
+
+      {/* Add Player Mid-Round Modal */}
+      {showAddPlayerModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 3000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '25px',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '350px'
+          }}>
+            <h3 style={{ marginBottom: '15px', color: '#27ae60' }}>Add Player Mid-Round</h3>
+            <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+              Player will only be eligible for skins and greenies from their join hole onwards.
+            </p>
+
+            {/* Toggle between league player and guest */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <button
+                onClick={() => setAddPlayerMode('existing')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: addPlayerMode === 'existing' ? '2px solid #27ae60' : '1px solid #ddd',
+                  background: addPlayerMode === 'existing' ? '#e8f5e9' : 'white',
+                  fontWeight: addPlayerMode === 'existing' ? '600' : 'normal',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                League Player
+              </button>
+              <button
+                onClick={() => setAddPlayerMode('guest')}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: addPlayerMode === 'guest' ? '2px solid #27ae60' : '1px solid #ddd',
+                  background: addPlayerMode === 'guest' ? '#e8f5e9' : 'white',
+                  fontWeight: addPlayerMode === 'guest' ? '600' : 'normal',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Add Guest
+              </button>
+            </div>
+
+            {addPlayerMode === 'existing' ? (
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                  Select Player
+                </label>
+                <select
+                  value={selectedPlayerToAdd || ''}
+                  onChange={(e) => setSelectedPlayerToAdd(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                >
+                  <option value="">-- Select a player --</option>
+                  {(leaguePlayers || [])
+                    .filter(p => !skinsMatch.participants.includes(String(p.id)))
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))
+                  }
+                </select>
+                {(leaguePlayers || []).filter(p => !skinsMatch.participants.includes(String(p.id))).length === 0 && (
+                  <div style={{ fontSize: '11px', color: '#e74c3c', marginTop: '5px' }}>
+                    All league players are already in the skins match. Use "Add Guest" to add someone new.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                  Guest Name
+                </label>
+                <input
+                  type="text"
+                  value={guestPlayerName}
+                  onChange={(e) => setGuestPlayerName(e.target.value)}
+                  placeholder="Enter guest name"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Team Selection */}
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                Add to Team
+              </label>
+              <select
+                value={selectedTeamToAdd || ''}
+                onChange={(e) => setSelectedTeamToAdd(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="">-- Select a team --</option>
+                {liveRound.teams.map(team => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} ({team.players.map(p => p.name).join(', ')})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                Joining on Hole #
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="18"
+                value={addPlayerJoinHole}
+                onChange={(e) => setAddPlayerJoinHole(Math.min(18, Math.max(1, parseInt(e.target.value) || 1)))}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+              <div style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
+                Eligible for holes {addPlayerJoinHole}-18 only
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  setShowAddPlayerModal(false)
+                  setSelectedPlayerToAdd(null)
+                  setAddPlayerJoinHole(1)
+                  setAddPlayerMode('existing')
+                  setGuestPlayerName('')
+                  setSelectedTeamToAdd(null)
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: '#f8f9fa',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Validate team selection
+                  if (!selectedTeamToAdd) {
+                    alert('Please select a team')
+                    return
+                  }
+
+                  // Create X scores for holes before join hole
+                  const initialScores = {}
+                  for (let h = 1; h < addPlayerJoinHole; h++) {
+                    initialScores[h] = 'X'
+                  }
+
+                  if (addPlayerMode === 'existing') {
+                    if (!selectedPlayerToAdd) {
+                      alert('Please select a player')
+                      return
+                    }
+                    const playerId = String(selectedPlayerToAdd)
+                    const leaguePlayer = (leaguePlayers || []).find(p => String(p.id) === playerId)
+
+                    if (!leaguePlayer) {
+                      alert('Player not found')
+                      return
+                    }
+
+                    // Add to skins match participants
+                    const newParticipants = [...skinsMatch.participants, playerId]
+                    const newDetails = {
+                      ...(skinsMatch.participantDetails || {}),
+                      [playerId]: {
+                        joinedOnHole: addPlayerJoinHole,
+                        leftOnHole: null,
+                        isSettled: false,
+                        settledOnHole: null
+                      }
+                    }
+                    setSkinsMatch({
+                      ...skinsMatch,
+                      participants: newParticipants,
+                      participantDetails: newDetails
+                    })
+
+                    // Add player to the selected team in liveRound
+                    const teamId = parseInt(selectedTeamToAdd) || selectedTeamToAdd
+                    setLiveRound({
+                      ...liveRound,
+                      teams: liveRound.teams.map(team => {
+                        if (team.id !== teamId) return team
+                        return {
+                          ...team,
+                          players: [
+                            ...team.players,
+                            {
+                              id: leaguePlayer.id,
+                              name: leaguePlayer.name,
+                              scores: initialScores,
+                              handicap: leaguePlayer.handicap || 0
+                            }
+                          ]
+                        }
+                      })
+                    })
+                  } else {
+                    // Add guest player
+                    if (!guestPlayerName.trim()) {
+                      alert('Please enter a guest name')
+                      return
+                    }
+                    // Generate a unique ID for the guest
+                    const guestId = `guest_${Date.now()}`
+                    const newParticipants = [...skinsMatch.participants, guestId]
+                    const newDetails = {
+                      ...(skinsMatch.participantDetails || {}),
+                      [guestId]: {
+                        joinedOnHole: addPlayerJoinHole,
+                        leftOnHole: null,
+                        isSettled: false,
+                        settledOnHole: null,
+                        isGuest: true,
+                        guestName: guestPlayerName.trim()
+                      }
+                    }
+                    // Store guest players info in skinsMatch
+                    const newGuestPlayers = {
+                      ...(skinsMatch.guestPlayers || {}),
+                      [guestId]: {
+                        id: guestId,
+                        name: guestPlayerName.trim(),
+                        scores: initialScores
+                      }
+                    }
+                    setSkinsMatch({
+                      ...skinsMatch,
+                      participants: newParticipants,
+                      participantDetails: newDetails,
+                      guestPlayers: newGuestPlayers
+                    })
+
+                    // Add guest player to the selected team in liveRound
+                    const teamId = parseInt(selectedTeamToAdd) || selectedTeamToAdd
+                    setLiveRound({
+                      ...liveRound,
+                      teams: liveRound.teams.map(team => {
+                        if (team.id !== teamId) return team
+                        return {
+                          ...team,
+                          players: [
+                            ...team.players,
+                            {
+                              id: guestId,
+                              name: guestPlayerName.trim(),
+                              scores: initialScores,
+                              handicap: 0
+                            }
+                          ]
+                        }
+                      })
+                    })
+                  }
+                  setShowAddPlayerModal(false)
+                  setSelectedPlayerToAdd(null)
+                  setAddPlayerJoinHole(1)
+                  setAddPlayerMode('existing')
+                  setGuestPlayerName('')
+                  setSelectedTeamToAdd(null)
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: '#27ae60',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Add Player
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settle & Leave Player Modal */}
+      {showSettleModal && settlePlayer && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 3000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '25px',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '400px',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <h3 style={{ marginBottom: '15px', color: '#e67e22' }}>
+              Settle & Leave: {settlePlayer.name}
+            </h3>
+
+            {settleStep === 1 && (
+              <>
+                <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+                  Enter the last hole this player completed before leaving.
+                </p>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                    Last Hole Played
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="18"
+                    value={settleLastHole}
+                    onChange={(e) => setSettleLastHole(Math.min(18, Math.max(1, parseInt(e.target.value) || 1)))}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid #ddd',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                {/* Show current settlement status with WHO owes whom */}
+                <div style={{
+                  background: '#f8f9fa',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>
+                    Settlement Preview
+                  </div>
+                  {(() => {
+                    const playerId = String(settlePlayer.id)
+                    const skinsCost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+                    const greenieCost = greeniesCostPerHole
+
+                    // Get skinWins and greenieWins (greeniesEnabled is from component scope)
+                    const { skinWins } = getSkinsSummary(skinsResults)
+                    const { greenieWins } = greeniesEnabled ? getGreeniesSummary(greenieResults) : { greenieWins: [] }
+
+                    // Calculate what this player owes/is owed by each other player
+                    const transactions = []
+                    let totalOwed = 0
+                    let totalCollect = 0
+                    let totalSkinsNet = 0
+                    let totalGreeniesNet = 0
+
+                    skinsPlayers.filter(p => String(p.id) !== playerId && !playerSummary[String(p.id)]?.isSettled).forEach(otherPlayer => {
+                      const otherId = String(otherPlayer.id)
+                      let skinsOwedToOther = 0
+                      let skinsOwedFromOther = 0
+                      let greeniesOwedToOther = 0
+                      let greeniesOwedFromOther = 0
+
+                      // Skins calculations
+                      skinWins.filter(sw => sw.winnerId === otherId && sw.activePlayerIds.includes(playerId)).forEach(sw => {
+                        skinsOwedToOther += sw.value * skinsCost
+                      })
+                      skinWins.filter(sw => sw.winnerId === playerId && sw.activePlayerIds.includes(otherId)).forEach(sw => {
+                        skinsOwedFromOther += sw.value * skinsCost
+                      })
+
+                      // Greenies calculations
+                      if (greeniesEnabled) {
+                        greenieWins.filter(gw => gw.winnerId === otherId && gw.activePlayerIds.includes(playerId)).forEach(() => {
+                          greeniesOwedToOther += greenieCost
+                        })
+                        greenieWins.filter(gw => gw.winnerId === playerId && gw.activePlayerIds.includes(otherId)).forEach(() => {
+                          greeniesOwedFromOther += greenieCost
+                        })
+                      }
+
+                      const totalOwedToOther = skinsOwedToOther + greeniesOwedToOther
+                      const totalOwedFromOther = skinsOwedFromOther + greeniesOwedFromOther
+                      const netWithOther = totalOwedFromOther - totalOwedToOther
+
+                      if (Math.abs(netWithOther) > 0.01) {
+                        transactions.push({
+                          playerName: otherPlayer.name,
+                          playerId: otherId,
+                          net: netWithOther,
+                          skinsOwed: skinsOwedToOther,
+                          skinsCollect: skinsOwedFromOther,
+                          greeniesOwed: greeniesOwedToOther,
+                          greeniesCollect: greeniesOwedFromOther
+                        })
+                        totalSkinsNet += (skinsOwedFromOther - skinsOwedToOther)
+                        totalGreeniesNet += (greeniesOwedFromOther - greeniesOwedToOther)
+                        if (netWithOther > 0) {
+                          totalCollect += netWithOther
+                        } else {
+                          totalOwed += Math.abs(netWithOther)
+                        }
+                      }
+                    })
+
+                    const grandTotal = totalCollect - totalOwed
+                    const hasGreeniesTotal = greeniesEnabled && Math.abs(totalGreeniesNet) > 0.01
+
+                    return (
+                      <>
+                        {transactions.length > 0 ? (
+                          <div style={{ marginBottom: '10px' }}>
+                            {transactions.map((tx, idx) => {
+                              const netSkins = tx.skinsCollect - tx.skinsOwed
+                              const netGreenies = tx.greeniesCollect - tx.greeniesOwed
+                              const hasGreenies = tx.greeniesOwed > 0 || tx.greeniesCollect > 0
+                              return (
+                                <div key={idx} style={{
+                                  padding: '8px',
+                                  background: tx.net > 0 ? '#e8f5e9' : '#ffebee',
+                                  borderRadius: '4px',
+                                  marginBottom: '4px',
+                                  fontSize: '12px'
+                                }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>
+                                      {tx.net > 0 ? (
+                                        <><span style={{ color: '#27ae60' }}>Collect from</span> {tx.playerName}</>
+                                      ) : (
+                                        <><span style={{ color: '#e74c3c' }}>Owe</span> {tx.playerName}</>
+                                      )}
+                                    </span>
+                                    <span style={{
+                                      fontWeight: '600',
+                                      color: tx.net > 0 ? '#27ae60' : '#e74c3c'
+                                    }}>
+                                      ${Math.abs(tx.net).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  {/* Breakdown of skins vs greenies */}
+                                  <div style={{ fontSize: '10px', color: '#888', marginTop: '2px', display: 'flex', gap: '10px' }}>
+                                    {Math.abs(netSkins) > 0.01 && (
+                                      <span>Skins: {netSkins > 0 ? '+' : ''}${netSkins.toFixed(2)}</span>
+                                    )}
+                                    {hasGreenies && Math.abs(netGreenies) > 0.01 && (
+                                      <span>Greenies: {netGreenies > 0 ? '+' : ''}${netGreenies.toFixed(2)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div style={{ color: '#666', fontSize: '12px', marginBottom: '10px' }}>
+                            No settlements needed - everyone is even!
+                          </div>
+                        )}
+
+                        {/* Summary breakdown */}
+                        {(Math.abs(totalSkinsNet) > 0.01 || hasGreeniesTotal) && (
+                          <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px', display: 'flex', gap: '15px' }}>
+                            {Math.abs(totalSkinsNet) > 0.01 && (
+                              <span>Skins: <span style={{ color: totalSkinsNet >= 0 ? '#27ae60' : '#e74c3c' }}>{totalSkinsNet >= 0 ? '+' : ''}${totalSkinsNet.toFixed(2)}</span></span>
+                            )}
+                            {hasGreeniesTotal && (
+                              <span>Greenies: <span style={{ color: totalGreeniesNet >= 0 ? '#27ae60' : '#e74c3c' }}>{totalGreeniesNet >= 0 ? '+' : ''}${totalGreeniesNet.toFixed(2)}</span></span>
+                            )}
+                          </div>
+                        )}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          borderTop: '1px solid #ddd',
+                          paddingTop: '8px'
+                        }}>
+                          <span>Net Total:</span>
+                          <span style={{ color: grandTotal >= 0 ? '#27ae60' : '#e74c3c' }}>
+                            {grandTotal >= 0 ? '+' : ''}${grandTotal.toFixed(2)}
+                          </span>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+
+                {/* Check if there are pending carryovers */}
+                {(() => {
+                  const pendingCOs = skinsResults.pendingCarryovers || []
+                  const playerDetails = skinsMatch.participantDetails?.[String(settlePlayer.id)] || {}
+                  const joinHole = playerDetails.joinedOnHole || 1
+                  const relevantCOs = pendingCOs.filter(co =>
+                    co.eligiblePlayerIds.includes(String(settlePlayer.id)) &&
+                    co.fromHole >= joinHole && co.fromHole <= settleLastHole
+                  )
+
+                  if (relevantCOs.length > 0) {
+                    return (
+                      <div style={{
+                        background: '#fff3e0',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        marginBottom: '15px',
+                        fontSize: '12px'
+                      }}>
+                        <strong>Pending Carryovers:</strong> This player contributed to {relevantCOs.length} unresolved carryover(s) from hole(s) {relevantCOs.map(c => c.fromHole).join(', ')}.
+                        <br/><br/>
+                        You'll choose how to handle these in the next step.
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => {
+                      setShowSettleModal(false)
+                      setSettlePlayer(null)
+                      setSettleStep(1)
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: '#f8f9fa',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Check if there are pending carryovers for this player
+                      const pendingCOs = skinsResults.pendingCarryovers || []
+                      const playerDetails = skinsMatch.participantDetails?.[String(settlePlayer.id)] || {}
+                      const joinHole = playerDetails.joinedOnHole || 1
+                      const relevantCOs = pendingCOs.filter(co =>
+                        co.eligiblePlayerIds.includes(String(settlePlayer.id)) &&
+                        co.fromHole >= joinHole && co.fromHole <= settleLastHole
+                      )
+
+                      if (relevantCOs.length > 0) {
+                        setSettleStep(2)
+                      } else {
+                        // No pending carryovers, finalize settlement
+                        finalizeSettlement()
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: '#e67e22',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </>
+            )}
+
+            {settleStep === 2 && (
+              <>
+                <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+                  How should {settlePlayer.name}'s unresolved carryovers be handled?
+                </p>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <button
+                    onClick={() => setCarryoverHandling('pay')}
+                    style={{
+                      width: '100%',
+                      padding: '15px',
+                      marginBottom: '10px',
+                      borderRadius: '8px',
+                      border: carryoverHandling === 'pay' ? '2px solid #e67e22' : '1px solid #ddd',
+                      background: carryoverHandling === 'pay' ? '#fff8e1' : 'white',
+                      textAlign: 'left',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ fontWeight: '600' }}>Pay my carryovers</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      Leaving player pays their share for carryover holes. Someone holds the money until resolved.
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setCarryoverHandling('forgive')}
+                    style={{
+                      width: '100%',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      border: carryoverHandling === 'forgive' ? '2px solid #e67e22' : '1px solid #ddd',
+                      background: carryoverHandling === 'forgive' ? '#fff8e1' : 'white',
+                      textAlign: 'left',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ fontWeight: '600' }}>Forgive carryovers</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      Remaining players absorb the cost. Treat as if there was one fewer player for those holes.
+                    </div>
+                  </button>
+                </div>
+
+                {carryoverHandling === 'pay' && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
+                      Who will hold the carryover money?
+                    </label>
+                    <select
+                      value={carryoverCollector || ''}
+                      onChange={(e) => setCarryoverCollector(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        borderRadius: '6px',
+                        border: '1px solid #ddd',
+                        fontSize: '14px'
+                      }}
+                    >
+                      <option value="">-- Select collector --</option>
+                      {skinsPlayers
+                        .filter(p => String(p.id) !== String(settlePlayer.id) && !playerSummary[String(p.id)]?.isSettled)
+                        .map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))
+                      }
+                    </select>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setSettleStep(1)}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: '#f8f9fa',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (carryoverHandling === 'pay' && !carryoverCollector) {
+                        alert('Please select who will hold the carryover money')
+                        return
+                      }
+                      finalizeSettlement()
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      background: '#27ae60',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Finalize Settlement
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -3509,6 +5115,8 @@ function LivePage() {
     holeInOnePot,
     quickSkinsMode,
     setQuickSkinsMode,
+    quickSkinsHistory,
+    setQuickSkinsHistory,
     defaultStartingHole
   } = useLeague()
 
@@ -3519,7 +5127,19 @@ function LivePage() {
   }
   const [leaderboardView, setLeaderboardView] = useState(getInitialLeaderboardView)
 
-  const [subTab, setSubTab] = useState(quickSkinsMode ? 'skins' : 'leaderboard')
+  // Detect Quick Skins mode from data structure if flag is out of sync
+  const isQuickSkinsGame = liveRound && 'quickSkinsGreenieSettings' in liveRound
+  const effectiveQuickSkinsMode = quickSkinsMode || isQuickSkinsGame
+
+  // Auto-correct quickSkinsMode if out of sync
+  useEffect(() => {
+    if (isQuickSkinsGame && !quickSkinsMode) {
+      console.log('Auto-correcting quickSkinsMode flag')
+      setQuickSkinsMode(true)
+    }
+  }, [isQuickSkinsGame, quickSkinsMode, setQuickSkinsMode])
+
+  const [subTab, setSubTab] = useState(effectiveQuickSkinsMode ? 'skins' : 'leaderboard')
   const [selectedTeamId, setSelectedTeamId] = useState(liveRound?.teams[0]?.id || 0)
   const [showFinishConfirm, setShowFinishConfirm] = useState(false)
   const [finishPin, setFinishPin] = useState('')
@@ -3842,7 +5462,7 @@ function LivePage() {
       PAR_3_HOLES.forEach(hole => {
         const team = liveRound.teams.find(t => t.players.some(p => p.id === player.id))
         const greenieData = team?.greenies?.[hole]
-        if (greenieData?.odometer && String(greenieData.playerId) === String(player.id)) {
+        if (greenieData?.playerId && String(greenieData.playerId) === String(player.id)) {
           greeniesWon.push(hole)
         }
       })
@@ -3900,8 +5520,23 @@ function LivePage() {
   }
 
   // End Quick Skins game
-  const endQuickSkins = () => {
-    if (confirm('End Quick Skins game? All data will be lost.')) {
+  const endQuickSkins = (saveResults = false) => {
+    if (saveResults) {
+      // Save the results before clearing
+      const quickSkinsRecord = {
+        id: Date.now(),
+        date: liveRound?.date || new Date().toISOString(),
+        skinsMatch: { ...skinsMatch },
+        teams: liveRound?.teams || [],
+        players: liveRound?.teams?.flatMap(t => t.players) || [],
+        quickSkinsGreenieSettings: liveRound?.quickSkinsGreenieSettings || null
+      }
+      setQuickSkinsHistory([quickSkinsRecord, ...(quickSkinsHistory || []).slice(0, 19)]) // Keep last 20
+      setLiveRound(null)
+      setSkinsMatch(null)
+      setQuickSkinsMode(false)
+      navigate('/history')
+    } else if (confirm('End Quick Skins game without saving? All data will be lost.')) {
       setLiveRound(null)
       setSkinsMatch(null)
       setQuickSkinsMode(false)
@@ -3910,7 +5545,7 @@ function LivePage() {
   }
 
   // Define tabs based on mode
-  const subTabs = quickSkinsMode
+  const subTabs = effectiveQuickSkinsMode
     ? [
         { id: 'scoring', label: 'Scores' },
         { id: 'skins', label: 'Skins' },
@@ -3928,41 +5563,60 @@ function LivePage() {
   return (
     <div>
       {/* Quick Skins Mode Banner */}
-      {quickSkinsMode && (
+      {effectiveQuickSkinsMode && (
         <div style={{
           background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
           color: 'white',
           padding: '15px',
           borderRadius: '10px',
-          marginBottom: '15px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
+          marginBottom: '15px'
         }}>
-          <div>
-            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>Quick Skins Game</div>
-            <div style={{ fontSize: '12px', opacity: 0.9 }}>
-              Informal skins match - no stats saved
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div>
+              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>Quick Skins Game</div>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>
+                Informal skins match
+              </div>
             </div>
           </div>
-          <button
-            onClick={endQuickSkins}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: 'white',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
-            End Game
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => endQuickSkins(true)}
+              style={{
+                flex: 1,
+                background: 'rgba(255,255,255,0.95)',
+                border: 'none',
+                color: '#27ae60',
+                padding: '10px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px'
+              }}
+            >
+              Save & End
+            </button>
+            <button
+              onClick={() => endQuickSkins(false)}
+              style={{
+                flex: 1,
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'white',
+                padding: '10px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px'
+              }}
+            >
+              End Without Saving
+            </button>
+          </div>
         </div>
       )}
 
-      <h2 style={{ marginBottom: '20px' }}>{quickSkinsMode ? 'Quick Skins Game' : 'Live Round Scoring'}</h2>
+      <h2 style={{ marginBottom: '20px' }}>{effectiveQuickSkinsMode ? 'Quick Skins Game' : 'Live Round Scoring'}</h2>
 
       <div style={{
         display: 'flex',
@@ -4009,14 +5663,17 @@ function LivePage() {
         <GreeniesTracker
           liveRound={liveRound}
           onUpdateGreenie={updateGreenie}
+          skinsMatch={skinsMatch}
         />
       )}
       {subTab === 'skins' && (
         <SkinsTracker
           liveRound={liveRound}
+          setLiveRound={setLiveRound}
           skinsMatch={skinsMatch}
           setSkinsMatch={setSkinsMatch}
           isAdmin={isAdmin}
+          leaguePlayers={players}
         />
       )}
       {subTab === 'money' && (
@@ -4045,7 +5702,7 @@ function LivePage() {
       )}
 
       {/* Admin Actions - Collapsible section for Finish Round */}
-      {isAdmin && !quickSkinsMode && (
+      {isAdmin && !effectiveQuickSkinsMode && (
         <div style={{ marginTop: '30px' }}>
           {!showFinishConfirm ? (
             <details style={{
