@@ -341,6 +341,37 @@ export function calculateLockedHandicaps(players, leagueId, courseTees, handicap
 }
 
 /**
+ * Calculate Course Handicap from Handicap Index
+ * Formula: Course Handicap = Handicap Index × (Slope Rating / 113)
+ * @param {Number} handicapIndex - The player's handicap index
+ * @param {Number} slopeRating - The slope rating of the tees being played
+ * @returns {Number|null} Course handicap rounded to nearest integer
+ */
+export function calculateCourseHandicap(handicapIndex, slopeRating) {
+  if (handicapIndex === null || handicapIndex === undefined) return null
+  if (!slopeRating) slopeRating = 113 // Standard slope
+
+  const courseHcp = handicapIndex * (slopeRating / 113)
+  return Math.round(courseHcp)
+}
+
+/**
+ * Get Course Handicap for a player at specific tees
+ * @param {Number} handicapIndex - The player's handicap index
+ * @param {String} teeKey - The tee key (e.g., 'blue', 'gold')
+ * @param {Object} courseTees - Course tee configuration
+ * @returns {Number|null} Course handicap for those tees
+ */
+export function getCourseHandicapForTee(handicapIndex, teeKey, courseTees = DEFAULT_COURSE_TEES) {
+  if (handicapIndex === null || handicapIndex === undefined) return null
+
+  const tee = courseTees?.[teeKey]
+  const slopeRating = tee?.slopeRating || 113
+
+  return calculateCourseHandicap(handicapIndex, slopeRating)
+}
+
+/**
  * Format handicap for display
  * @param {Number|null} handicap - Handicap value
  * @returns {String} Formatted string
@@ -348,6 +379,16 @@ export function calculateLockedHandicaps(players, leagueId, courseTees, handicap
 export function formatHandicap(handicap) {
   if (handicap === null || handicap === undefined) return '--'
   return handicap.toFixed(1)
+}
+
+/**
+ * Format course handicap for display (integer)
+ * @param {Number|null} courseHandicap - Course handicap value
+ * @returns {String} Formatted string
+ */
+export function formatCourseHandicap(courseHandicap) {
+  if (courseHandicap === null || courseHandicap === undefined) return '--'
+  return courseHandicap.toString()
 }
 
 /**

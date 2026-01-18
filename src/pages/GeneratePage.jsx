@@ -2,11 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { generateTeams } from '../utils/teamGeneration'
-import { formatHandicap, getEffectiveHandicap } from '../utils/handicapCalculation'
+import { formatHandicap, formatCourseHandicap, getEffectiveHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
 
-function PlayerCheckInCard({ player, isSelected, isInManualTeam, onToggle, showSkill }) {
-  const displayRating = player.handicap !== undefined && player.handicap !== null
-    ? `HCP: ${formatHandicap(player.handicap)}`
+function PlayerCheckInCard({ player, isSelected, isInManualTeam, onToggle, showSkill, courseTees }) {
+  const playerTee = player.defaultTee || 'blue'
+  const handicapIndex = player.handicap
+  const courseHandicap = getCourseHandicapForTee(handicapIndex, playerTee, courseTees)
+
+  const displayRating = handicapIndex !== undefined && handicapIndex !== null
+    ? `Index: ${formatHandicap(handicapIndex)} | Course: ${formatCourseHandicap(courseHandicap)}`
     : `Skill: ${player.skillRating?.toFixed(1) || '5.0'}`
 
   return (
@@ -91,7 +95,7 @@ function ManualTeamCard({ team, onDelete }) {
   )
 }
 
-function CreateManualTeamForm({ availablePlayers, onSave, onCancel }) {
+function CreateManualTeamForm({ availablePlayers, onSave, onCancel, courseTees }) {
   const [selectedIds, setSelectedIds] = useState([])
 
   const togglePlayer = (playerId) => {
@@ -131,7 +135,7 @@ function CreateManualTeamForm({ availablePlayers, onSave, onCancel }) {
             style={{ marginRight: '8px' }}
           />
           {player.name} ({player.handicap !== undefined && player.handicap !== null
-            ? `HCP ${formatHandicap(player.handicap)}`
+            ? `Index: ${formatHandicap(player.handicap)} | Course: ${formatCourseHandicap(getCourseHandicapForTee(player.handicap, player.defaultTee || 'blue', courseTees))}`
             : player.skillRating?.toFixed(1) || '5.0'})
         </div>
       ))}
@@ -516,11 +520,15 @@ function GeneratePage() {
   const handleGenerateTeams = () => {
     // Get selected players and compute their effective handicaps for team generation
     const selectedPlayerObjects = activePlayers.filter(p => selectedPlayers.includes(p.id)).map(p => {
-      // Calculate effective handicap based on league settings
-      const effectiveHandicap = getEffectiveHandicap(p, handicapSettings, leagueId, courseTees)
+      // Calculate effective handicap index based on league settings
+      const effectiveIndex = getEffectiveHandicap(p, handicapSettings, leagueId, courseTees)
+      // Convert to Course Handicap for their tees (used for team balancing)
+      const playerTee = p.defaultTee || 'blue'
+      const effectiveHandicap = getCourseHandicapForTee(effectiveIndex, playerTee, courseTees)
       return {
         ...p,
-        effectiveHandicap
+        handicap: effectiveIndex,           // Store Index
+        effectiveHandicap: effectiveHandicap // Course HCP for team balancing
       }
     })
 
@@ -579,6 +587,7 @@ function GeneratePage() {
                 isInManualTeam={playersInManualTeams.has(player.id)}
                 onToggle={() => togglePlayerSelection(player.id)}
                 showSkill={isAdmin}
+                courseTees={courseTees}
               />
             ))}
 
@@ -633,6 +642,7 @@ function GeneratePage() {
                 availablePlayers={availableForPairing}
                 onSave={handleSaveManualTeam}
                 onCancel={() => setCreatingManualTeam(false)}
+                courseTees={courseTees}
               />
             ) : (
               <button

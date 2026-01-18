@@ -2,16 +2,22 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { getTeamName, calculateTeamSkill, calculateTeamBalance } from '../utils/teamGeneration'
-import { formatHandicap } from '../utils/handicapCalculation'
+import { formatHandicap, formatCourseHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
 
-function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin }) {
+function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, courseTees }) {
   const teamSkill = calculateTeamSkill(team)
   const avgSkill = team.length > 0 ? teamSkill / team.length : 0
-  // Calculate average handicap for display
+
+  // Calculate average handicap index and total course handicap
   const playersWithHandicap = team.filter(p => p.handicap !== undefined && p.handicap !== null)
-  const avgHandicap = playersWithHandicap.length > 0
+  const avgHandicapIndex = playersWithHandicap.length > 0
     ? playersWithHandicap.reduce((sum, p) => sum + p.handicap, 0) / playersWithHandicap.length
     : null
+  // Sum of course handicaps (what they actually play with)
+  const totalCourseHcp = playersWithHandicap.reduce((sum, p) => {
+    const courseHcp = getCourseHandicapForTee(p.handicap, p.tee || p.defaultTee || 'blue', courseTees)
+    return sum + (courseHcp || 0)
+  }, 0)
 
   return (
     <div className="team-container" style={{ position: 'relative', marginBottom: '15px' }}>
@@ -71,15 +77,24 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin }) {
           #{index + 1}
         </span>
         {getTeamName(team)} ({team.length})
-        {avgHandicap !== null ? ` - Avg HCP: ${avgHandicap.toFixed(1)}` : ` - Avg Skill: ${avgSkill.toFixed(1)}`}
+        {avgHandicapIndex !== null
+          ? ` - Team HCP: ${totalCourseHcp}`
+          : ` - Avg Skill: ${avgSkill.toFixed(1)}`}
       </div>
-      {team.map(player => (
-        <div key={player.id} className="team-member">
-          {player.name} ({player.handicap !== undefined && player.handicap !== null
-            ? `HCP ${formatHandicap(player.handicap)}`
-            : player.skillRating?.toFixed(1) || '5.0'})
-        </div>
-      ))}
+      {team.map(player => {
+        const playerCourseHcp = getCourseHandicapForTee(
+          player.handicap,
+          player.tee || player.defaultTee || 'blue',
+          courseTees
+        )
+        return (
+          <div key={player.id} className="team-member">
+            {player.name} ({player.handicap !== undefined && player.handicap !== null
+              ? `${formatCourseHandicap(playerCourseHcp)}`
+              : player.skillRating?.toFixed(1) || '5.0'})
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -411,7 +426,8 @@ function TeamsPage() {
     setCheckedInPlayers,
     setManualTeams,
     setPairingRequests,
-    players
+    players,
+    courseTees
   } = useLeague()
 
   const balance = teams.length > 0 ? calculateTeamBalance(teams) : null
@@ -522,6 +538,7 @@ function TeamsPage() {
               onMoveUp={moveTeamUp}
               onMoveDown={moveTeamDown}
               isAdmin={isAdmin}
+              courseTees={courseTees}
             />
           ))}
 

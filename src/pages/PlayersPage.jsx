@@ -4,8 +4,10 @@ import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
 import {
   getAllHandicaps,
   formatHandicap,
+  formatCourseHandicap,
   getScopeLabel,
   recalculatePlayerHandicaps,
+  getCourseHandicapForTee,
   DEFAULT_COURSE_TEES
 } from '../utils/handicapCalculation'
 
@@ -24,6 +26,8 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
   }
 
   const activeHandicap = getActiveHandicap()
+  const playerTee = player.defaultTee || 'blue'
+  const courseHandicap = getCourseHandicapForTee(activeHandicap, playerTee, courseTees)
 
   return (
     <div className="player-card">
@@ -44,37 +48,30 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
           )}
         </div>
         <div className="player-skill">
-          {/* Handicap display - show all three with active one highlighted */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Primary display: Index and Course HCP */}
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '4px' }}>
             <span style={{
-              padding: '2px 6px',
+              padding: '3px 8px',
               borderRadius: '4px',
-              fontSize: '11px',
-              background: handicapScope === 'true' ? '#27ae60' : '#e0e0e0',
-              color: handicapScope === 'true' ? 'white' : '#666'
+              fontSize: '12px',
+              background: '#27ae60',
+              color: 'white',
+              fontWeight: '600'
             }}>
-              True: {formatHandicap(handicaps.trueHandicap)}
+              Index: {formatHandicap(activeHandicap)}
             </span>
             <span style={{
-              padding: '2px 6px',
+              padding: '3px 8px',
               borderRadius: '4px',
-              fontSize: '11px',
-              background: handicapScope === 'league' ? '#27ae60' : '#e0e0e0',
-              color: handicapScope === 'league' ? 'white' : '#666'
+              fontSize: '12px',
+              background: '#3498db',
+              color: 'white',
+              fontWeight: '600'
             }}>
-              League: {formatHandicap(handicaps.leagueHandicap)}
-            </span>
-            <span style={{
-              padding: '2px 6px',
-              borderRadius: '4px',
-              fontSize: '11px',
-              background: handicapScope === 'gunpowder' ? '#27ae60' : '#e0e0e0',
-              color: handicapScope === 'gunpowder' ? 'white' : '#666'
-            }}>
-              Gunpowder: {formatHandicap(handicaps.gunpowderHandicap)}
+              Course HCP: {formatCourseHandicap(courseHandicap)}
             </span>
             <span style={{ color: '#666', fontSize: '12px' }}>
-              | Games: {player.gamesPlayed || 0}
+              Games: {player.gamesPlayed || 0}
             </span>
             {player.avgTotal > 0 && (
               <span style={{ color: '#666', fontSize: '12px' }}>
@@ -82,11 +79,42 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
               </span>
             )}
           </div>
-          {player.defaultTee && (
-            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
-              Default Tee: {courseTees?.[player.defaultTee]?.name || player.defaultTee}
-            </div>
-          )}
+          {/* Secondary display: All three index values */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{
+              padding: '1px 5px',
+              borderRadius: '3px',
+              fontSize: '10px',
+              background: handicapScope === 'true' ? '#e8f5e9' : '#f5f5f5',
+              color: handicapScope === 'true' ? '#2e7d32' : '#888',
+              border: handicapScope === 'true' ? '1px solid #a5d6a7' : '1px solid #e0e0e0'
+            }}>
+              True: {formatHandicap(handicaps.trueHandicap)}
+            </span>
+            <span style={{
+              padding: '1px 5px',
+              borderRadius: '3px',
+              fontSize: '10px',
+              background: handicapScope === 'league' ? '#e8f5e9' : '#f5f5f5',
+              color: handicapScope === 'league' ? '#2e7d32' : '#888',
+              border: handicapScope === 'league' ? '1px solid #a5d6a7' : '1px solid #e0e0e0'
+            }}>
+              League: {formatHandicap(handicaps.leagueHandicap)}
+            </span>
+            <span style={{
+              padding: '1px 5px',
+              borderRadius: '3px',
+              fontSize: '10px',
+              background: handicapScope === 'gunpowder' ? '#e8f5e9' : '#f5f5f5',
+              color: handicapScope === 'gunpowder' ? '#2e7d32' : '#888',
+              border: handicapScope === 'gunpowder' ? '1px solid #a5d6a7' : '1px solid #e0e0e0'
+            }}>
+              Gunpowder: {formatHandicap(handicaps.gunpowderHandicap)}
+            </span>
+            <span style={{ fontSize: '10px', color: '#999' }}>
+              ({courseTees?.[playerTee]?.name || playerTee} tees)
+            </span>
+          </div>
         </div>
       </div>
       <div className="player-actions">
