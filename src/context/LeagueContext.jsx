@@ -138,6 +138,14 @@ export function LeagueProvider({ children }) {
     return localStorage.getItem('gunpowder_admin') === 'true'
   })
 
+  // Site Owner state (higher privilege than admin)
+  const [isSiteOwner, setIsSiteOwner] = useState(() => {
+    return localStorage.getItem('gunpowder_site_owner') === 'true'
+  })
+
+  // Course mapping data for GPS
+  const [courseMapping, setCourseMapping] = useState(null)
+
   const hasLoadedData = useRef(false)
   const isUpdatingFromRealtime = useRef(false)
 
@@ -190,6 +198,7 @@ export function LeagueProvider({ children }) {
           if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
           if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
           if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
+          if (data.courseMapping) setCourseMapping(data.courseMapping)
           setIsSetup(true)
         }
       }
@@ -225,7 +234,8 @@ export function LeagueProvider({ children }) {
           quickSkinsHistory,
           quickSkinsMode,
           handicapSettings,
-          courseTees
+          courseTees,
+          courseMapping
         },
         () => setSaveStatus('saving'),
         (success) => setSaveStatus(success ? 'saved' : 'error')
@@ -234,7 +244,7 @@ export function LeagueProvider({ children }) {
   }, [players, history, pairingRequests, liveRound, teams, leagueId, isSetup,
       leagueSettings, pendingPlayerRequests, payoutFormats, holeInOnePot,
       moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, quickSkinsHistory, quickSkinsMode,
-      handicapSettings, courseTees])
+      handicapSettings, courseTees, courseMapping])
 
   // Mark data as loaded
   useEffect(() => {
@@ -465,6 +475,7 @@ export function LeagueProvider({ children }) {
       if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
       if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
       if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
+      if (data.courseMapping) setCourseMapping(data.courseMapping)
       setIsSetup(true)
       hasLoadedData.current = true
       return true
@@ -498,6 +509,21 @@ export function LeagueProvider({ children }) {
     localStorage.removeItem('gunpowder_admin')
   }
 
+  // Site Owner actions
+  const siteOwnerLogin = (pin) => {
+    if (pin === '3494') {
+      setIsSiteOwner(true)
+      localStorage.setItem('gunpowder_site_owner', 'true')
+      return true
+    }
+    return false
+  }
+
+  const siteOwnerLogout = () => {
+    setIsSiteOwner(false)
+    localStorage.removeItem('gunpowder_site_owner')
+  }
+
   const value = {
     // League
     leagueId,
@@ -514,6 +540,15 @@ export function LeagueProvider({ children }) {
     isAdmin,
     adminLogin,
     adminLogout,
+
+    // Site Owner
+    isSiteOwner,
+    siteOwnerLogin,
+    siteOwnerLogout,
+
+    // GPS Course Mapping
+    courseMapping,
+    setCourseMapping,
 
     // Core data
     players,

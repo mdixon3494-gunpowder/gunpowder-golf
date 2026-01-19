@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
+import CourseMappingTool from '../components/gps/CourseMappingTool'
 import {
   DEFAULT_HANDICAP_SETTINGS,
   DEFAULT_COURSE_TEES,
@@ -101,6 +102,183 @@ function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
         </div>
       )}
     </div>
+  )
+}
+
+function SiteOwnerAccessSection({
+  isSiteOwner,
+  onLogin,
+  onLogout,
+  courseMapping,
+  onUpdateCourseMapping
+}) {
+  const [showPinModal, setShowPinModal] = useState(false)
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
+  const [showMappingTool, setShowMappingTool] = useState(false)
+  const tapCountRef = useRef(0)
+  const tapTimeoutRef = useRef(null)
+
+  const handleTripleTap = () => {
+    tapCountRef.current += 1
+
+    if (tapTimeoutRef.current) {
+      clearTimeout(tapTimeoutRef.current)
+    }
+
+    if (tapCountRef.current >= 3) {
+      tapCountRef.current = 0
+      setShowPinModal(true)
+    } else {
+      tapTimeoutRef.current = setTimeout(() => {
+        tapCountRef.current = 0
+      }, 500)
+    }
+  }
+
+  const handleLogin = () => {
+    const success = onLogin(pin)
+    if (success) {
+      setShowPinModal(false)
+      setPin('')
+      setError('')
+    } else {
+      setError('Incorrect PIN')
+      setPin('')
+    }
+  }
+
+  if (isSiteOwner) {
+    return (
+      <>
+        <div style={{
+          background: 'linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%)',
+          color: 'white',
+          padding: '20px',
+          borderRadius: '10px',
+          marginTop: '30px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <div>
+              <div style={{ fontWeight: 'bold', fontSize: '18px' }}>Site Owner Mode</div>
+              <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
+                You have access to course mapping and advanced features
+              </div>
+            </div>
+            <button
+              onClick={onLogout}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'white',
+                padding: '10px 20px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Logout
+            </button>
+          </div>
+          <button
+            className="btn"
+            onClick={() => setShowMappingTool(true)}
+            style={{
+              background: 'rgba(255,255,255,0.9)',
+              color: '#8e44ad',
+              width: '100%',
+              fontWeight: '600'
+            }}
+          >
+            Open Course Mapping Tool
+          </button>
+        </div>
+
+        {showMappingTool && (
+          <CourseMappingTool
+            courseMapping={courseMapping}
+            onSave={onUpdateCourseMapping}
+            onClose={() => setShowMappingTool(false)}
+          />
+        )}
+      </>
+    )
+  }
+
+  return (
+    <>
+      {/* Hidden trigger - triple tap on app info to reveal */}
+      <div
+        onClick={handleTripleTap}
+        style={{
+          background: '#f8f9fa',
+          padding: '15px',
+          borderRadius: '10px',
+          textAlign: 'center',
+          fontSize: '13px',
+          color: '#666',
+          cursor: 'default',
+          userSelect: 'none'
+        }}
+      >
+        <div style={{ fontWeight: '600', marginBottom: '5px' }}>Gunpowder Big Boy's Golf</div>
+        <div>League Management App</div>
+        <div style={{ marginTop: '10px', fontSize: '11px' }}>
+          Migrated from v5.18
+        </div>
+      </div>
+
+      {/* PIN Entry Modal */}
+      {showPinModal && (
+        <div className="modal-overlay" onClick={() => setShowPinModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '350px' }}>
+            <div className="modal-header">
+              <h3>Site Owner Access</h3>
+              <button className="close-btn" onClick={() => setShowPinModal(false)}>&times;</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <p style={{ color: '#666', marginBottom: '15px', fontSize: '14px' }}>
+                Enter the Site Owner PIN to access course mapping tools.
+              </p>
+              <input
+                type="password"
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value)
+                  setError('')
+                }}
+                placeholder="Enter PIN"
+                maxLength={4}
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  border: error ? '2px solid #e74c3c' : '1px solid #ddd',
+                  fontSize: '24px',
+                  textAlign: 'center',
+                  letterSpacing: '10px',
+                  marginBottom: '15px'
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              />
+              {error && (
+                <div style={{ color: '#e74c3c', marginBottom: '15px', fontSize: '14px', textAlign: 'center' }}>
+                  {error}
+                </div>
+              )}
+              <button
+                className="btn btn-primary"
+                onClick={handleLogin}
+                style={{ width: '100%' }}
+              >
+                Login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -1909,7 +2087,12 @@ function SettingsPage() {
     courseTees,
     setCourseTees,
     leagueSettings,
-    setLeagueSettings
+    setLeagueSettings,
+    isSiteOwner,
+    siteOwnerLogin,
+    siteOwnerLogout,
+    courseMapping,
+    setCourseMapping
   } = useLeague()
 
   const handleStartQuickSkins = ({ players: qsPlayers, teams, skinsSettings, greenieSettings }) => {
@@ -2014,21 +2197,14 @@ function SettingsPage() {
         isAdmin={isAdmin}
       />
 
-      {/* App info */}
-      <div style={{
-        background: '#f8f9fa',
-        padding: '15px',
-        borderRadius: '10px',
-        textAlign: 'center',
-        fontSize: '13px',
-        color: '#666'
-      }}>
-        <div style={{ fontWeight: '600', marginBottom: '5px' }}>Gunpowder Big Boy's Golf</div>
-        <div>League Management App</div>
-        <div style={{ marginTop: '10px', fontSize: '11px' }}>
-          Migrated from v5.18
-        </div>
-      </div>
+      {/* Site Owner Access - hidden by default, triple-tap reveals */}
+      <SiteOwnerAccessSection
+        isSiteOwner={isSiteOwner}
+        onLogin={siteOwnerLogin}
+        onLogout={siteOwnerLogout}
+        courseMapping={courseMapping}
+        onUpdateCourseMapping={setCourseMapping}
+      />
     </div>
   )
 }

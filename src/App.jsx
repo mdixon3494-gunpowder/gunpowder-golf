@@ -15,6 +15,7 @@ import LivePage from './pages/LivePage'
 import HistoryPage from './pages/HistoryPage'
 import ScorecardPage from './pages/ScorecardPage'
 import SettingsPage from './pages/SettingsPage'
+import GPSPage from './pages/GPSPage'
 
 function AppContent() {
   const { loading, isSetup } = useLeague()
@@ -42,6 +43,7 @@ function AppContent() {
         <Route path="generate" element={<GeneratePage />} />
         <Route path="teams" element={<TeamsPage />} />
         <Route path="live" element={<LivePage />} />
+        <Route path="gps" element={<GPSPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="scorecard" element={<ScorecardPage />} />
         <Route path="settings" element={<SettingsPage />} />

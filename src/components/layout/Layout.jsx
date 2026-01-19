@@ -150,6 +150,12 @@ function Layout() {
           Live
         </NavLink>
         <NavLink
+          to="/gps"
+          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
+        >
+          GPS
+        </NavLink>
+        <NavLink
           to="/history"
           className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
         >
