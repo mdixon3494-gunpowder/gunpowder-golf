@@ -22,8 +22,57 @@ function SaveIndicator({ status }) {
   return null
 }
 
+function NextRoundBanner({ leagueSettings }) {
+  const nextRoundDate = leagueSettings?.nextRoundDate
+  const nextRoundTime = leagueSettings?.nextRoundTime
+  const nextRoundMessage = leagueSettings?.nextRoundMessage
+
+  // Show banner if any field is set
+  if (!nextRoundDate && !nextRoundTime && !nextRoundMessage) return null
+
+  // Format the date for display
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    const date = new Date(dateStr + 'T00:00:00')
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  }
+
+  // Format time for display (convert 24h to 12h)
+  const formatTime = (timeStr) => {
+    if (!timeStr) return ''
+    const [hours, minutes] = timeStr.split(':')
+    const h = parseInt(hours)
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12}:${minutes} ${ampm}`
+  }
+
+  const hasDateOrTime = nextRoundDate || nextRoundTime
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+      color: 'white',
+      padding: '12px 20px',
+      textAlign: 'center'
+    }}>
+      {hasDateOrTime && (
+        <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: nextRoundMessage ? '4px' : '0' }}>
+          Next Round: {formatDate(nextRoundDate)}
+          {nextRoundTime && ` at ${formatTime(nextRoundTime)}`}
+        </div>
+      )}
+      {nextRoundMessage && (
+        <div style={{ fontSize: hasDateOrTime ? '13px' : '16px', opacity: hasDateOrTime ? 0.9 : 1, fontWeight: hasDateOrTime ? 'normal' : 'bold' }}>
+          {nextRoundMessage}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Layout() {
-  const { leagueId, isAdmin, saveStatus } = useLeague()
+  const { leagueId, isAdmin, saveStatus, leagueSettings } = useLeague()
 
   const copyLeagueCode = () => {
     navigator.clipboard.writeText(leagueId)
@@ -119,6 +168,8 @@ function Layout() {
           Settings
         </NavLink>
       </nav>
+
+      <NextRoundBanner leagueSettings={leagueSettings} />
 
       <main className="content">
         <Outlet />

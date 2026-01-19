@@ -1141,6 +1141,184 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
   )
 }
 
+function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
+  const nextRoundDate = leagueSettings?.nextRoundDate || ''
+  const nextRoundTime = leagueSettings?.nextRoundTime || ''
+  const nextRoundMessage = leagueSettings?.nextRoundMessage || ''
+
+  const handleUpdate = (field, value) => {
+    onUpdate({
+      ...leagueSettings,
+      [field]: value
+    })
+  }
+
+  const handleClear = () => {
+    onUpdate({
+      ...leagueSettings,
+      nextRoundDate: '',
+      nextRoundTime: '',
+      nextRoundMessage: ''
+    })
+  }
+
+  const hasAnnouncement = nextRoundDate || nextRoundTime || nextRoundMessage
+  const hasDateOrTime = nextRoundDate || nextRoundTime
+
+  // Format the date for display
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    const date = new Date(dateStr + 'T00:00:00')
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  }
+
+  // Format time for display (convert 24h to 12h)
+  const formatTime = (timeStr) => {
+    if (!timeStr) return ''
+    const [hours, minutes] = timeStr.split(':')
+    const h = parseInt(hours)
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12}:${minutes} ${ampm}`
+  }
+
+  if (!isAdmin) {
+    // Non-admin view - just show the announcement if one exists
+    if (!hasAnnouncement) return null
+
+    return (
+      <div style={{
+        background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+        color: 'white',
+        padding: '20px',
+        borderRadius: '10px',
+        marginBottom: '20px',
+        textAlign: 'center'
+      }}>
+        {hasDateOrTime && (
+          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: nextRoundMessage ? '5px' : '0' }}>
+            Next Round: {formatDate(nextRoundDate)}
+            {nextRoundTime && ` at ${formatTime(nextRoundTime)}`}
+          </div>
+        )}
+        {nextRoundMessage && (
+          <div style={{ fontSize: hasDateOrTime ? '14px' : '18px', opacity: hasDateOrTime ? 0.9 : 1, fontWeight: hasDateOrTime ? 'normal' : 'bold' }}>
+            {nextRoundMessage}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      background: '#fff3cd',
+      padding: '20px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      border: '2px solid #ffc107'
+    }}>
+      <h3 style={{ marginBottom: '15px' }}>Next Round Announcement</h3>
+      <p style={{ color: '#666', fontSize: '13px', marginBottom: '15px' }}>
+        Set the next round date and time to display an announcement banner on the Players page.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+        <div>
+          <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>Date</label>
+          <input
+            type="date"
+            value={nextRoundDate}
+            onChange={(e) => handleUpdate('nextRoundDate', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid #ddd',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>Time</label>
+          <input
+            type="time"
+            value={nextRoundTime}
+            onChange={(e) => handleUpdate('nextRoundTime', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              borderRadius: '6px',
+              border: '1px solid #ddd',
+              fontSize: '14px'
+            }}
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px' }}>Message (optional)</label>
+        <textarea
+          value={nextRoundMessage}
+          onChange={(e) => handleUpdate('nextRoundMessage', e.target.value)}
+          placeholder="e.g., Meet at clubhouse, bring lunch money..."
+          rows={2}
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: '6px',
+            border: '1px solid #ddd',
+            fontSize: '14px',
+            resize: 'vertical'
+          }}
+        />
+      </div>
+
+      {/* Preview */}
+      {hasAnnouncement && (
+        <div style={{
+          background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+          color: 'white',
+          padding: '15px',
+          borderRadius: '8px',
+          marginBottom: '15px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '5px' }}>Preview:</div>
+          {hasDateOrTime && (
+            <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
+              Next Round: {formatDate(nextRoundDate)}
+              {nextRoundTime && ` at ${formatTime(nextRoundTime)}`}
+            </div>
+          )}
+          {nextRoundMessage && (
+            <div style={{ fontSize: hasDateOrTime ? '13px' : '16px', opacity: hasDateOrTime ? 0.9 : 1, fontWeight: hasDateOrTime ? 'normal' : 'bold', marginTop: hasDateOrTime ? '5px' : '0' }}>
+              {nextRoundMessage}
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasAnnouncement && (
+        <button
+          onClick={handleClear}
+          style={{
+            background: 'transparent',
+            border: '1px solid #e74c3c',
+            color: '#e74c3c',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '13px'
+          }}
+        >
+          Clear Announcement
+        </button>
+      )}
+    </div>
+  )
+}
+
 function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
   return (
     <div style={{
@@ -1729,7 +1907,9 @@ function SettingsPage() {
     handicapSettings,
     setHandicapSettings,
     courseTees,
-    setCourseTees
+    setCourseTees,
+    leagueSettings,
+    setLeagueSettings
   } = useLeague()
 
   const handleStartQuickSkins = ({ players: qsPlayers, teams, skinsSettings, greenieSettings }) => {
@@ -1782,6 +1962,15 @@ function SettingsPage() {
         onLogin={adminLogin}
         onLogout={adminLogout}
       />
+
+      {/* Next Round Announcement - Admin Only */}
+      {isAdmin && (
+        <NextRoundAnnouncementSection
+          leagueSettings={leagueSettings}
+          onUpdate={setLeagueSettings}
+          isAdmin={isAdmin}
+        />
+      )}
 
       {/* Quick Skins Section */}
       <QuickSkinsSection
