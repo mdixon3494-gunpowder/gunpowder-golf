@@ -1498,7 +1498,7 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
   const players = record.players || []
   const numPlayers = skinsMatch?.participants?.length || players.length
 
-  // Calculate quick summary of skins won (simplified - just counts skins)
+  // Simple summary - just show who won skins (detailed payout requires clicking View Details)
   const getQuickSummary = () => {
     if (!skinsMatch) return null
     const summary = {}
@@ -1506,11 +1506,8 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
     const skinsPlayers = players.filter(p => skinsMatch.participants?.includes(String(p.id)))
 
     skinsPlayers.forEach(p => {
-      summary[p.id] = { name: p.name, skinsWon: 0, totalValue: 0 }
+      summary[String(p.id)] = { name: p.name, skinsWon: 0 }
     })
-
-    let carryoverCount = 0
-    let totalSkinsWon = 0
 
     allHoles.forEach(holeInfo => {
       const hole = holeInfo.hole
@@ -1532,54 +1529,16 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
       if (playersWithMin.length === 1) {
         const winner = playersWithMin[0]
         const meetsParRequirement = !skinsMatch.settings.parOrBetterRequired || winner.score <= par
-        if (meetsParRequirement && summary[winner.playerId]) {
-          let skinValue = 1
-          const score = winner.score
-          const scoreToPar = score - par
-          const s = skinsMatch.settings
-
-          if (s.birdieDoubleEagleTriple) {
-            if (scoreToPar === -1) skinValue = 2
-            else if (scoreToPar <= -2) skinValue = 3
-          } else {
-            const multipliers = []
-            if (score === 1 && s.holeInOneMultiplier > 1) multipliers.push(s.holeInOneMultiplier)
-            if (scoreToPar <= -3 && s.doubleEagleMultiplier > 1) multipliers.push(s.doubleEagleMultiplier)
-            if (scoreToPar === -2 && s.eagleMultiplier > 1) multipliers.push(s.eagleMultiplier)
-            if (scoreToPar === -1 && s.birdieMultiplier > 1) multipliers.push(s.birdieMultiplier)
-            if (multipliers.length > 0) skinValue = Math.max(...multipliers)
-          }
-          const totalSkinValue = skinValue + carryoverCount
-          summary[winner.playerId].skinsWon += 1
-          summary[winner.playerId].totalValue += totalSkinValue
-          totalSkinsWon += totalSkinValue
-          carryoverCount = 0
-        } else if (skinsMatch.settings.carryovers) {
-          carryoverCount++
+        if (meetsParRequirement && summary[String(winner.playerId)]) {
+          summary[String(winner.playerId)].skinsWon += 1
         }
-      } else if (skinsMatch.settings.carryovers) {
-        carryoverCount++
       }
     })
 
-    // Calculate net amounts: winnings - payments
-    // You pay cost for each skin that someone ELSE won
-    const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
-    Object.keys(summary).forEach(playerId => {
-      const s = summary[playerId]
-      const winnings = s.totalValue * cost * (skinsPlayers.length - 1)  // What you win from others
-      const payments = (totalSkinsWon - s.totalValue) * cost  // What you pay to others (not yourself)
-      s.netAmount = winnings - payments
-    })
-
-    return {
-      players: Object.values(summary).sort((a, b) => b.netAmount - a.netAmount),
-      totalSkinsWon
-    }
+    return Object.values(summary).filter(s => s.skinsWon > 0).sort((a, b) => b.skinsWon - a.skinsWon)
   }
 
-  const summaryData = getQuickSummary()
-  const winners = summaryData?.players || []
+  const winners = getQuickSummary() || []
   const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
 
   return (
@@ -1613,19 +1572,16 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
       <div style={{ padding: '12px 15px' }}>
         {winners.length > 0 ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
-            {winners.filter(w => w.skinsWon > 0 || w.netAmount !== 0).slice(0, 4).map((w, idx) => (
+            {winners.slice(0, 4).map((w, idx) => (
               <div key={idx} style={{
-                background: w.netAmount > 0 ? '#e8f5e9' : w.netAmount < 0 ? '#ffebee' : '#f8f9fa',
+                background: idx === 0 ? '#fff3cd' : '#f8f9fa',
                 padding: '6px 12px',
                 borderRadius: '6px',
                 fontSize: '13px'
               }}>
                 <span style={{ fontWeight: '600' }}>{w.name}</span>
-                <span style={{
-                  color: w.netAmount > 0 ? '#27ae60' : w.netAmount < 0 ? '#e74c3c' : '#666',
-                  marginLeft: '5px'
-                }}>
-                  {w.netAmount >= 0 ? '+' : ''}${w.netAmount.toFixed(0)}
+                <span style={{ color: '#666', marginLeft: '5px' }}>
+                  {w.skinsWon} {w.skinsWon === 1 ? 'skin' : 'skins'}
                 </span>
               </div>
             ))}
@@ -2457,7 +2413,11 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                       <div style={{ display: 'flex', gap: '15px', fontSize: '13px' }}>
                         <span style={{ color: '#666' }}>
                           {summary.skinsWon} skins
-                          {greeniesWon > 0 && `, ${greeniesWon} greenies`}
+                          {greenieNet !== 0 && (
+                            <span style={{ color: greenieNet > 0 ? '#27ae60' : '#e74c3c' }}>
+                              , greenies {greenieNet > 0 ? '+' : ''}${greenieNet.toFixed(0)}
+                            </span>
+                          )}
                         </span>
                         <span style={{
                           fontWeight: '700',
@@ -2479,6 +2439,24 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
                 {[4, 8, 12, 17].map(hole => {
                   const result = greenieData.results[hole]
+                  const par3Holes = [4, 8, 12, 17]
+
+                  // Find who ultimately won this hole's pot
+                  let ultimateWinner = result?.winner ? result.winnerName : null
+                  let viaCarryover = false
+                  const costPerHole = greenieData.settings.costPerHole
+                  // Net per hole for winner = pot - what they paid = (numPlayers × cost) - cost = cost × (numPlayers - 1)
+                  const netPerHole = costPerHole * (skinsPlayers.length - 1)
+
+                  if (!result?.winner && greenieData.settings.carryover) {
+                    // Find the next hole with a winner who collected this carryover
+                    const laterWinnerHole = par3Holes.find(h => h > hole && greenieData.results[h]?.winner)
+                    if (laterWinnerHole) {
+                      ultimateWinner = greenieData.results[laterWinnerHole].winnerName
+                      viaCarryover = true
+                    }
+                  }
+
                   return (
                     <div key={hole} style={{
                       background: 'white',
@@ -2489,9 +2467,13 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                       alignItems: 'center'
                     }}>
                       <span style={{ fontWeight: '600' }}>Hole {hole}</span>
-                      <span style={{ color: result?.winner ? '#27ae60' : '#666' }}>
-                        {result?.winnerName || 'No winner'}
-                        {result?.winner && <span style={{ marginLeft: '5px' }}>${result.pot}</span>}
+                      <span style={{ color: ultimateWinner ? '#27ae60' : '#666' }}>
+                        {ultimateWinner || 'No winner'}
+                        {ultimateWinner && (
+                          <span style={{ marginLeft: '5px', fontSize: '12px' }}>
+                            {viaCarryover ? '(c/o)' : ''} +${netPerHole}
+                          </span>
+                        )}
                       </span>
                     </div>
                   )

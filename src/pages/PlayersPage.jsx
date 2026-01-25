@@ -1220,7 +1220,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
   const [showExternalRounds, setShowExternalRounds] = useState(false)
   const [showAddExternal, setShowAddExternal] = useState(false)
   const [externalForm, setExternalForm] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     courseName: '',
     tee: '',
     courseRating: '72',
@@ -1259,7 +1259,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
 
     onUpdatePlayer(updatedPlayer)
     setExternalForm({
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       courseName: '',
       tee: '',
       courseRating: '72',

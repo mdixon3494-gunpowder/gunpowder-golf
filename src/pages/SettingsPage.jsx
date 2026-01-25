@@ -2156,7 +2156,7 @@ function SettingsPage() {
   const handleStartQuickSkins = ({ players: qsPlayers, teams, skinsSettings, greenieSettings }) => {
     // Create the quick skins round
     const quickRound = {
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD in local timezone
       teams: teams.map((team, idx) => ({
         id: idx + 1,
         name: `Team ${idx + 1}`,
