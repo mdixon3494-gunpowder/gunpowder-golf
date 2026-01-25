@@ -2176,7 +2176,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
   const greeniesCostPerHole = skinsMatch?.settings?.greeniesCostPerHole ||
     (quickSkinsGreenies ? parseFloat(quickSkinsGreenies.costPerGreenie) || 1 : 0)
   const greeniesCarryover = skinsMatch?.settings?.greeniesCarryover ?? quickSkinsGreenies?.carryovers ?? true
-  const greeniesWrap = skinsMatch?.settings?.greeniesWrap ?? quickSkinsGreenies?.wrapUnwonGreenies ?? true
+  const greeniesWrap = skinsMatch?.settings?.greeniesWrap ?? quickSkinsGreenies?.wrapUnwonGreenies ?? false
 
   const frontHoles = GUNPOWDER_SCORECARD.front9
   const backHoles = GUNPOWDER_SCORECARD.back9

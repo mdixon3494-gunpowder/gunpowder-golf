@@ -775,7 +775,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
     enabled: false,
     costPerGreenie: '',
     carryovers: true,
-    wrapUnwonGreenies: true,
+    wrapUnwonGreenies: false,
     wrapTo: 'front'
   })
 
@@ -798,7 +798,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
       enabled: false,
       costPerGreenie: '',
       carryovers: true,
-      wrapUnwonGreenies: true,
+      wrapUnwonGreenies: false,
       wrapTo: 'front'
     })
   }
