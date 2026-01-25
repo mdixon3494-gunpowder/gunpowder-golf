@@ -24,7 +24,6 @@ const POINT_TYPES = {
     { key: 'greenBack', label: 'Green Back', required: false, isArray: false }
   ],
   tee: [
-    { key: 'teeWhite', label: 'White Tees', required: false, isArray: false },
     { key: 'teeBlue', label: 'Blue Tees', required: false, isArray: false },
     { key: 'teeGold', label: 'Gold Tees', required: false, isArray: false },
     { key: 'teeRed', label: 'Red Tees', required: false, isArray: false }
@@ -243,8 +242,21 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
     }
   }
 
-  // Save all changes
-  const handleSave = () => {
+  // Save and continue to next hole
+  const handleSaveAndContinue = () => {
+    onSave(mapping)
+    setHasUnsavedChanges(false)
+    // Advance to next hole (wrap from 18 to 1)
+    const nextHole = selectedHole < 18 ? selectedHole + 1 : 1
+    setSelectedHole(nextHole)
+    // Switch to tees filter
+    setSelectedCategory('tee')
+    setSelectedPointType('teeBlue')
+    setLastCapture(null)
+  }
+
+  // Save and close
+  const handleSaveAndClose = () => {
     onSave(mapping)
     setHasUnsavedChanges(false)
     onClose()
@@ -629,25 +641,38 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
             })}
           </div>
 
-          {/* Save Button */}
-          <div style={{ display: 'flex', gap: '10px' }}>
+          {/* Save Buttons */}
+          <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveAndContinue}
+                disabled={!hasUnsavedChanges}
+                style={{
+                  flex: 1,
+                  opacity: hasUnsavedChanges ? 1 : 0.5
+                }}
+              >
+                Save & Next Hole
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSaveAndClose}
+                disabled={!hasUnsavedChanges}
+                style={{
+                  flex: 1,
+                  opacity: hasUnsavedChanges ? 1 : 0.5
+                }}
+              >
+                Save & Close
+              </button>
+            </div>
             <button
               className="btn btn-secondary"
               onClick={handleClose}
-              style={{ flex: 1 }}
+              style={{ width: '100%' }}
             >
               Cancel
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleSave}
-              disabled={!hasUnsavedChanges}
-              style={{
-                flex: 1,
-                opacity: hasUnsavedChanges ? 1 : 0.5
-              }}
-            >
-              Save Changes
             </button>
           </div>
         </div>
