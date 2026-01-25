@@ -1498,7 +1498,7 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
   const players = record.players || []
   const numPlayers = skinsMatch?.participants?.length || players.length
 
-  // Simple summary - just show who won skins (detailed payout requires clicking View Details)
+  // Simple summary - show skins won including carryovers
   const getQuickSummary = () => {
     if (!skinsMatch) return null
     const summary = {}
@@ -1508,6 +1508,8 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
     skinsPlayers.forEach(p => {
       summary[String(p.id)] = { name: p.name, skinsWon: 0 }
     })
+
+    let carryoverCount = 0
 
     allHoles.forEach(holeInfo => {
       const hole = holeInfo.hole
@@ -1530,15 +1532,69 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
         const winner = playersWithMin[0]
         const meetsParRequirement = !skinsMatch.settings.parOrBetterRequired || winner.score <= par
         if (meetsParRequirement && summary[String(winner.playerId)]) {
-          summary[String(winner.playerId)].skinsWon += 1
+          // Add 1 for the win plus any carryovers
+          summary[String(winner.playerId)].skinsWon += 1 + carryoverCount
+          carryoverCount = 0
+        } else if (skinsMatch.settings.carryovers) {
+          carryoverCount++
         }
+      } else if (skinsMatch.settings.carryovers) {
+        carryoverCount++
       }
     })
 
-    return Object.values(summary).filter(s => s.skinsWon > 0).sort((a, b) => b.skinsWon - a.skinsWon)
+    // Handle wrap: if carryovers remain and wrap is enabled, add to first winner
+    if (skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && carryoverCount > 0) {
+      // Find the first winner and add remaining carryovers
+      const firstWinnerId = Object.keys(summary).find(id => summary[id].skinsWon > 0)
+      if (firstWinnerId) {
+        summary[firstWinnerId].skinsWon += carryoverCount
+      }
+    }
+
+    return { skins: Object.values(summary).filter(s => s.skinsWon > 0).sort((a, b) => b.skinsWon - a.skinsWon), summary }
   }
 
-  const winners = getQuickSummary() || []
+  // Calculate greenies for card
+  const getGreenieSummary = () => {
+    const quickSkinsGreenies = record.quickSkinsGreenieSettings
+    const greeniesEnabled = skinsMatch?.settings?.greeniesEnabled || !!quickSkinsGreenies
+    if (!greeniesEnabled) return null
+
+    const skinsPlayers = players.filter(p => skinsMatch.participants?.includes(String(p.id)))
+    const summary = {}
+    skinsPlayers.forEach(p => {
+      summary[String(p.id)] = { name: p.name, greeniesWon: 0 }
+    })
+
+    const par3Holes = [4, 8, 12, 17]
+    let carryoverCount = 0
+    const greeniesCarryover = skinsMatch?.settings?.greeniesCarryover ?? quickSkinsGreenies?.carryovers ?? true
+
+    par3Holes.forEach(hole => {
+      // Look for greenie data
+      let greenieData = null
+      record.teams?.forEach(team => {
+        if (team.greenies?.[hole]) {
+          greenieData = team.greenies[hole]
+        }
+      })
+
+      if (greenieData?.playerId && summary[String(greenieData.playerId)]) {
+        // Winner gets 1 + carryovers
+        summary[String(greenieData.playerId)].greeniesWon += 1 + carryoverCount
+        carryoverCount = 0
+      } else if (greeniesCarryover) {
+        carryoverCount++
+      }
+    })
+
+    return Object.values(summary).filter(s => s.greeniesWon > 0).sort((a, b) => b.greeniesWon - a.greeniesWon)
+  }
+
+  const skinsData = getQuickSummary()
+  const winners = skinsData?.skins || []
+  const greenieWinners = getGreenieSummary() || []
   const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
 
   return (
@@ -1570,10 +1626,10 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
 
       {/* Winners Preview */}
       <div style={{ padding: '12px 15px' }}>
-        {winners.length > 0 ? (
+        {winners.length > 0 || greenieWinners.length > 0 ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
             {winners.slice(0, 4).map((w, idx) => (
-              <div key={idx} style={{
+              <div key={`skin-${idx}`} style={{
                 background: idx === 0 ? '#fff3cd' : '#f8f9fa',
                 padding: '6px 12px',
                 borderRadius: '6px',
@@ -1582,6 +1638,19 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
                 <span style={{ fontWeight: '600' }}>{w.name}</span>
                 <span style={{ color: '#666', marginLeft: '5px' }}>
                   {w.skinsWon} {w.skinsWon === 1 ? 'skin' : 'skins'}
+                </span>
+              </div>
+            ))}
+            {greenieWinners.slice(0, 2).map((w, idx) => (
+              <div key={`greenie-${idx}`} style={{
+                background: '#e8f5e9',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '13px'
+              }}>
+                <span style={{ fontWeight: '600' }}>{w.name}</span>
+                <span style={{ color: '#2e7d32', marginLeft: '5px' }}>
+                  {w.greeniesWon} {w.greeniesWon === 1 ? 'greenie' : 'greenies'}
                 </span>
               </div>
             ))}
