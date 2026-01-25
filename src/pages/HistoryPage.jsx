@@ -1593,9 +1593,26 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
   }
 
   const skinsData = getQuickSummary()
-  const winners = skinsData?.skins || []
+  const skinsWinners = skinsData?.skins || []
   const greenieWinners = getGreenieSummary() || []
   const cost = parseFloat(skinsMatch?.settings?.costPerSkin) || 0
+
+  // Combine skins and greenies by player
+  const combinedWinners = (() => {
+    const byName = {}
+    skinsWinners.forEach(w => {
+      byName[w.name] = { name: w.name, skinsWon: w.skinsWon, greeniesWon: 0 }
+    })
+    greenieWinners.forEach(w => {
+      if (byName[w.name]) {
+        byName[w.name].greeniesWon = w.greeniesWon
+      } else {
+        byName[w.name] = { name: w.name, skinsWon: 0, greeniesWon: w.greeniesWon }
+      }
+    })
+    // Sort by skins first, then greenies
+    return Object.values(byName).sort((a, b) => (b.skinsWon + b.greeniesWon) - (a.skinsWon + a.greeniesWon))
+  })()
 
   return (
     <div style={{
@@ -1626,10 +1643,10 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
 
       {/* Winners Preview */}
       <div style={{ padding: '12px 15px' }}>
-        {winners.length > 0 || greenieWinners.length > 0 ? (
+        {combinedWinners.length > 0 ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
-            {winners.slice(0, 4).map((w, idx) => (
-              <div key={`skin-${idx}`} style={{
+            {combinedWinners.slice(0, 4).map((w, idx) => (
+              <div key={idx} style={{
                 background: idx === 0 ? '#fff3cd' : '#f8f9fa',
                 padding: '6px 12px',
                 borderRadius: '6px',
@@ -1637,20 +1654,13 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
               }}>
                 <span style={{ fontWeight: '600' }}>{w.name}</span>
                 <span style={{ color: '#666', marginLeft: '5px' }}>
-                  {w.skinsWon} {w.skinsWon === 1 ? 'skin' : 'skins'}
-                </span>
-              </div>
-            ))}
-            {greenieWinners.slice(0, 2).map((w, idx) => (
-              <div key={`greenie-${idx}`} style={{
-                background: '#e8f5e9',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '13px'
-              }}>
-                <span style={{ fontWeight: '600' }}>{w.name}</span>
-                <span style={{ color: '#2e7d32', marginLeft: '5px' }}>
-                  {w.greeniesWon} {w.greeniesWon === 1 ? 'greenie' : 'greenies'}
+                  {w.skinsWon > 0 && `${w.skinsWon} ${w.skinsWon === 1 ? 'skin' : 'skins'}`}
+                  {w.skinsWon > 0 && w.greeniesWon > 0 && ', '}
+                  {w.greeniesWon > 0 && (
+                    <span style={{ color: '#2e7d32' }}>
+                      {w.greeniesWon} {w.greeniesWon === 1 ? 'greenie' : 'greenies'}
+                    </span>
+                  )}
                 </span>
               </div>
             ))}
