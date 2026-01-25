@@ -3,10 +3,10 @@
  * Provides distance calculations and GPS helper functions for golf course yardage
  */
 
-// Gunpowder Golf Course approximate center coordinates
+// Gunpowder Golf Course center coordinates
 const GUNPOWDER_CENTER = {
-  lat: 39.45,
-  lng: -76.52
+  lat: 39.0871,
+  lng: -76.9199
 }
 
 // Maximum reasonable distance from course center (5 miles in meters)
@@ -187,19 +187,20 @@ export function clearPositionWatch(watchId) {
  * @param {number} lat - Latitude
  * @param {number} lng - Longitude
  * @param {number} accuracy - GPS accuracy in meters
- * @returns {{ valid: boolean, warnings: string[] }}
+ * @returns {{ valid: boolean, warnings: string[], accuracyTooLow: boolean }}
  */
 export function validateCoordinates(lat, lng, accuracy) {
   const warnings = []
+  let accuracyTooLow = false
 
   // Check if coordinates are valid numbers
   if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
-    return { valid: false, warnings: ['Invalid coordinate values'] }
+    return { valid: false, warnings: ['Invalid coordinate values'], accuracyTooLow: false }
   }
 
   // Check if coordinates are within valid range
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-    return { valid: false, warnings: ['Coordinates out of valid range'] }
+    return { valid: false, warnings: ['Coordinates out of valid range'], accuracyTooLow: false }
   }
 
   // Check distance from expected Gunpowder location
@@ -210,12 +211,19 @@ export function validateCoordinates(lat, lng, accuracy) {
     warnings.push(`Location is ${distanceInMiles.toFixed(1)} miles from Gunpowder Golf Course`)
   }
 
-  // Check GPS accuracy
-  if (accuracy && accuracy > 10) {
-    warnings.push(`GPS accuracy is ${Math.round(accuracy)}m (may be inaccurate)`)
+  // Check GPS accuracy - tiered warnings
+  if (accuracy) {
+    if (accuracy > 30) {
+      warnings.push(`GPS accuracy is very poor (${Math.round(accuracy)}m) - distances could be off by ${Math.round(accuracy * 1.09)}+ yards`)
+      accuracyTooLow = true
+    } else if (accuracy > 15) {
+      warnings.push(`GPS accuracy is poor (${Math.round(accuracy)}m) - consider waiting for better signal`)
+    } else if (accuracy > 10) {
+      warnings.push(`GPS accuracy is fair (${Math.round(accuracy)}m)`)
+    }
   }
 
-  return { valid: true, warnings }
+  return { valid: true, warnings, accuracyTooLow }
 }
 
 /**

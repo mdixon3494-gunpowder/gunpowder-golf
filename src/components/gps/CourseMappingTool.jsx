@@ -80,6 +80,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
   const [lastCapture, setLastCapture] = useState(null)
   const [error, setError] = useState(null)
   const [showConfirmOverwrite, setShowConfirmOverwrite] = useState(false)
+  const [showPoorAccuracyWarning, setShowPoorAccuracyWarning] = useState(false)
   const [pendingCapture, setPendingCapture] = useState(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
@@ -123,10 +124,18 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
         accuracy: position.accuracy,
         mappedAt: new Date().toISOString(),
         warnings: validation.warnings,
+        accuracyTooLow: validation.accuracyTooLow,
         label: customLabel || undefined
       }
 
       setLastCapture(captureData)
+
+      // If accuracy is too poor, show warning before allowing save
+      if (validation.accuracyTooLow) {
+        setPendingCapture(captureData)
+        setShowPoorAccuracyWarning(true)
+        return
+      }
 
       // For array types, always add (no overwrite prompt)
       if (currentPointTypeInfo?.isArray) {
@@ -145,6 +154,22 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
     }
   }
 
+  // Proceed after poor accuracy warning
+  const proceedAfterPoorAccuracyWarning = () => {
+    setShowPoorAccuracyWarning(false)
+    if (pendingCapture) {
+      // For array types, always add
+      if (currentPointTypeInfo?.isArray) {
+        applyCapture(pendingCapture)
+      } else if (currentHoleData[selectedPointType]) {
+        // For single types, confirm overwrite
+        setShowConfirmOverwrite(true)
+      } else {
+        applyCapture(pendingCapture)
+      }
+    }
+  }
+
   // Apply the captured coordinates
   const applyCapture = (captureData) => {
     const updatedMapping = { ...mapping }
@@ -154,6 +179,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
       const pointData = {
         lat: captureData.lat,
         lng: captureData.lng,
+        accuracy: captureData.accuracy,
         mappedAt: captureData.mappedAt
       }
 
@@ -498,10 +524,10 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '10px',
-                      background: '#e8f5e9',
+                      background: point.accuracy > 30 ? '#fff3e0' : '#e8f5e9',
                       borderRadius: '6px',
                       marginBottom: '8px',
-                      borderLeft: `3px solid ${categoryColor}`
+                      borderLeft: `3px solid ${point.accuracy > 30 ? '#f39c12' : categoryColor}`
                     }}
                   >
                     <div>
@@ -514,6 +540,15 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                       <span style={{ color: '#27ae60', marginLeft: '10px', fontSize: '12px' }}>
                         {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
                       </span>
+                      {point.accuracy && (
+                        <span style={{
+                          color: point.accuracy > 30 ? '#e74c3c' : point.accuracy > 15 ? '#f39c12' : '#27ae60',
+                          marginLeft: '8px',
+                          fontSize: '11px'
+                        }}>
+                          ±{Math.round(point.accuracy)}m
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={() => deletePoint(pt.key, idx)}
@@ -534,6 +569,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
               } else {
                 // Render single point
                 const point = currentHoleData[pt.key]
+                const hasLowAccuracy = point?.accuracy > 30
                 return (
                   <div
                     key={pt.key}
@@ -542,18 +578,29 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '10px',
-                      background: point ? '#e8f5e9' : '#f5f5f5',
+                      background: point ? (hasLowAccuracy ? '#fff3e0' : '#e8f5e9') : '#f5f5f5',
                       borderRadius: '6px',
                       marginBottom: '8px',
-                      borderLeft: `3px solid ${categoryColor}`
+                      borderLeft: `3px solid ${hasLowAccuracy ? '#f39c12' : categoryColor}`
                     }}
                   >
                     <div>
                       <span style={{ fontWeight: '500' }}>{pt.label}</span>
                       {point ? (
-                        <span style={{ color: '#27ae60', marginLeft: '10px', fontSize: '12px' }}>
-                          {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
-                        </span>
+                        <>
+                          <span style={{ color: '#27ae60', marginLeft: '10px', fontSize: '12px' }}>
+                            {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
+                          </span>
+                          {point.accuracy && (
+                            <span style={{
+                              color: point.accuracy > 30 ? '#e74c3c' : point.accuracy > 15 ? '#f39c12' : '#27ae60',
+                              marginLeft: '8px',
+                              fontSize: '11px'
+                            }}>
+                              ±{Math.round(point.accuracy)}m
+                            </span>
+                          )}
+                        </>
                       ) : (
                         <span style={{ color: '#999', marginLeft: '10px', fontSize: '13px' }}>
                           Not mapped
@@ -641,6 +688,58 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                     style={{ flex: 1 }}
                   >
                     Overwrite
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Poor Accuracy Warning Modal */}
+        {showPoorAccuracyWarning && (
+          <div
+            className="modal-overlay"
+            style={{ background: 'rgba(0,0,0,0.5)' }}
+            onClick={() => {
+              setShowPoorAccuracyWarning(false)
+              setPendingCapture(null)
+            }}
+          >
+            <div
+              className="modal-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '380px' }}
+            >
+              <div className="modal-header" style={{ background: '#fff3e0' }}>
+                <h3 style={{ color: '#e65100' }}>⚠️ Poor GPS Accuracy</h3>
+              </div>
+              <div style={{ padding: '20px' }}>
+                <p style={{ marginBottom: '15px', color: '#e65100', fontWeight: '600' }}>
+                  GPS accuracy is {pendingCapture?.accuracy ? Math.round(pendingCapture.accuracy) : '?'}m
+                </p>
+                <p style={{ marginBottom: '15px', fontSize: '14px' }}>
+                  This could result in yardage calculations being off by <strong>{pendingCapture?.accuracy ? Math.round(pendingCapture.accuracy * 1.09) : '?'}+ yards</strong>.
+                </p>
+                <p style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
+                  For best results, wait for better GPS signal (ideally under 10m). Cloudy weather and buildings can affect accuracy.
+                </p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setShowPoorAccuracyWarning(false)
+                      setPendingCapture(null)
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    Wait for Better Signal
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={proceedAfterPoorAccuracyWarning}
+                    style={{ flex: 1, background: '#f39c12', color: 'white' }}
+                  >
+                    Save Anyway
                   </button>
                 </div>
               </div>

@@ -32,6 +32,8 @@ export default function GPSPage() {
   // Get current hole data
   const currentHoleData = courseMapping?.holes?.find(h => h.number === selectedHole)
   const hasMappingData = currentHoleData?.greenCenter != null
+  const mappedPointAccuracy = currentHoleData?.greenCenter?.accuracy
+  const hasPoorMappingAccuracy = mappedPointAccuracy && mappedPointAccuracy > 30
 
   // Calculate yardages
   const yardages = position && hasMappingData
@@ -164,6 +166,18 @@ export default function GPSPage() {
         <div className="alert alert-warning">
           <strong>Hole {selectedHole} not mapped</strong>
           <p>GPS coordinates have not been captured for this hole.</p>
+        </div>
+      )}
+
+      {/* Poor Mapping Accuracy Warning */}
+      {hasMappingData && hasPoorMappingAccuracy && (
+        <div className="alert alert-warning" style={{ marginBottom: '10px', fontSize: '13px' }}>
+          <strong>⚠️ Low accuracy mapping</strong>
+          <p style={{ margin: '5px 0 0 0' }}>
+            Hole {selectedHole} was mapped with {Math.round(mappedPointAccuracy)}m accuracy.
+            Distances may be off by ±{Math.round(mappedPointAccuracy * 1.09)} yards.
+            Consider remapping this hole with better GPS signal.
+          </p>
         </div>
       )}
 
