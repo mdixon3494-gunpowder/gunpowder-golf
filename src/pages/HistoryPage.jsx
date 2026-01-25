@@ -1993,7 +1993,8 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
       enabled: true,
       costPerHole: skinsMatch?.settings?.greeniesCostPerHole ||
         (quickSkinsGreenies ? parseFloat(quickSkinsGreenies.costPerGreenie) || 1 : 1),
-      carryover: skinsMatch?.settings?.greeniesCarryover ?? quickSkinsGreenies?.carryovers ?? true
+      carryover: skinsMatch?.settings?.greeniesCarryover ?? quickSkinsGreenies?.carryovers ?? true,
+      wrap: skinsMatch?.settings?.greeniesWrap ?? quickSkinsGreenies?.wrapUnwonGreenies ?? true
     }
 
     const par3Holes = [4, 8, 12, 17]
@@ -2038,18 +2039,63 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
       }
     })
 
+    // Handle wrap: if carryovers remain and wrap is enabled, give to first winner
+    const remainingCarryoverHoles = par3Holes.filter(h => !results[h]?.winner)
+    if (settings.carryover && settings.wrap && carryover > 0 && remainingCarryoverHoles.length > 0) {
+      // Find the first winning hole to give the wrapped carryovers to
+      const firstWinnerHole = par3Holes.find(h => results[h]?.winner)
+      if (firstWinnerHole) {
+        // Add the remaining carryover to the first winner's pot
+        results[firstWinnerHole].pot += carryover
+        results[firstWinnerHole].wrappedCarryoverFromHoles = [...remainingCarryoverHoles]
+        results[firstWinnerHole].wrappedCarryoverPlayerIds = [...carryoverActivePlayerIds]
+        carryover = 0
+        carryoverActivePlayerIds = []
+      }
+    }
+
+    // Track remaining unresolved carryover (if wrap disabled or no winner found)
+    results.remainingCarryover = carryover
+    results.remainingCarryoverPlayerIds = carryoverActivePlayerIds
+
     // Calculate greenie summary (eligibility-aware)
     const summary = {}
     skinsPlayers.forEach(p => {
       summary[p.id] = { name: p.name, greeniesWon: 0, amountWon: 0, amountPaid: 0 }
     })
 
-    // Calculate payments - each player pays for par 3s they were active on
+    // Track which holes had their money distributed (won holes + their carryover sources)
+    const holesWithDistributedMoney = new Set()
+
+    // First pass: identify all holes where money was distributed
     par3Holes.forEach(hole => {
+      const result = results[hole]
+      if (result.winner) {
+        holesWithDistributedMoney.add(hole)
+        // Also add carryover source holes (their money went to this winner)
+        if (result.carryoverActivePlayerIds?.length > 0) {
+          // Find which holes carried over to this one
+          par3Holes.forEach(prevHole => {
+            if (prevHole < hole && !results[prevHole]?.winner) {
+              holesWithDistributedMoney.add(prevHole)
+            }
+          })
+        }
+        // Also add wrapped carryover holes (holes that wrapped to this winner)
+        if (result.wrappedCarryoverFromHoles?.length > 0) {
+          result.wrappedCarryoverFromHoles.forEach(h => holesWithDistributedMoney.add(h))
+        }
+      }
+    })
+
+    // Calculate payments - only charge for holes where money was distributed
+    par3Holes.forEach(hole => {
+      if (!holesWithDistributedMoney.has(hole)) return // Skip unwon holes
+
       const result = results[hole]
       const activePlayerIds = result.activePlayerIds || []
 
-      // Each active player pays costPerHole
+      // Each active player pays costPerHole for this hole
       activePlayerIds.forEach(playerId => {
         if (summary[playerId]) {
           summary[playerId].amountPaid += settings.costPerHole

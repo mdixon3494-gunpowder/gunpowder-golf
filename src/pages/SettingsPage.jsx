@@ -1282,6 +1282,64 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                             >No</button>
                           </div>
                         </div>
+
+                        {/* Greenie Wrap options (if carryovers ON) */}
+                        {greenieSettings.carryovers && (
+                          <>
+                            <div style={{ marginBottom: '15px' }}>
+                              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>Wrap Unwon Greenies</label>
+                              <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                  onClick={() => setGreenieSettings({ ...greenieSettings, wrapUnwonGreenies: true })}
+                                  style={{
+                                    flex: 1, padding: '10px', borderRadius: '6px',
+                                    border: greenieSettings.wrapUnwonGreenies ? '2px solid #27ae60' : '2px solid #ddd',
+                                    background: greenieSettings.wrapUnwonGreenies ? '#e8f8f5' : 'white',
+                                    fontWeight: greenieSettings.wrapUnwonGreenies ? '600' : 'normal',
+                                    cursor: 'pointer', fontSize: '13px'
+                                  }}
+                                >Yes</button>
+                                <button
+                                  onClick={() => setGreenieSettings({ ...greenieSettings, wrapUnwonGreenies: false })}
+                                  style={{
+                                    flex: 1, padding: '10px', borderRadius: '6px',
+                                    border: !greenieSettings.wrapUnwonGreenies ? '2px solid #27ae60' : '2px solid #ddd',
+                                    background: !greenieSettings.wrapUnwonGreenies ? '#e8f8f5' : 'white',
+                                    fontWeight: !greenieSettings.wrapUnwonGreenies ? '600' : 'normal',
+                                    cursor: 'pointer', fontSize: '13px'
+                                  }}
+                                >No</button>
+                              </div>
+                            </div>
+                            {greenieSettings.wrapUnwonGreenies && (
+                              <div style={{ marginBottom: '15px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>Wrap To</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                  <button
+                                    onClick={() => setGreenieSettings({ ...greenieSettings, wrapTo: 'front' })}
+                                    style={{
+                                      flex: 1, padding: '10px', borderRadius: '6px',
+                                      border: greenieSettings.wrapTo === 'front' ? '2px solid #27ae60' : '2px solid #ddd',
+                                      background: greenieSettings.wrapTo === 'front' ? '#e8f8f5' : 'white',
+                                      fontWeight: greenieSettings.wrapTo === 'front' ? '600' : 'normal',
+                                      cursor: 'pointer', fontSize: '13px'
+                                    }}
+                                  >Front 9</button>
+                                  <button
+                                    onClick={() => setGreenieSettings({ ...greenieSettings, wrapTo: 'back' })}
+                                    style={{
+                                      flex: 1, padding: '10px', borderRadius: '6px',
+                                      border: greenieSettings.wrapTo === 'back' ? '2px solid #27ae60' : '2px solid #ddd',
+                                      background: greenieSettings.wrapTo === 'back' ? '#e8f8f5' : 'white',
+                                      fontWeight: greenieSettings.wrapTo === 'back' ? '600' : 'normal',
+                                      cursor: 'pointer', fontSize: '13px'
+                                    }}
+                                  >Back 9</button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2121,7 +2179,9 @@ function SettingsPage() {
         // Include greenie settings so settlement calculations work
         greeniesEnabled: greenieSettings.enabled,
         greeniesCostPerHole: greenieSettings.enabled ? parseFloat(greenieSettings.costPerGreenie) || 1 : 0,
-        greeniesCarryover: greenieSettings.carryovers
+        greeniesCarryover: greenieSettings.carryovers,
+        greeniesWrap: greenieSettings.wrapUnwonGreenies,
+        greeniesWrapTo: greenieSettings.wrapTo
       },
       participants: qsPlayers.map(p => String(p.id)),
       results: {}

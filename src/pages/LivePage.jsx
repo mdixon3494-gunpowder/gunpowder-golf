@@ -2176,6 +2176,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
   const greeniesCostPerHole = skinsMatch?.settings?.greeniesCostPerHole ||
     (quickSkinsGreenies ? parseFloat(quickSkinsGreenies.costPerGreenie) || 1 : 0)
   const greeniesCarryover = skinsMatch?.settings?.greeniesCarryover ?? quickSkinsGreenies?.carryovers ?? true
+  const greeniesWrap = skinsMatch?.settings?.greeniesWrap ?? quickSkinsGreenies?.wrapUnwonGreenies ?? true
 
   const frontHoles = GUNPOWDER_SCORECARD.front9
   const backHoles = GUNPOWDER_SCORECARD.back9
@@ -2483,7 +2484,20 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
     }
 
     // Handle wrap unwon skins - if carryovers remain after hole 18, wrap to first winner
-    if (skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && pendingCarryovers.length > 0) {
+    // ONLY apply wrap after ALL holes have been scored by all active players
+    const allHolesCompleted = (() => {
+      for (let h = 1; h <= 18; h++) {
+        const activePlayers = getActivePlayersForHole(h, skinsPlayers)
+        const allScored = activePlayers.every(player => {
+          const score = player.scores?.[h]
+          return score !== undefined && score !== null && score !== ''
+        })
+        if (!allScored) return false
+      }
+      return true
+    })()
+
+    if (skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && pendingCarryovers.length > 0 && allHolesCompleted) {
       const wrapToFront = skinsMatch.settings.wrapTo === 'front'
       const searchHoles = wrapToFront ? [1,2,3,4,5,6,7,8,9] : [10,11,12,13,14,15,16,17,18]
 
@@ -2824,7 +2838,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
     })
 
     // If carryovers remain after ALL par 3 holes have been played, wrap to first par 3 winner
-    // Only wrap if all par 3 holes have been completed (have scores for all active players)
+    // Only wrap if greeniesWrap is enabled and all par 3 holes have been completed
     const allPar3Completed = PAR_3_HOLES.every(hole => {
       const activePlayers = getActivePlayersForHole(hole, skinsPlayers)
       return activePlayers.every(player => {
@@ -2833,7 +2847,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       })
     })
 
-    if (greeniesCarryover && pendingCarryovers.length > 0 && allPar3Completed) {
+    if (greeniesCarryover && greeniesWrap && pendingCarryovers.length > 0 && allPar3Completed) {
       const carryoversByEligibility = {}
       pendingCarryovers.forEach(co => {
         const key = [...co.eligiblePlayerIds].sort().join(',')
