@@ -333,6 +333,24 @@ function Layout({ onShowLeagueSelector }) {
           >
             Scorecard
           </NavLink>
+          <NavLink
+            to="/gps"
+            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
+          >
+            GPS
+          </NavLink>
+          <NavLink
+            to="/history"
+            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
+          >
+            History
+          </NavLink>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
+          >
+            Settings
+          </NavLink>
         </nav>
 
         <main className="content">
