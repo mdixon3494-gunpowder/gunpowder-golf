@@ -8,6 +8,7 @@ import Layout from './components/layout/Layout'
 import LeagueSetup from './components/LeagueSetup'
 import MyLeaguesScreen from './components/MyLeaguesScreen'
 import CasualGameSetup from './components/CasualGameSetup'
+import IndividualRoundSetup from './components/IndividualRoundSetup'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import { ToastProvider } from './components/common/Toast'
 import LoginScreen from './components/auth/LoginScreen'
@@ -23,6 +24,7 @@ import HistoryPage from './pages/HistoryPage'
 import ScorecardPage from './pages/ScorecardPage'
 import SettingsPage from './pages/SettingsPage'
 import GPSPage from './pages/GPSPage'
+import RoundHistoryPage from './pages/RoundHistoryPage'
 
 function AppContent() {
   const { loading: authLoading, isAuthenticated, needsProfileClaim, profile } = useAuth()
@@ -35,6 +37,8 @@ function AppContent() {
   const [showLeagueSelector, setShowLeagueSelector] = useState(false)
   const [showLeagueSetup, setShowLeagueSetup] = useState(false)
   const [showCasualSetup, setShowCasualSetup] = useState(false)
+  const [showIndividualSetup, setShowIndividualSetup] = useState(false)
+  const [showRoundHistory, setShowRoundHistory] = useState(false)
   const [leagueSetupMode, setLeagueSetupMode] = useState('create') // 'create' | 'join'
 
   // When a league is loaded/joined/created, clear setup screens and show main app
@@ -43,6 +47,8 @@ function AppContent() {
       setShowLeagueSetup(false)
       setShowLeagueSelector(false)
       setShowCasualSetup(false)
+      setShowIndividualSetup(false)
+      setShowRoundHistory(false)
     }
   }, [leagueId])
 
@@ -107,6 +113,31 @@ function AppContent() {
     )
   }
 
+  // Authenticated user wants to start an individual round
+  if (showIndividualSetup && isAuthenticated) {
+    return (
+      <IndividualRoundSetup
+        onBack={() => {
+          setShowIndividualSetup(false)
+          setShowLeagueSelector(true)
+        }}
+      />
+    )
+  }
+
+  // Authenticated user wants to view round history
+  if (showRoundHistory && isAuthenticated) {
+    return (
+      <RoundHistoryPage
+        profile={profile}
+        onBack={() => {
+          setShowRoundHistory(false)
+          setShowLeagueSelector(true)
+        }}
+      />
+    )
+  }
+
   // Authenticated user wants to see league selector
   if (showLeagueSelector && isAuthenticated) {
     return (
@@ -129,6 +160,14 @@ function AppContent() {
         }}
         onStartCasualGame={() => {
           setShowCasualSetup(true)
+          setShowLeagueSelector(false)
+        }}
+        onStartIndividualRound={() => {
+          setShowIndividualSetup(true)
+          setShowLeagueSelector(false)
+        }}
+        onViewRoundHistory={() => {
+          setShowRoundHistory(true)
           setShowLeagueSelector(false)
         }}
       />
@@ -168,6 +207,12 @@ function AppContent() {
           }}
           onStartCasualGame={() => {
             setShowCasualSetup(true)
+          }}
+          onStartIndividualRound={() => {
+            setShowIndividualSetup(true)
+          }}
+          onViewRoundHistory={() => {
+            setShowRoundHistory(true)
           }}
         />
       )

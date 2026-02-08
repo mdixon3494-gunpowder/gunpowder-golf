@@ -279,7 +279,68 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
 }
 
 function Layout({ onShowLeagueSelector }) {
-  const { leagueId, isAdmin, saveStatus, leagueSettings, switchLeague } = useLeague()
+  const { leagueId, isAdmin, saveStatus, leagueSettings, switchLeague, isIndividualRound, leaveLeague } = useLeague()
+
+  const handleExitRound = () => {
+    leaveLeague()
+    onShowLeagueSelector()
+  }
+
+  if (isIndividualRound) {
+    return (
+      <div className="app-container">
+        <header className="header">
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            maxWidth: '600px',
+            margin: '0 auto',
+            padding: '0 10px'
+          }}>
+            <button
+              onClick={handleExitRound}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'white',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '600'
+              }}
+            >
+              Exit Round
+            </button>
+            <h1 style={{ fontSize: '18px', margin: 0 }}>Individual Round</h1>
+            <div style={{ width: '80px' }} />
+          </div>
+          <SaveIndicator status={saveStatus} />
+        </header>
+
+        <nav className="tabs">
+          <NavLink
+            to="/live"
+            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
+          >
+            Scoring
+          </NavLink>
+          <NavLink
+            to="/scorecard"
+            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
+          >
+            Scorecard
+          </NavLink>
+        </nav>
+
+        <main className="content">
+          <Outlet />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="app-container">

@@ -409,7 +409,7 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
 }
 
 // Score Entry Component - Legacy Style
-function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins }) {
+function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound }) {
   const [activeInput, setActiveInput] = useState(null)
   const [keypadValue, setKeypadValue] = useState('')
   const [isFirstKeypress, setIsFirstKeypress] = useState(true)
@@ -474,11 +474,17 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
     return skill >= 7 ? par + 2 : par + 3
   }
 
+  // Determine hole range for scoring
+  const holesPlayed = liveRound.holesPlayed || 18
+  const roundStartingHole = liveRound.startingHole || 1
+  const roundEndingHole = holesPlayed === 9 ? roundStartingHole + 8 : 18
+  const is9HoleRound = holesPlayed === 9
+
   // Find next score needed for a team (only for tracked players)
   const findNextScoreNeeded = (team) => {
     const trackedIds = getTrackedPlayerIds(team.id)
     const activePlayers = team.players.filter(p => !p.isDNF && trackedIds.has(p.id))
-    for (let hole = 1; hole <= 18; hole++) {
+    for (let hole = roundStartingHole; hole <= roundEndingHole; hole++) {
       for (const player of activePlayers) {
         const score = player.scores[hole]
         if (score === undefined || score === null || score === '') {
@@ -616,7 +622,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
   // Navigate to previous hole for same player (saves current score first)
   const goToPrevHole = () => {
-    if (!activeInput || activeInput.hole <= 1) return
+    if (!activeInput || activeInput.hole <= roundStartingHole) return
 
     // Save current score if there is one
     if (keypadValue) {
@@ -637,7 +643,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
   // Navigate to next hole for same player (saves current score first)
   const goToNextHole = () => {
-    if (!activeInput || activeInput.hole >= 18) return
+    if (!activeInput || activeInput.hole >= roundEndingHole) return
 
     // Save current score if there is one
     if (keypadValue) {
@@ -654,6 +660,11 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
     setActiveInput({ ...activeInput, hole: nextHole })
     setKeypadValue(nextScore?.toString() || '')
     setIsFirstKeypress(true)
+  }
+
+  // Auto-select team for individual rounds
+  if (isIndividualRound && !selectedTeam && liveRound.teams.length > 0) {
+    setSelectedTeamId(liveRound.teams[0].id)
   }
 
   // Team selection view
@@ -699,8 +710,8 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
   // Scoring view for selected team
   const nextNeeded = findNextScoreNeeded(selectedTeam)
-  const frontTotal = calculateTeamTotal(selectedTeam, 1, 9)
-  const backTotal = calculateTeamTotal(selectedTeam, 10, 18)
+  const frontTotal = (!is9HoleRound || roundStartingHole === 1) ? calculateTeamTotal(selectedTeam, 1, 9) : 0
+  const backTotal = (!is9HoleRound || roundStartingHole === 10) ? calculateTeamTotal(selectedTeam, 10, 18) : 0
 
   return (
     <div>
@@ -712,6 +723,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
         marginBottom: '15px',
         color: selectedTeam.isFinished ? '#155724' : 'white'
       }}>
+        {!isIndividualRound && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '14px', opacity: 0.9 }}>Team:</span>
@@ -739,6 +751,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
           </div>
           {selectedTeam.isFinished && <span style={{ fontSize: '14px', fontWeight: '600' }}>✓ Done</span>}
         </div>
+        )}
 
         {/* Team Score Summary - Hide in Quick Skins mode */}
         {!isQuickSkins && (
@@ -751,29 +764,36 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
             background: 'rgba(255,255,255,0.15)',
             borderRadius: '8px'
           }}>
+            {(!is9HoleRound || roundStartingHole === 1) && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '11px', opacity: 0.8 }}>FRONT</div>
               <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
                 {frontTotal === 0 ? 'E' : (frontTotal > 0 ? '+' : '') + frontTotal}
               </div>
             </div>
+            )}
+            {(!is9HoleRound || roundStartingHole === 10) && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '11px', opacity: 0.8 }}>BACK</div>
               <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
                 {backTotal === 0 ? 'E' : (backTotal > 0 ? '+' : '') + backTotal}
               </div>
             </div>
+            )}
+            {!is9HoleRound && (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '11px', opacity: 0.8 }}>TOTAL</div>
               <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
                 {(frontTotal + backTotal) === 0 ? 'E' : ((frontTotal + backTotal) > 0 ? '+' : '') + (frontTotal + backTotal)}
               </div>
             </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Player Tracking Selector */}
+      {/* Player Tracking Selector - hidden for individual rounds */}
+      {!isIndividualRound && (
       <div style={{
         background: 'white',
         borderRadius: '10px',
@@ -863,6 +883,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
           </div>
         )}
       </div>
+      )}
 
       {/* Enter Next Score Button */}
       {nextNeeded && (
@@ -906,7 +927,8 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
         overflow: 'hidden',
         border: '1px solid #e0e0e0'
       }}>
-        {/* Front 9 */}
+        {/* Front 9 - hidden for back-9 only individual rounds */}
+        {!(is9HoleRound && roundStartingHole === 10) && (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '340px' }}>
             <thead>
@@ -1033,9 +1055,11 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
             </tbody>
           </table>
         </div>
+        )}
 
-        {/* Back 9 */}
-        <div style={{ overflowX: 'auto', borderTop: '2px solid #34495e' }}>
+        {/* Back 9 - hidden for front-9 only individual rounds */}
+        {!(is9HoleRound && roundStartingHole === 1) && (
+        <div style={{ overflowX: 'auto', borderTop: is9HoleRound ? 'none' : '2px solid #34495e' }}>
           <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '340px' }}>
             <thead>
               <tr style={{ background: '#ef6c00', color: 'white' }}>
@@ -1161,6 +1185,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {/* Mark Team Done Button */}
@@ -5927,7 +5952,9 @@ function LivePage() {
     courseTees,
     leagueId,
     isCasualGame,
-    saveCasualRoundHistory
+    isIndividualRound,
+    saveCasualRoundHistory,
+    saveIndividualRoundHistory
   } = useLeague()
 
   // Leaderboard view state - defaults based on starting hole (front if 1-9, back if 10-18)
@@ -5957,6 +5984,9 @@ function LivePage() {
   const [casualHandicapChoices, setCasualHandicapChoices] = useState({})
   const [casualRoundData, setCasualRoundData] = useState(null)
   const [savingCasualRound, setSavingCasualRound] = useState(false)
+  const [showIndividualSummary, setShowIndividualSummary] = useState(false)
+  const [individualSummaryData, setIndividualSummaryData] = useState(null)
+  const [savingIndividualRound, setSavingIndividualRound] = useState(false)
 
   if (!liveRound) {
     return (
@@ -6239,8 +6269,8 @@ function LivePage() {
   }
 
   const finishRound = () => {
-    // Skip PIN check for casual games
-    if (!isCasualGame && finishPin !== '1234') {
+    // Skip PIN check for casual games and individual rounds
+    if (!isCasualGame && !isIndividualRound && finishPin !== '1234') {
       alert('Incorrect PIN')
       setFinishPin('')
       return
@@ -6432,6 +6462,62 @@ function LivePage() {
     setHistory([roundData, ...history])
     setShowFinishConfirm(false)
 
+    // For individual rounds, show summary modal before cleaning up
+    if (isIndividualRound) {
+      const player = liveRound.teams[0]?.players[0]
+      if (player) {
+        const scores = player.scores || {}
+        const holesPlayed = liveRound.holesPlayed || 18
+        const startHole = liveRound.startingHole || 1
+        const endHole = holesPlayed === 9 ? startHole + 8 : 18
+
+        let front9 = 0, back9 = 0
+        for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += parseInt(scores[h]) || 0
+        for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += parseInt(scores[h]) || 0
+
+        const total = holesPlayed === 9 ? (startHole === 1 ? front9 : back9) : front9 + back9
+
+        // Par calculation
+        const allHolesData = getAllHoles()
+        let parTotal = 0
+        for (let h = startHole; h <= endHole; h++) {
+          const hInfo = allHolesData.find(hd => hd.hole === h)
+          if (hInfo) parTotal += hInfo.par
+        }
+
+        // Scoring breakdown
+        const breakdown = { eagles: 0, birdies: 0, pars: 0, bogeys: 0, doubleBogeys: 0, worse: 0 }
+        for (let h = startHole; h <= endHole; h++) {
+          const s = scores[h]
+          if (s === undefined || s === null || s === '' || s === 'X') continue
+          const hInfo = allHolesData.find(hd => hd.hole === h)
+          if (!hInfo) continue
+          const diff = parseInt(s) - hInfo.par
+          if (diff <= -2) breakdown.eagles++
+          else if (diff === -1) breakdown.birdies++
+          else if (diff === 0) breakdown.pars++
+          else if (diff === 1) breakdown.bogeys++
+          else if (diff === 2) breakdown.doubleBogeys++
+          else breakdown.worse++
+        }
+
+        setIndividualSummaryData({
+          scores,
+          front9,
+          back9,
+          total,
+          parTotal,
+          holesPlayed,
+          startingHole: startHole,
+          tee: player.tee || 'blue',
+          handicap: player.handicap || 0,
+          breakdown
+        })
+        setShowIndividualSummary(true)
+        return
+      }
+    }
+
     // For casual games, show the save round modal before cleaning up
     if (isCasualGame) {
       // Build round player data for history saving
@@ -6513,6 +6599,26 @@ function LivePage() {
     setSavingCasualRound(false)
   }
 
+  // Individual round save handler
+  const handleIndividualSave = async () => {
+    if (!individualSummaryData) return
+    setSavingIndividualRound(true)
+    try {
+      const playerProfileId = players[0]?.profileId || players[0]?.id
+      if (playerProfileId) {
+        await saveIndividualRoundHistory(playerProfileId, individualSummaryData)
+      }
+    } catch (err) {
+      console.error('Failed to save individual round history:', err)
+    }
+    setLiveRound(null)
+    setTeams([])
+    setShowIndividualSummary(false)
+    setIndividualSummaryData(null)
+    setSavingIndividualRound(false)
+    navigate('/scorecard')
+  }
+
   // End Quick Skins game
   const endQuickSkins = async (saveResults = false) => {
     if (saveResults) {
@@ -6569,7 +6675,9 @@ function LivePage() {
   }
 
   // Define tabs based on mode
-  const subTabs = effectiveQuickSkinsMode
+  const subTabs = isIndividualRound
+    ? [{ id: 'scoring', label: 'Scores' }]
+    : effectiveQuickSkinsMode
     ? [
         { id: 'scoring', label: 'Scores' },
         { id: 'skins', label: 'Skins' },
@@ -6685,6 +6793,7 @@ function LivePage() {
           onMarkTeamFinished={markTeamFinished}
           onUpdateGreenie={updateGreenie}
           isQuickSkins={effectiveQuickSkinsMode}
+          isIndividualRound={isIndividualRound}
         />
       )}
       {subTab === 'greenies' && (
@@ -6733,7 +6842,7 @@ function LivePage() {
       )}
 
       {/* Admin Actions - Collapsible section for Finish Round */}
-      {(isAdmin || isCasualGame) && !effectiveQuickSkinsMode && (
+      {(isAdmin || isCasualGame || isIndividualRound) && !effectiveQuickSkinsMode && (
         <div style={{ marginTop: '30px' }}>
           {!showFinishConfirm ? (
             <details style={{
@@ -6748,7 +6857,7 @@ function LivePage() {
                 color: '#666',
                 fontSize: '14px'
               }}>
-                {isCasualGame ? 'Game Actions' : 'Admin Actions'}
+                {isCasualGame ? 'Game Actions' : isIndividualRound ? 'Round Actions' : 'Admin Actions'}
               </summary>
               <div style={{ padding: '15px', borderTop: '1px solid #ddd' }}>
                 <button
@@ -6765,7 +6874,7 @@ function LivePage() {
                     fontSize: '14px'
                   }}
                 >
-                  {isCasualGame ? 'Finish Game' : 'Finish Round (End League Round)'}
+                  {isCasualGame ? 'Finish Game' : isIndividualRound ? 'Finish Round' : 'Finish Round (End League Round)'}
                 </button>
                 <p style={{ fontSize: '12px', color: '#999', marginTop: '10px', textAlign: 'center' }}>
                   This saves all scores to history and updates player statistics.
@@ -6779,12 +6888,12 @@ function LivePage() {
               borderRadius: '10px',
               border: '2px solid #f9a825'
             }}>
-              <h3 style={{ marginBottom: '15px' }}>{isCasualGame ? 'Finish Game?' : 'Finish Round?'}</h3>
+              <h3 style={{ marginBottom: '15px' }}>{isCasualGame ? 'Finish Game?' : isIndividualRound ? 'Finish Round?' : 'Finish Round?'}</h3>
               <p style={{ marginBottom: '15px', color: '#666' }}>
                 This will save all scores to history and update player statistics.
               </p>
               {/* Only show PIN for league games */}
-              {!isCasualGame && (
+              {!isCasualGame && !isIndividualRound && (
                 <div className="input-group" style={{ marginBottom: '15px' }}>
                   <label>Enter Admin PIN to confirm</label>
                   <input
@@ -6799,7 +6908,7 @@ function LivePage() {
               )}
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button className="btn btn-primary" onClick={finishRound} style={{ flex: 1 }}>
-                  {isCasualGame ? 'Finish Game' : 'Finish Round'}
+                  {isCasualGame ? 'Finish Game' : isIndividualRound ? 'Finish Round' : 'Finish Round'}
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -6954,6 +7063,125 @@ function LivePage() {
                 {savingCasualRound ? 'Saving...' : 'Save & Stay'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Individual Round Summary Modal */}
+      {showIndividualSummary && individualSummaryData && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <h3 style={{ margin: '0 0 4px', fontSize: '18px', textAlign: 'center' }}>Round Complete!</h3>
+            <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginBottom: '20px' }}>
+              Gunpowder Golf Course
+            </div>
+
+            {/* Score Summary */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%)',
+              color: 'white',
+              borderRadius: '12px',
+              padding: '20px',
+              textAlign: 'center',
+              marginBottom: '20px'
+            }}>
+              <div style={{ fontSize: '48px', fontWeight: 'bold' }}>
+                {individualSummaryData.total}
+              </div>
+              <div style={{ fontSize: '16px', opacity: 0.9, marginTop: '4px' }}>
+                {(() => {
+                  const diff = individualSummaryData.total - individualSummaryData.parTotal
+                  if (diff === 0) return 'Even Par'
+                  return diff > 0 ? `+${diff} (${individualSummaryData.parTotal} par)` : `${diff} (${individualSummaryData.parTotal} par)`
+                })()}
+              </div>
+              {individualSummaryData.holesPlayed === 18 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '30px',
+                  marginTop: '15px',
+                  paddingTop: '15px',
+                  borderTop: '1px solid rgba(255,255,255,0.2)'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '11px', opacity: 0.7 }}>FRONT</div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{individualSummaryData.front9}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', opacity: 0.7 }}>BACK</div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold' }}>{individualSummaryData.back9}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Scoring Breakdown */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#888', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Scoring Breakdown
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                {[
+                  { label: 'Eagles+', count: individualSummaryData.breakdown.eagles, color: '#f39c12' },
+                  { label: 'Birdies', count: individualSummaryData.breakdown.birdies, color: '#27ae60' },
+                  { label: 'Pars', count: individualSummaryData.breakdown.pars, color: '#3498db' },
+                  { label: 'Bogeys', count: individualSummaryData.breakdown.bogeys, color: '#e67e22' },
+                  { label: 'Double', count: individualSummaryData.breakdown.doubleBogeys, color: '#e74c3c' },
+                  { label: 'Worse', count: individualSummaryData.breakdown.worse, color: '#8e44ad' }
+                ].map(item => (
+                  <div key={item.label} style={{
+                    textAlign: 'center',
+                    padding: '8px',
+                    background: '#f8f9fa',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: item.color }}>{item.count}</div>
+                    <div style={{ fontSize: '11px', color: '#888' }}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <button
+              onClick={handleIndividualSave}
+              disabled={savingIndividualRound}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '10px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: savingIndividualRound ? 'default' : 'pointer',
+                opacity: savingIndividualRound ? 0.7 : 1
+              }}
+            >
+              {savingIndividualRound ? 'Saving...' : 'Save & Done'}
+            </button>
           </div>
         </div>
       )}

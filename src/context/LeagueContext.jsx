@@ -650,6 +650,7 @@ export function LeagueProvider({ children }) {
 
   // Casual game helpers
   const isCasualGame = leagueType === 'casual'
+  const isIndividualRound = leagueType === 'individual'
 
   const saveCasualRoundHistory = async (roundPlayers, applyChoices = {}) => {
     // roundPlayers: array of { id, profileId, name, scores, front9, back9, total, handicap, tee }
@@ -676,6 +677,29 @@ export function LeagueProvider({ children }) {
     return await saveRoundHistory(entries)
   }
 
+  const saveIndividualRoundHistory = async (profileId, roundData) => {
+    // roundData: { scores, front9, back9, total, handicap, tee, holesPlayed, startingHole }
+    const entry = {
+      profile_id: profileId,
+      source_id: leagueId,
+      round_type: 'individual',
+      date: new Date().toISOString().split('T')[0],
+      holes_played: roundData.holesPlayed || 18,
+      total_score: roundData.total || null,
+      front_nine: roundData.front9 || null,
+      back_nine: roundData.back9 || null,
+      scores: roundData.scores || null,
+      handicap_used: roundData.handicap || null,
+      applied_to_handicap: true,
+      format_name: null,
+      metadata: {
+        tee: roundData.tee || 'blue',
+        startingHole: roundData.startingHole || 1
+      }
+    }
+    return await saveRoundHistory([entry])
+  }
+
   const value = {
     // League
     leagueId,
@@ -684,6 +708,7 @@ export function LeagueProvider({ children }) {
     saveStatus,
     leagueType,
     isCasualGame,
+    isIndividualRound,
     createNewLeague,
     joinExistingLeague,
     leaveLeague,
@@ -691,6 +716,7 @@ export function LeagueProvider({ children }) {
     checkLeagueCodeAvailable,
     cloneLeagueToTest,
     saveCasualRoundHistory,
+    saveIndividualRoundHistory,
 
     // Admin
     isAdmin,
