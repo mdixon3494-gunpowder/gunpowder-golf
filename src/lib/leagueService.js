@@ -80,7 +80,7 @@ export async function removeLeagueMember(leagueId, profileId) {
 export async function getLeaguesForProfile(profileId) {
   const { data, error } = await supabase
     .from('league_members')
-    .select('*, leagues(id, name, owner_id, is_test, visibility, created_at, updated_at)')
+    .select('*, leagues(id, name, owner_id, is_test, type, visibility, created_at, updated_at)')
     .eq('profile_id', profileId)
     .order('joined_at', { ascending: false })
 

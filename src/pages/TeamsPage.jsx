@@ -99,7 +99,7 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, cour
   )
 }
 
-function SkinsSetupModal({ onClose, skinsMatch, onSave }) {
+function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound }) {
   const [settings, setSettings] = useState(skinsMatch?.settings || {
     costPerSkin: '',
     carryovers: true,
@@ -111,17 +111,45 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave }) {
     useHandicaps: false,
     playerHandicaps: {}
   })
+  const [greenieSettings, setGreenieSettings] = useState(() => {
+    const qs = liveRound?.quickSkinsGreenieSettings
+    if (qs) return { enabled: true, costPerGreenie: qs.costPerGreenie || '', carryovers: qs.carryovers !== false, wrapUnwonGreenies: qs.wrapUnwonGreenies || false, wrapTo: qs.wrapTo || 'front' }
+    if (skinsMatch?.settings?.greeniesEnabled) return { enabled: true, costPerGreenie: skinsMatch.settings.greeniesCostPerHole || '', carryovers: skinsMatch.settings.greeniesCarryover !== false, wrapUnwonGreenies: skinsMatch.settings.greeniesWrap || false, wrapTo: skinsMatch.settings.greeniesWrapTo || 'front' }
+    return { enabled: false, costPerGreenie: '', carryovers: true, wrapUnwonGreenies: false, wrapTo: 'front' }
+  })
 
   const handleSave = () => {
     if (!settings.costPerSkin) {
       alert('Please enter a cost per skin')
       return
     }
+    // Merge greenie settings into skins settings
+    const mergedSettings = {
+      ...settings,
+      greeniesEnabled: greenieSettings.enabled,
+      greeniesCostPerHole: greenieSettings.enabled ? (parseFloat(greenieSettings.costPerGreenie) || 1) : 0,
+      greeniesCarryover: greenieSettings.carryovers,
+      greeniesWrap: greenieSettings.wrapUnwonGreenies,
+      greeniesWrapTo: greenieSettings.wrapTo
+    }
     onSave({
-      settings,
+      settings: mergedSettings,
       participants: skinsMatch?.participants || [],
       results: skinsMatch?.results || {}
     })
+    // Update quickSkinsGreenieSettings on liveRound if applicable
+    if (setLiveRound && liveRound) {
+      setLiveRound({
+        ...liveRound,
+        quickSkinsGreenieSettings: greenieSettings.enabled ? {
+          enabled: true,
+          costPerGreenie: parseFloat(greenieSettings.costPerGreenie) || 1,
+          carryovers: greenieSettings.carryovers,
+          wrapUnwonGreenies: greenieSettings.wrapUnwonGreenies,
+          wrapTo: greenieSettings.wrapTo
+        } : null
+      })
+    }
     onClose()
   }
 
@@ -226,6 +254,120 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave }) {
             </label>
           </div>
 
+          {/* Greenies Section */}
+          <div style={{ marginBottom: '20px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+              <label style={{ fontWeight: '600', fontSize: '15px' }}>Greenies (Par 3s)</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setGreenieSettings({ ...greenieSettings, enabled: true })}
+                  style={{
+                    padding: '6px 16px', borderRadius: '6px',
+                    border: greenieSettings.enabled ? '2px solid #27ae60' : '2px solid #ddd',
+                    background: greenieSettings.enabled ? '#e8f8f5' : 'white',
+                    fontWeight: greenieSettings.enabled ? '600' : 'normal',
+                    color: greenieSettings.enabled ? '#27ae60' : '#666',
+                    cursor: 'pointer', fontSize: '13px'
+                  }}
+                >Yes</button>
+                <button
+                  onClick={() => setGreenieSettings({ ...greenieSettings, enabled: false })}
+                  style={{
+                    padding: '6px 16px', borderRadius: '6px',
+                    border: !greenieSettings.enabled ? '2px solid #27ae60' : '2px solid #ddd',
+                    background: !greenieSettings.enabled ? '#e8f8f5' : 'white',
+                    fontWeight: !greenieSettings.enabled ? '600' : 'normal',
+                    color: !greenieSettings.enabled ? '#27ae60' : '#666',
+                    cursor: 'pointer', fontSize: '13px'
+                  }}
+                >No</button>
+              </div>
+            </div>
+
+            {greenieSettings.enabled && (
+              <div style={{ background: '#f0fff4', padding: '15px', borderRadius: '8px' }}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>
+                    Cost per Greenie ($)
+                  </label>
+                  <input
+                    type="number"
+                    value={greenieSettings.costPerGreenie}
+                    onChange={(e) => setGreenieSettings({ ...greenieSettings, costPerGreenie: e.target.value })}
+                    placeholder="1.00"
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '14px' }}
+                  />
+                </div>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>Carryovers</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      onClick={() => setGreenieSettings({ ...greenieSettings, carryovers: true })}
+                      style={{
+                        flex: 1, padding: '10px', borderRadius: '6px',
+                        border: greenieSettings.carryovers ? '2px solid #27ae60' : '2px solid #ddd',
+                        background: greenieSettings.carryovers ? '#e8f8f5' : 'white',
+                        fontWeight: greenieSettings.carryovers ? '600' : 'normal',
+                        cursor: 'pointer', fontSize: '13px'
+                      }}
+                    >Yes</button>
+                    <button
+                      onClick={() => setGreenieSettings({ ...greenieSettings, carryovers: false })}
+                      style={{
+                        flex: 1, padding: '10px', borderRadius: '6px',
+                        border: !greenieSettings.carryovers ? '2px solid #27ae60' : '2px solid #ddd',
+                        background: !greenieSettings.carryovers ? '#e8f8f5' : 'white',
+                        fontWeight: !greenieSettings.carryovers ? '600' : 'normal',
+                        cursor: 'pointer', fontSize: '13px'
+                      }}
+                    >No</button>
+                  </div>
+                </div>
+
+                {greenieSettings.carryovers && (
+                  <>
+                    <div style={{ marginBottom: '15px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>Wrap Unwon Greenies</label>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          onClick={() => setGreenieSettings({ ...greenieSettings, wrapUnwonGreenies: true })}
+                          style={{
+                            flex: 1, padding: '10px', borderRadius: '6px',
+                            border: greenieSettings.wrapUnwonGreenies ? '2px solid #27ae60' : '2px solid #ddd',
+                            background: greenieSettings.wrapUnwonGreenies ? '#e8f8f5' : 'white',
+                            fontWeight: greenieSettings.wrapUnwonGreenies ? '600' : 'normal',
+                            cursor: 'pointer', fontSize: '13px'
+                          }}
+                        >Yes</button>
+                        <button
+                          onClick={() => setGreenieSettings({ ...greenieSettings, wrapUnwonGreenies: false })}
+                          style={{
+                            flex: 1, padding: '10px', borderRadius: '6px',
+                            border: !greenieSettings.wrapUnwonGreenies ? '2px solid #27ae60' : '2px solid #ddd',
+                            background: !greenieSettings.wrapUnwonGreenies ? '#e8f8f5' : 'white',
+                            fontWeight: !greenieSettings.wrapUnwonGreenies ? '600' : 'normal',
+                            cursor: 'pointer', fontSize: '13px'
+                          }}
+                        >No</button>
+                      </div>
+                    </div>
+                    {greenieSettings.wrapUnwonGreenies && (
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>Wrap To</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button onClick={() => setGreenieSettings({ ...greenieSettings, wrapTo: 'front' })}
+                            style={{ flex: 1, padding: '10px', borderRadius: '6px', border: greenieSettings.wrapTo === 'front' ? '2px solid #27ae60' : '2px solid #ddd', background: greenieSettings.wrapTo === 'front' ? '#e8f8f5' : 'white', fontWeight: greenieSettings.wrapTo === 'front' ? '600' : 'normal', cursor: 'pointer', fontSize: '13px' }}>Front 9</button>
+                          <button onClick={() => setGreenieSettings({ ...greenieSettings, wrapTo: 'back' })}
+                            style={{ flex: 1, padding: '10px', borderRadius: '6px', border: greenieSettings.wrapTo === 'back' ? '2px solid #27ae60' : '2px solid #ddd', background: greenieSettings.wrapTo === 'back' ? '#e8f8f5' : 'white', fontWeight: greenieSettings.wrapTo === 'back' ? '600' : 'normal', cursor: 'pointer', fontSize: '13px' }}>Back 9</button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} style={{ flex: 1 }}>
@@ -238,7 +380,7 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave }) {
   )
 }
 
-function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, isAdmin }) {
+function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiveRound, isAdmin, isCasualGame }) {
   const [showSetup, setShowSetup] = useState(false)
 
   // Get all unique players from teams
@@ -298,6 +440,8 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, isAdmi
             onClose={() => setShowSetup(false)}
             skinsMatch={null}
             onSave={setSkinsMatch}
+            liveRound={liveRound}
+            setLiveRound={setLiveRound}
           />
         )}
       </div>
@@ -347,43 +491,45 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, isAdmi
         {skinsMatch.settings.birdieDoubleEagleTriple && <span>| Birdie 2x/Eagle 3x</span>}
       </div>
 
-      {/* Player opt-in */}
-      <div style={{ marginBottom: '15px' }}>
-        <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px' }}>
-          Tap your name to {skinsMatch.participants.length > 0 ? 'join or leave' : 'join'}:
+      {/* Player opt-in - skip for casual games since everyone plays */}
+      {!isCasualGame && (
+        <div style={{ marginBottom: '15px' }}>
+          <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px' }}>
+            Tap your name to {skinsMatch.participants.length > 0 ? 'join or leave' : 'join'}:
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {allPlayers.map(player => {
+              const inSkins = skinsMatch.participants.includes(String(player.id))
+              const canToggle = !liveRound || isAdmin
+              return (
+                <button
+                  key={player.id}
+                  onClick={() => togglePlayer(player.id)}
+                  disabled={!canToggle}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '20px',
+                    border: inSkins ? '2px solid #27ae60' : '2px solid #ddd',
+                    background: inSkins ? '#e8f8f5' : 'white',
+                    color: inSkins ? '#27ae60' : '#666',
+                    fontSize: '13px',
+                    fontWeight: inSkins ? '600' : 'normal',
+                    cursor: canToggle ? 'pointer' : 'not-allowed',
+                    opacity: canToggle ? 1 : 0.7
+                  }}
+                >
+                  {inSkins ? '✓ ' : ''}{player.name}
+                </button>
+              )
+            })}
+          </div>
+          {liveRound && !isAdmin && (
+            <p style={{ fontSize: '11px', color: '#999', marginTop: '8px' }}>
+              Round in progress. Contact admin to change skins participation.
+            </p>
+          )}
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {allPlayers.map(player => {
-            const inSkins = skinsMatch.participants.includes(String(player.id))
-            const canToggle = !liveRound || isAdmin
-            return (
-              <button
-                key={player.id}
-                onClick={() => togglePlayer(player.id)}
-                disabled={!canToggle}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: '20px',
-                  border: inSkins ? '2px solid #27ae60' : '2px solid #ddd',
-                  background: inSkins ? '#e8f8f5' : 'white',
-                  color: inSkins ? '#27ae60' : '#666',
-                  fontSize: '13px',
-                  fontWeight: inSkins ? '600' : 'normal',
-                  cursor: canToggle ? 'pointer' : 'not-allowed',
-                  opacity: canToggle ? 1 : 0.7
-                }}
-              >
-                {inSkins ? '✓ ' : ''}{player.name}
-              </button>
-            )
-          })}
-        </div>
-        {liveRound && !isAdmin && (
-          <p style={{ fontSize: '11px', color: '#999', marginTop: '8px' }}>
-            Round in progress. Contact admin to change skins participation.
-          </p>
-        )}
-      </div>
+      )}
 
       {/* Participant count */}
       <div style={{
@@ -393,12 +539,18 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, isAdmi
         borderRadius: '8px',
         fontSize: '13px'
       }}>
-        <strong>{skinsMatch.participants.length}</strong> player{skinsMatch.participants.length !== 1 ? 's' : ''} in skins
-        {skinsMatch.participants.length >= 2 && (
-          <span style={{ color: '#27ae60' }}> - Ready to play</span>
-        )}
-        {skinsMatch.participants.length < 2 && skinsMatch.participants.length > 0 && (
-          <span style={{ color: '#e67e22' }}> (need at least 2)</span>
+        {isCasualGame ? (
+          <span style={{ color: '#27ae60' }}><strong>{allPlayers.length}</strong> player{allPlayers.length !== 1 ? 's' : ''} - All playing skins</span>
+        ) : (
+          <>
+            <strong>{skinsMatch.participants.length}</strong> player{skinsMatch.participants.length !== 1 ? 's' : ''} in skins
+            {skinsMatch.participants.length >= 2 && (
+              <span style={{ color: '#27ae60' }}> - Ready to play</span>
+            )}
+            {skinsMatch.participants.length < 2 && skinsMatch.participants.length > 0 && (
+              <span style={{ color: '#e67e22' }}> (need at least 2)</span>
+            )}
+          </>
         )}
       </div>
 
@@ -407,6 +559,8 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, isAdmi
           onClose={() => setShowSetup(false)}
           skinsMatch={skinsMatch}
           onSave={setSkinsMatch}
+          liveRound={liveRound}
+          setLiveRound={setLiveRound}
         />
       )}
     </div>
@@ -427,7 +581,8 @@ function TeamsPage() {
     setManualTeams,
     setPairingRequests,
     players,
-    courseTees
+    courseTees,
+    isCasualGame
   } = useLeague()
 
   const balance = teams.length > 0 ? calculateTeamBalance(teams) : null
@@ -525,7 +680,9 @@ function TeamsPage() {
             skinsMatch={skinsMatch}
             setSkinsMatch={setSkinsMatch}
             liveRound={liveRound}
+            setLiveRound={setLiveRound}
             isAdmin={isAdmin}
+            isCasualGame={isCasualGame}
           />
 
           {/* Team list */}

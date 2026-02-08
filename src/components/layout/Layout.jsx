@@ -100,10 +100,12 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
     return () => document.removeEventListener('mousedown', handleClick)
   }, [isOpen])
 
-  // Hide test leagues unless user is an admin
-  const visibleLeagues = isAdmin
-    ? leagues
-    : leagues.filter(m => !m.leagues?.is_test)
+  // Hide test leagues unless user is an admin, and always hide casual/individual games
+  const visibleLeagues = leagues.filter(m => {
+    if (!isAdmin && m.leagues?.is_test) return false
+    if (m.leagues?.type === 'casual' || m.leagues?.type === 'individual') return false
+    return true
+  })
   const otherLeagues = visibleLeagues.filter(m => m.league_id !== leagueId)
   const currentMembership = leagues.find(m => m.league_id === leagueId)
   const currentLeagueName = currentMembership?.leagues?.name

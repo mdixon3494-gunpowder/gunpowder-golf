@@ -7,6 +7,7 @@ import { LeagueProvider, useLeague } from './context/LeagueContext'
 import Layout from './components/layout/Layout'
 import LeagueSetup from './components/LeagueSetup'
 import MyLeaguesScreen from './components/MyLeaguesScreen'
+import CasualGameSetup from './components/CasualGameSetup'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import { ToastProvider } from './components/common/Toast'
 import LoginScreen from './components/auth/LoginScreen'
@@ -33,6 +34,7 @@ function AppContent() {
   })
   const [showLeagueSelector, setShowLeagueSelector] = useState(false)
   const [showLeagueSetup, setShowLeagueSetup] = useState(false)
+  const [showCasualSetup, setShowCasualSetup] = useState(false)
   const [leagueSetupMode, setLeagueSetupMode] = useState('create') // 'create' | 'join'
 
   // When a league is loaded/joined/created, clear setup screens and show main app
@@ -40,6 +42,7 @@ function AppContent() {
     if (leagueId && isSetup) {
       setShowLeagueSetup(false)
       setShowLeagueSelector(false)
+      setShowCasualSetup(false)
     }
   }, [leagueId])
 
@@ -92,6 +95,18 @@ function AppContent() {
     )
   }
 
+  // Authenticated user wants to set up a casual game
+  if (showCasualSetup && isAuthenticated) {
+    return (
+      <CasualGameSetup
+        onBack={() => {
+          setShowCasualSetup(false)
+          setShowLeagueSelector(true)
+        }}
+      />
+    )
+  }
+
   // Authenticated user wants to see league selector
   if (showLeagueSelector && isAuthenticated) {
     return (
@@ -110,6 +125,10 @@ function AppContent() {
         onJoinExisting={() => {
           setLeagueSetupMode('join')
           setShowLeagueSetup(true)
+          setShowLeagueSelector(false)
+        }}
+        onStartCasualGame={() => {
+          setShowCasualSetup(true)
           setShowLeagueSelector(false)
         }}
       />
@@ -146,6 +165,9 @@ function AppContent() {
           onJoinExisting={() => {
             setLeagueSetupMode('join')
             setShowLeagueSetup(true)
+          }}
+          onStartCasualGame={() => {
+            setShowCasualSetup(true)
           }}
         />
       )

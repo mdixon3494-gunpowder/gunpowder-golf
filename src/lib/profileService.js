@@ -285,6 +285,37 @@ export async function searchGhostProfilesByName(name) {
   }
 }
 
+export async function searchProfiles(query, excludeProfileId = null) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    let q = supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url')
+      .ilike('display_name', `%${query}%`)
+      .limit(10)
+      .abortSignal(controller.signal)
+
+    if (excludeProfileId) {
+      q = q.neq('id', excludeProfileId)
+    }
+
+    const { data, error } = await q
+    clearTimeout(timeoutId)
+
+    if (error) {
+      console.error('Error searching profiles:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    clearTimeout(timeoutId)
+    console.error('Profile search failed:', err.message)
+    return []
+  }
+}
+
 export async function claimProfile(profileId, userId, email = null) {
   // First check if this profile is already claimed by this user
   const { data: existing } = await supabase

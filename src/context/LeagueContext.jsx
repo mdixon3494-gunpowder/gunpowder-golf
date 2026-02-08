@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { DEFAULT_HANDICAP_SETTINGS, DEFAULT_COURSE_TEES } from '../utils/handicapCalculation'
 import { addLeagueMember } from '../lib/leagueService'
 import { getTemplateById, getDefaultTemplate } from '../lib/formatTemplateService'
+import { saveRoundHistory } from '../lib/roundHistoryService'
 
 const LeagueContext = createContext(null)
 
@@ -153,6 +154,9 @@ export function LeagueProvider({ children }) {
   // Course mapping data for GPS
   const [courseMapping, setCourseMapping] = useState(null)
 
+  // League type: 'league' | 'casual' | 'individual'
+  const [leagueType, setLeagueType] = useState('league')
+
   // Format template for the league
   const [formatTemplate, setFormatTemplate] = useState(null)
 
@@ -160,8 +164,9 @@ export function LeagueProvider({ children }) {
   const isUpdatingFromRealtime = useRef(false)
 
   // Shared helper to populate all state from a league's data blob
-  const loadLeagueData = (lid, data) => {
+  const loadLeagueData = (lid, data, type = null) => {
     setLeagueId(lid)
+    if (type) setLeagueType(type)
 
     // Data migration: Add IDs to rounds that don't have them
     const migratedPlayers = (data.players || []).map(player => {
@@ -214,7 +219,19 @@ export function LeagueProvider({ children }) {
     const data = await CloudStorage.loadData(newLeagueId)
     if (data) {
       CloudStorage.setLeagueId(newLeagueId)
-      loadLeagueData(newLeagueId, data)
+      // Fetch type column
+      let type = 'league'
+      try {
+        const { data: meta } = await supabase
+          .from('leagues')
+          .select('type')
+          .eq('id', newLeagueId)
+          .single()
+        if (meta?.type) type = meta.type
+      } catch (err) {
+        console.warn('Could not fetch league type:', err)
+      }
+      loadLeagueData(newLeagueId, data, type)
       return true
     }
     return false
@@ -231,7 +248,19 @@ export function LeagueProvider({ children }) {
         console.log('Loaded data:', data)
 
         if (data) {
-          loadLeagueData(existingLeagueId, data)
+          // Fetch type column
+          let type = 'league'
+          try {
+            const { data: meta } = await supabase
+              .from('leagues')
+              .select('type')
+              .eq('id', existingLeagueId)
+              .single()
+            if (meta?.type) type = meta.type
+          } catch (err) {
+            console.warn('Could not fetch league type:', err)
+          }
+          loadLeagueData(existingLeagueId, data, type)
         }
       }
       setLoading(false)
@@ -619,18 +648,49 @@ export function LeagueProvider({ children }) {
     setViewAsRole(null)
   }
 
+  // Casual game helpers
+  const isCasualGame = leagueType === 'casual'
+
+  const saveCasualRoundHistory = async (roundPlayers, applyChoices = {}) => {
+    // roundPlayers: array of { id, profileId, name, scores, front9, back9, total, handicap, tee }
+    // applyChoices: { [profileId]: boolean } - whether to apply to handicap
+    const entries = roundPlayers
+      .filter(p => p.profileId && !p.isGuest)
+      .map(p => ({
+        profile_id: p.profileId,
+        source_id: leagueId,
+        round_type: 'casual',
+        date: new Date().toISOString().split('T')[0],
+        holes_played: 18,
+        total_score: p.total || null,
+        front_nine: p.front9 || null,
+        back_nine: p.back9 || null,
+        scores: p.scores || null,
+        handicap_used: p.handicap || null,
+        applied_to_handicap: applyChoices[p.profileId] !== false,
+        format_name: null,
+        metadata: null
+      }))
+
+    if (entries.length === 0) return []
+    return await saveRoundHistory(entries)
+  }
+
   const value = {
     // League
     leagueId,
     isSetup,
     loading,
     saveStatus,
+    leagueType,
+    isCasualGame,
     createNewLeague,
     joinExistingLeague,
     leaveLeague,
     switchLeague,
     checkLeagueCodeAvailable,
     cloneLeagueToTest,
+    saveCasualRoundHistory,
 
     // Admin
     isAdmin,

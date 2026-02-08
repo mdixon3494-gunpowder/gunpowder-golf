@@ -1397,8 +1397,10 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
     return allPlayers.filter(p => {
       const details = skinsMatch.participantDetails[String(p.id)]
       if (!details?.isSettled) return true  // Not settled, still eligible
-      // Settled - only eligible if they played this hole (leftOnHole >= hole)
-      return (details.leftOnHole || 18) >= hole
+      // Settled - only eligible if they played this hole
+      const leftOnHole = details.leftOnHole
+      if (leftOnHole === 0 || leftOnHole === null || leftOnHole === undefined) return false
+      return leftOnHole >= hole
     })
   }
 
@@ -1941,14 +1943,16 @@ function DNFManager({ liveRound, onMarkDNF, onUndoDNF, isAdmin }) {
 }
 
 // Late Player Component
-function LatePlayerManager({ liveRound, players, onAddLatePlayer, isAdmin }) {
+function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlayer, isAdmin, isCasualGame }) {
   const [showModal, setShowModal] = useState(false)
   const [step, setStep] = useState(1)
   const [selectedTeamId, setSelectedTeamId] = useState(null)
   const [selectedPlayerId, setSelectedPlayerId] = useState(null)
   const [paymentStatus, setPaymentStatus] = useState('back')
+  const [guestName, setGuestName] = useState('')
+  const [guestHandicap, setGuestHandicap] = useState(0)
 
-  if (!isAdmin) return null
+  if (!isAdmin && !isCasualGame) return null
 
   const playersInRound = new Set(liveRound.teams.flatMap(t => t.players.map(p => p.id)))
   const availablePlayers = players.filter(p => p.isActive !== false && !playersInRound.has(p.id))
@@ -1964,6 +1968,119 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, isAdmin }) {
     }
   }
 
+  const handleAddGuest = () => {
+    if (!guestName.trim()) {
+      alert('Please enter a name')
+      return
+    }
+    // For casual single-group games, use team 0
+    const teamId = liveRound.teams.length === 1 ? liveRound.teams[0].id : selectedTeamId
+    if (teamId === null || teamId === undefined) {
+      alert('Please select a group')
+      return
+    }
+    onAddGuestPlayer(teamId, guestName.trim(), guestHandicap)
+    setShowModal(false)
+    setStep(1)
+    setGuestName('')
+    setGuestHandicap(0)
+    setSelectedTeamId(null)
+  }
+
+  const resetAndClose = () => {
+    setShowModal(false)
+    setStep(1)
+    setSelectedTeamId(null)
+    setSelectedPlayerId(null)
+    setGuestName('')
+    setGuestHandicap(0)
+  }
+
+  // Casual game: simplified "Add Player" flow
+  if (isCasualGame) {
+    return (
+      <div style={{ marginTop: '20px' }}>
+        <button
+          className="btn btn-secondary"
+          onClick={() => setShowModal(true)}
+          style={{ width: '100%' }}
+        >
+          + Add Player
+        </button>
+
+        {showModal && (
+          <div className="modal-overlay" onClick={resetAndClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Add Player</h3>
+                <button className="modal-close" onClick={resetAndClose}>&times;</button>
+              </div>
+              <div className="modal-body">
+                {/* Step 1: Select team (skip if only one group) */}
+                {step === 1 && liveRound.teams.length > 1 && (
+                  <>
+                    <h4 style={{ marginBottom: '15px' }}>Select Group</h4>
+                    <div style={{ display: 'grid', gap: '10px' }}>
+                      {liveRound.teams.map(team => (
+                        <button
+                          key={team.id}
+                          onClick={() => { setSelectedTeamId(team.id); setStep(2) }}
+                          style={{ padding: '15px', borderRadius: '8px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', textAlign: 'left' }}
+                        >
+                          <div style={{ fontWeight: '600' }}>{team.name}</div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>{team.players.map(p => p.name).join(', ')}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Enter guest info (step 2, or step 1 if single group) */}
+                {(step === 2 || (step === 1 && liveRound.teams.length === 1)) && (
+                  <>
+                    <div style={{ marginBottom: '15px' }}>
+                      <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px' }}>Name</label>
+                      <input
+                        type="text"
+                        value={guestName}
+                        onChange={e => setGuestName(e.target.value)}
+                        placeholder="Player name"
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px', boxSizing: 'border-box' }}
+                        autoFocus
+                      />
+                    </div>
+                    <div style={{ marginBottom: '20px' }}>
+                      <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px' }}>Handicap</label>
+                      <input
+                        type="number"
+                        value={guestHandicap}
+                        onChange={e => setGuestHandicap(parseInt(e.target.value) || 0)}
+                        style={{ width: '80px', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        className="btn btn-primary"
+                        onClick={handleAddGuest}
+                        style={{ flex: 1 }}
+                      >
+                        Add Player
+                      </button>
+                      {liveRound.teams.length > 1 && (
+                        <button className="btn btn-secondary" onClick={() => setStep(1)} style={{ flex: 1 }}>Back</button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // League mode: existing late player flow
   return (
     <div style={{ marginTop: '20px' }}>
       <button
@@ -1982,11 +2099,11 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, isAdmin }) {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay" onClick={resetAndClose}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Add Late Player</h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>&times;</button>
+              <button className="modal-close" onClick={resetAndClose}>&times;</button>
             </div>
             <div className="modal-body">
               {step === 1 && (
@@ -2120,7 +2237,7 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, isAdmin }) {
 }
 
 // Skins Game Component
-function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAdmin, leaguePlayers }) {
+function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAdmin, leaguePlayers, isCasualGame }) {
   const [showSetup, setShowSetup] = useState(false)
   const [showEditSettings, setShowEditSettings] = useState(false)
   const [skinsView, setSkinsView] = useState('front')
@@ -2158,16 +2275,28 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
   const [selectedTeamToAdd, setSelectedTeamToAdd] = useState(null)
   const [showSettleModal, setShowSettleModal] = useState(false)
   const [settlePlayer, setSettlePlayer] = useState(null)
-  const [settleLastHole, setSettleLastHole] = useState(9)
+  const [settleLastHole, setSettleLastHole] = useState(0)
   const [settleStep, setSettleStep] = useState(1)
   const [carryoverHandling, setCarryoverHandling] = useState('pay')
   const [carryoverCollector, setCarryoverCollector] = useState(null)
 
-  const allPlayers = liveRound.teams.flatMap(t => t.players.filter(p => !p.isDNF))
+  const participantDetails = skinsMatch?.participantDetails || {}
+  // Include settled players who played at least 1 hole (they're DNF but should show on skins scorecard)
+  const allPlayers = liveRound.teams.flatMap(t => t.players.filter(p => {
+    if (!p.isDNF) return true
+    const details = participantDetails[String(p.id)]
+    return details?.isSettled && details.leftOnHole > 0
+  }))
+  // All players including those who settled before playing (for the Players section)
+  const allPlayersIncludingSettled = liveRound.teams.flatMap(t => t.players.filter(p => {
+    if (!p.isDNF) return true
+    const details = participantDetails[String(p.id)]
+    return details?.isSettled
+  }))
   // Get skins players - players from teams who are participants
   // (includes both league players and guests since they're added to teams)
   const skinsPlayers = skinsMatch
-    ? allPlayers.filter(p => skinsMatch.participants.includes(String(p.id)))
+    ? (isCasualGame ? allPlayers : allPlayers.filter(p => skinsMatch.participants.includes(String(p.id))))
     : []
 
   // Check if greenies are enabled - check both skinsMatch settings and Quick Skins settings
@@ -2253,8 +2382,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       if (!details) return true  // Backwards compat: assume active for all holes
 
       const joinedOnHole = details.joinedOnHole || 1
-      const leftOnHole = details.leftOnHole || 18
+      const leftOnHole = details.leftOnHole !== null && details.leftOnHole !== undefined ? details.leftOnHole : 18
 
+      if (leftOnHole === 0) return false  // Left before playing any holes
       return hole >= joinedOnHole && hole <= leftOnHole
     })
   }
@@ -2917,7 +3047,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       if (result.winner) {
         const playerId = String(result.winner)
         if (summary[playerId]) {
-          const holePot = cost * activePlayers.length
+          const holePot = cost * (activePlayers.length - 1)
           summary[playerId].greeniesWon += 1
           summary[playerId].totalPot += holePot
           summary[playerId].holes.push(hole)
@@ -2943,7 +3073,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             result.carryoverFromHoles?.forEach(coHole => {
               const coResult = results[coHole]
               const coActivePlayers = coResult?.activePlayers || activePlayers
-              const coPot = cost * coActivePlayers.length
+              const coPot = cost * (coActivePlayers.length - 1)
               summary[playerId].totalPot += coPot
               summary[playerId].holeDetails.push({
                 hole: coHole,
@@ -2980,7 +3110,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             cw.fromHoles?.forEach(coHole => {
               const coResult = results[coHole]
               const coActivePlayers = coResult?.activePlayers || cw.eligiblePlayerIds
-              const coPot = cost * coActivePlayers.length
+              const coPot = cost * (coActivePlayers.length - 1)
               summary[playerId].totalPot += coPot
               summary[playerId].holeDetails.push({
                 hole: coHole,
@@ -3008,9 +3138,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       let amountWon = playerSummary.totalPot
       let amountPaid = 0
 
-      // Amount paid: cost for each greenie hole the player was active (including holes they won)
+      // Amount paid: cost for each greenie hole the player was active but didn't win
       greenieWins.forEach(gw => {
-        if (gw.activePlayerIds.includes(playerId)) {
+        if (gw.activePlayerIds.includes(playerId) && gw.winnerId !== playerId) {
           amountPaid += cost
         }
       })
@@ -3164,7 +3294,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       }
     }
 
-    // Set X scores for remaining holes for regular players in liveRound
+    // Set X scores for remaining holes and mark as DNF for regular players in liveRound
     if (liveRound) {
       const updatedTeams = liveRound.teams.map(team => ({
         ...team,
@@ -3174,7 +3304,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             for (let h = settleLastHole + 1; h <= 18; h++) {
               updatedScores[h] = 'X'
             }
-            return { ...player, scores: updatedScores }
+            return { ...player, scores: updatedScores, isDNF: true }
           }
           return player
         })
@@ -3484,33 +3614,35 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
         </div>
       </div>
 
-      {/* Admin Add/Remove Players */}
-      {isAdmin && (
+      {/* Admin/Casual Manage Players */}
+      {(isAdmin || isCasualGame) && (
         <div style={{ background: 'white', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ fontWeight: '600', fontSize: '14px' }}>
-              Manage Players (Admin)
+              {isCasualGame ? 'Players' : 'Manage Players (Admin)'}
             </div>
-            <button
-              onClick={() => setShowAddPlayerModal(true)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: 'none',
-                background: '#27ae60',
-                color: 'white',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
-            >
-              + Add Mid-Round
-            </button>
+            {!isCasualGame && (
+              <button
+                onClick={() => setShowAddPlayerModal(true)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#27ae60',
+                  color: 'white',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                + Add Mid-Round
+              </button>
+            )}
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {allPlayers.map(player => {
+            {allPlayersIncludingSettled.map(player => {
               const playerId = String(player.id)
-              const inSkins = skinsMatch.participants.includes(playerId)
+              const inSkins = isCasualGame || skinsMatch.participants.includes(playerId)
               const details = skinsMatch.participantDetails?.[playerId] || {}
               const isSettled = details.isSettled
               const joinHole = details.joinedOnHole || 1
@@ -3519,8 +3651,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
               return (
                 <div key={player.id} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <button
-                    onClick={() => !isSettled && handleToggleParticipant(player.id)}
-                    disabled={isSettled}
+                    onClick={() => !isCasualGame && !isSettled && handleToggleParticipant(player.id)}
+                    disabled={isCasualGame || isSettled}
                     style={{
                       padding: '8px 12px',
                       borderRadius: '20px',
@@ -3529,19 +3661,19 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       color: isSettled ? '#7f8c8d' : inSkins ? '#27ae60' : '#666',
                       fontSize: '12px',
                       fontWeight: inSkins ? '600' : 'normal',
-                      cursor: isSettled ? 'not-allowed' : 'pointer',
+                      cursor: isCasualGame ? 'default' : isSettled ? 'not-allowed' : 'pointer',
                       opacity: isSettled ? 0.7 : 1
                     }}
                   >
-                    {inSkins ? '✓ ' : ''}{player.name}
-                    {inSkins && joinHole > 1 && <span style={{ fontSize: '10px', marginLeft: '4px' }}>(h{joinHole}+)</span>}
-                    {isSettled && <span style={{ fontSize: '10px', marginLeft: '4px' }}>(settled h{leftHole})</span>}
+                    {inSkins && !isSettled ? '✓ ' : ''}{player.name}
+                    {inSkins && !isSettled && joinHole > 1 && <span style={{ fontSize: '10px', marginLeft: '4px' }}>(h{joinHole}+)</span>}
+                    {isSettled && <span style={{ fontSize: '10px', marginLeft: '4px' }}>({leftHole > 0 ? `settled h${leftHole}` : 'left before playing'})</span>}
                   </button>
                   {inSkins && !isSettled && (
                     <button
                       onClick={() => {
                         setSettlePlayer(player)
-                        setSettleLastHole(9)
+                        setSettleLastHole(0)
                         setSettleStep(1)
                         setShowSettleModal(true)
                       }}
@@ -3793,7 +3925,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           }}>
             <span>Greenies (Par 3s)</span>
             <span style={{ fontSize: '12px', opacity: 0.9 }}>
-              ${greeniesCostPerHole}/hole × {skinsPlayers.length} players = ${(greeniesCostPerHole * skinsPlayers.length).toFixed(2)}/pot
+              ${greeniesCostPerHole}/hole × {skinsPlayers.length} players = ${(greeniesCostPerHole * (skinsPlayers.length - 1)).toFixed(2)} won
             </span>
           </div>
           <div style={{ padding: '15px' }}>
@@ -3801,8 +3933,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
               {PAR_3_HOLES.map(hole => {
                 const result = greenieResults[hole] || {}
                 const hasCarryover = result.carryoverCount > 0
-                const totalPot = (1 + (result.carryoverCount || 0)) * greeniesCostPerHole * skinsPlayers.length
-                const holePot = greeniesCostPerHole * (result.activePlayers?.length || skinsPlayers.length)
+                const activeCount = result.activePlayers?.length || skinsPlayers.length
+                const totalPot = (1 + (result.carryoverCount || 0)) * greeniesCostPerHole * (activeCount - 1)
+                const holePot = greeniesCostPerHole * (activeCount - 1)
 
                 // Check if this hole was won via carryover on another hole
                 let carryoverWonBy = null
@@ -4163,22 +4296,40 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
               }
 
               const paidSettlements = skinsMatch.paidSettlements || {}
-              const paidCount = settlements.filter(s => paidSettlements[`${s.from}->${s.to}`]).length
+              // Calculate paid/remaining for each settlement
+              const getSettlementStatus = (s) => {
+                const key = `${s.from}->${s.to}`
+                const paid = paidSettlements[key]
+                if (!paid) return { paidAmount: 0, remaining: s.amount, isFullyPaid: false }
+                // Legacy support: true means fully paid at some point
+                const paidAmount = typeof paid === 'number' ? paid : s.amount
+                const remaining = Math.max(0, s.amount - paidAmount)
+                return { paidAmount, remaining, isFullyPaid: remaining < 0.01 }
+              }
+              const paidCount = settlements.filter(s => getSettlementStatus(s).isFullyPaid).length
               const remainingCount = settlements.length - paidCount
-              const togglePaid = (from, to) => {
+              const togglePaid = (from, to, currentAmount) => {
                 const key = `${from}->${to}`
-                const newPaidSettlements = { ...paidSettlements, [key]: !paidSettlements[key] }
-                setSkinsMatch({ ...skinsMatch, paidSettlements: newPaidSettlements })
+                const existing = paidSettlements[key]
+                if (existing && (typeof existing === 'number' ? existing >= currentAmount - 0.01 : true)) {
+                  // Uncheck: clear payment record
+                  const newPaidSettlements = { ...paidSettlements }
+                  delete newPaidSettlements[key]
+                  setSkinsMatch({ ...skinsMatch, paidSettlements: newPaidSettlements })
+                } else {
+                  // Check: record current total amount as paid
+                  const newPaidSettlements = { ...paidSettlements, [key]: currentAmount }
+                  setSkinsMatch({ ...skinsMatch, paidSettlements: newPaidSettlements })
+                }
               }
 
-              // Sort: unpaid first, then paid
+              // Sort: unpaid first, then partial, then fully paid
               const sortedSettlements = [...settlements].sort((a, b) => {
-                const aKey = `${a.from}->${a.to}`
-                const bKey = `${b.from}->${b.to}`
-                const aPaid = paidSettlements[aKey] || false
-                const bPaid = paidSettlements[bKey] || false
-                if (aPaid === bPaid) return 0
-                return aPaid ? 1 : -1
+                const aStatus = getSettlementStatus(a)
+                const bStatus = getSettlementStatus(b)
+                const aOrder = aStatus.isFullyPaid ? 2 : aStatus.paidAmount > 0 ? 1 : 0
+                const bOrder = bStatus.isFullyPaid ? 2 : bStatus.paidAmount > 0 ? 1 : 0
+                return aOrder - bOrder
               })
 
               return (
@@ -4209,49 +4360,78 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     )}
                   </div>
                   {sortedSettlements.map((s, idx) => {
-                const key = `${s.from}->${s.to}`
-                const isPaid = paidSettlements[key] || false
+                const status = getSettlementStatus(s)
+                const hasPartialPayment = status.paidAmount > 0 && !status.isFullyPaid
                 return (
                   <div key={idx} style={{
                     padding: '8px 0',
                     borderBottom: idx < sortedSettlements.length - 1 ? '1px solid #e8f5e9' : 'none',
                     fontSize: '13px',
-                    opacity: isPaid ? 0.75 : 1
+                    opacity: status.isFullyPaid ? 0.75 : 1
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginRight: '10px' }}>
                         <input
                           type="checkbox"
-                          checked={isPaid}
-                          onChange={() => togglePaid(s.from, s.to)}
+                          checked={status.isFullyPaid}
+                          onChange={() => togglePaid(s.from, s.to, s.amount)}
                           style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                         />
                       </label>
                       <span style={{
                         color: '#e74c3c',
                         fontWeight: '600',
-                        textDecoration: isPaid ? 'line-through' : 'none'
+                        textDecoration: status.isFullyPaid ? 'line-through' : 'none'
                       }}>{s.from}</span>
                       <span style={{ margin: '0 8px', color: '#666' }}>→</span>
                       <span style={{
                         color: '#27ae60',
                         fontWeight: '600',
-                        textDecoration: isPaid ? 'line-through' : 'none'
+                        textDecoration: status.isFullyPaid ? 'line-through' : 'none'
                       }}>{s.to}</span>
                       <span style={{
                         marginLeft: 'auto',
                         fontWeight: '700',
-                        color: isPaid ? '#999' : '#333',
-                        textDecoration: isPaid ? 'line-through' : 'none'
+                        color: status.isFullyPaid ? '#999' : '#333',
+                        textDecoration: status.isFullyPaid ? 'line-through' : 'none'
                       }}>
                         ${s.amount.toFixed(2)}
                       </span>
-                      {isPaid && (
+                      {status.isFullyPaid && (
                         <span style={{ marginLeft: '8px', color: '#27ae60', fontSize: '11px', fontWeight: '600' }}>
                           ✓ PAID
                         </span>
                       )}
                     </div>
+                    {hasPartialPayment && (
+                      <div style={{ marginLeft: '38px', marginTop: '4px', padding: '4px 8px', background: '#fff3cd', borderRadius: '4px', fontSize: '11px', border: '1px solid #ffc107', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#856404' }}>
+                          Paid ${status.paidAmount.toFixed(2)} earlier — <strong>${status.remaining.toFixed(2)} additional owed</strong>
+                        </span>
+                        <button
+                          onClick={() => {
+                            const key = `${s.from}->${s.to}`
+                            const newPaidSettlements = { ...paidSettlements }
+                            delete newPaidSettlements[key]
+                            setSkinsMatch({ ...skinsMatch, paidSettlements: newPaidSettlements })
+                          }}
+                          style={{
+                            padding: '2px 8px',
+                            background: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '10px',
+                            fontWeight: '600',
+                            marginLeft: '8px',
+                            flexShrink: 0
+                          }}
+                        >
+                          Undo
+                        </button>
+                      </div>
+                    )}
                     <div style={{ fontSize: '10px', color: '#888', marginTop: '2px', marginLeft: '38px', display: 'flex', gap: '12px' }}>
                       {s.skins > 0.001 && <span>Skins: ${s.skins.toFixed(2)}</span>}
                       {greeniesEnabled && s.greenies > 0.001 && <span>Greenies: ${s.greenies.toFixed(2)}</span>}
@@ -5088,19 +5268,16 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             {settleStep === 1 && (
               <>
                 <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
-                  Enter the last hole this player completed before leaving.
+                  Select the last hole this player completed before leaving. Choose "None" if they left before playing.
                 </p>
 
                 <div style={{ marginBottom: '20px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
                     Last Hole Played
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="18"
+                  <select
                     value={settleLastHole}
-                    onChange={(e) => setSettleLastHole(Math.min(18, Math.max(1, parseInt(e.target.value) || 1)))}
+                    onChange={(e) => setSettleLastHole(parseInt(e.target.value))}
                     style={{
                       width: '100%',
                       padding: '10px',
@@ -5108,7 +5285,12 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       border: '1px solid #ddd',
                       fontSize: '14px'
                     }}
-                  />
+                  >
+                    <option value={0}>None (left before playing)</option>
+                    {Array.from({ length: 18 }, (_, i) => i + 1).map(h => (
+                      <option key={h} value={h}>Hole {h}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Show current settlement status with WHO owes whom */}
@@ -5743,7 +5925,9 @@ function LivePage() {
     defaultStartingHole,
     handicapSettings,
     courseTees,
-    leagueId
+    leagueId,
+    isCasualGame,
+    saveCasualRoundHistory
   } = useLeague()
 
   // Leaderboard view state - defaults based on starting hole (front if 1-9, back if 10-18)
@@ -5769,6 +5953,10 @@ function LivePage() {
   const [selectedTeamId, setSelectedTeamId] = useState(liveRound?.teams[0]?.id || 0)
   const [showFinishConfirm, setShowFinishConfirm] = useState(false)
   const [finishPin, setFinishPin] = useState('')
+  const [showCasualSaveModal, setShowCasualSaveModal] = useState(false)
+  const [casualHandicapChoices, setCasualHandicapChoices] = useState({})
+  const [casualRoundData, setCasualRoundData] = useState(null)
+  const [savingCasualRound, setSavingCasualRound] = useState(false)
 
   if (!liveRound) {
     return (
@@ -5997,8 +6185,62 @@ function LivePage() {
     })
   }
 
+  const addGuestPlayer = (teamId, name, handicap) => {
+    const guestId = `guest_${Date.now()}`
+    const skillRating = Math.max(1, Math.min(10, Math.round(10 - (handicap / 5.4))))
+    // Add to liveRound teams
+    setLiveRound({
+      ...liveRound,
+      teams: liveRound.teams.map(team => {
+        if (team.id !== teamId) return team
+        return {
+          ...team,
+          players: [
+            ...team.players,
+            {
+              id: guestId,
+              name,
+              skillRating,
+              handicap,
+              scores: {},
+              isDNF: false,
+              includeInTeamScore: true,
+              joinedLate: true,
+              isGuest: true,
+              tee: 'blue'
+            }
+          ]
+        }
+      })
+    })
+    // Add to players array
+    setPlayers([
+      ...players,
+      {
+        id: guestId,
+        name,
+        handicap,
+        skillRating,
+        tee: 'blue',
+        scoreHistory: [],
+        checkedIn: true,
+        isGuest: true,
+        gamesPlayed: 0,
+        avgTotal: 0
+      }
+    ])
+    // Add to skinsMatch participants if skins is active
+    if (skinsMatch) {
+      setSkinsMatch({
+        ...skinsMatch,
+        participants: [...skinsMatch.participants, guestId]
+      })
+    }
+  }
+
   const finishRound = () => {
-    if (finishPin !== '1234') {
+    // Skip PIN check for casual games
+    if (!isCasualGame && finishPin !== '1234') {
       alert('Incorrect PIN')
       setFinishPin('')
       return
@@ -6188,15 +6430,91 @@ function LivePage() {
 
     setPlayers(updatedPlayers)
     setHistory([roundData, ...history])
+    setShowFinishConfirm(false)
+
+    // For casual games, show the save round modal before cleaning up
+    if (isCasualGame) {
+      // Build round player data for history saving
+      const roundPlayersForHistory = liveRound.teams.flatMap(t => t.players)
+        .filter(p => !p.isDNF)
+        .map(p => {
+          const scores = p.scores || {}
+          let front9 = 0, back9 = 0
+          for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += scores[h]
+          for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += scores[h]
+          // Find the matching player data to get profileId
+          const playerData = players.find(pl => pl.id === p.id)
+          return {
+            id: p.id,
+            profileId: playerData?.profileId || null,
+            isGuest: playerData?.isGuest || false,
+            name: p.name,
+            scores,
+            front9,
+            back9,
+            total: front9 + back9,
+            handicap: p.handicap || 0,
+            tee: p.tee || 'blue'
+          }
+        })
+
+      // Initialize handicap choices (all checked by default)
+      const defaultChoices = {}
+      roundPlayersForHistory
+        .filter(p => p.profileId && !p.isGuest)
+        .forEach(p => { defaultChoices[p.profileId] = true })
+      setCasualHandicapChoices(defaultChoices)
+      setCasualRoundData(roundPlayersForHistory)
+      setShowCasualSaveModal(true)
+      // Don't clear liveRound yet - keep scorecard visible
+      return
+    }
+
     setLiveRound(null)
     setTeams([])
     setSkinsMatch(null)
-    setShowFinishConfirm(false)
     navigate('/history')
   }
 
+  // Casual game save handlers
+  const handleCasualSaveAndExit = async () => {
+    setSavingCasualRound(true)
+    try {
+      if (casualRoundData) {
+        await saveCasualRoundHistory(casualRoundData, casualHandicapChoices)
+      }
+    } catch (err) {
+      console.error('Failed to save casual round history:', err)
+    }
+    // Clean up the game
+    setLiveRound(null)
+    setTeams([])
+    setSkinsMatch(null)
+    setShowCasualSaveModal(false)
+    setSavingCasualRound(false)
+    // Navigate back - use leaveLeague behavior to return to MyLeaguesScreen
+    navigate('/history')
+  }
+
+  const handleCasualSaveAndStay = async () => {
+    setSavingCasualRound(true)
+    try {
+      if (casualRoundData) {
+        await saveCasualRoundHistory(casualRoundData, casualHandicapChoices)
+      }
+    } catch (err) {
+      console.error('Failed to save casual round history:', err)
+    }
+    // Clean up but stay on the page to view results
+    setLiveRound(null)
+    setTeams([])
+    setSkinsMatch(null)
+    setShowCasualSaveModal(false)
+    setSavingCasualRound(false)
+  }
+
   // End Quick Skins game
-  const endQuickSkins = (saveResults = false) => {
+  const endQuickSkins = async (saveResults = false) => {
     if (saveResults) {
       // Save the results before clearing
       const quickSkinsRecord = {
@@ -6208,6 +6526,36 @@ function LivePage() {
         quickSkinsGreenieSettings: liveRound?.quickSkinsGreenieSettings || null
       }
       setQuickSkinsHistory([quickSkinsRecord, ...(quickSkinsHistory || []).slice(0, 19)]) // Keep last 20
+
+      // For casual skins games, also save round history for app users
+      if (isCasualGame) {
+        const roundPlayersForHistory = (liveRound?.teams || []).flatMap(t => t.players)
+          .filter(p => !p.isDNF)
+          .map(p => {
+            const scores = p.scores || {}
+            let front9 = 0, back9 = 0
+            for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += scores[h]
+            for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += scores[h]
+            const playerData = players.find(pl => pl.id === p.id)
+            return {
+              id: p.id,
+              profileId: playerData?.profileId || null,
+              isGuest: playerData?.isGuest || false,
+              name: p.name,
+              scores,
+              front9,
+              back9,
+              total: front9 + back9,
+              handicap: p.handicap || 0
+            }
+          })
+        try {
+          await saveCasualRoundHistory(roundPlayersForHistory, {})
+        } catch (err) {
+          console.error('Failed to save casual skins round history:', err)
+        }
+      }
+
       setLiveRound(null)
       setSkinsMatch(null)
       setQuickSkinsMode(false)
@@ -6216,7 +6564,7 @@ function LivePage() {
       setLiveRound(null)
       setSkinsMatch(null)
       setQuickSkinsMode(false)
-      navigate('/settings')
+      navigate(isCasualGame ? '/history' : '/settings')
     }
   }
 
@@ -6225,7 +6573,8 @@ function LivePage() {
     ? [
         { id: 'scoring', label: 'Scores' },
         { id: 'skins', label: 'Skins' },
-        ...(liveRound?.quickSkinsGreenieSettings ? [{ id: 'greenies', label: 'Greenies' }] : [])
+        ...(liveRound?.quickSkinsGreenieSettings ? [{ id: 'greenies', label: 'Greenies' }] : []),
+        ...(isCasualGame ? [{ id: 'manage', label: 'Manage' }] : [])
       ]
     : [
         { id: 'leaderboard', label: 'Board' },
@@ -6270,24 +6619,26 @@ function LivePage() {
                 fontSize: '14px'
               }}
             >
-              Save & End
+              Finish & Save
             </button>
-            <button
-              onClick={() => endQuickSkins(false)}
-              style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                color: 'white',
-                padding: '10px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '14px'
-              }}
-            >
-              End Without Saving
-            </button>
+            {!isCasualGame && (
+              <button
+                onClick={() => endQuickSkins(false)}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  color: 'white',
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '14px'
+                }}
+              >
+                End Without Saving
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -6351,6 +6702,7 @@ function LivePage() {
           setSkinsMatch={setSkinsMatch}
           isAdmin={isAdmin}
           leaguePlayers={players}
+          isCasualGame={isCasualGame}
         />
       )}
       {subTab === 'money' && (
@@ -6373,13 +6725,15 @@ function LivePage() {
             liveRound={liveRound}
             players={players}
             onAddLatePlayer={addLatePlayer}
+            onAddGuestPlayer={addGuestPlayer}
             isAdmin={isAdmin}
+            isCasualGame={isCasualGame}
           />
         </div>
       )}
 
       {/* Admin Actions - Collapsible section for Finish Round */}
-      {isAdmin && !effectiveQuickSkinsMode && (
+      {(isAdmin || isCasualGame) && !effectiveQuickSkinsMode && (
         <div style={{ marginTop: '30px' }}>
           {!showFinishConfirm ? (
             <details style={{
@@ -6394,7 +6748,7 @@ function LivePage() {
                 color: '#666',
                 fontSize: '14px'
               }}>
-                ⚙️ Admin Actions
+                {isCasualGame ? 'Game Actions' : 'Admin Actions'}
               </summary>
               <div style={{ padding: '15px', borderTop: '1px solid #ddd' }}>
                 <button
@@ -6411,7 +6765,7 @@ function LivePage() {
                     fontSize: '14px'
                   }}
                 >
-                  Finish Round (End League Round)
+                  {isCasualGame ? 'Finish Game' : 'Finish Round (End League Round)'}
                 </button>
                 <p style={{ fontSize: '12px', color: '#999', marginTop: '10px', textAlign: 'center' }}>
                   This saves all scores to history and updates player statistics.
@@ -6425,24 +6779,27 @@ function LivePage() {
               borderRadius: '10px',
               border: '2px solid #f9a825'
             }}>
-              <h3 style={{ marginBottom: '15px' }}>Finish Round?</h3>
+              <h3 style={{ marginBottom: '15px' }}>{isCasualGame ? 'Finish Game?' : 'Finish Round?'}</h3>
               <p style={{ marginBottom: '15px', color: '#666' }}>
                 This will save all scores to history and update player statistics.
               </p>
-              <div className="input-group" style={{ marginBottom: '15px' }}>
-                <label>Enter Admin PIN to confirm</label>
-                <input
-                  type="password"
-                  value={finishPin}
-                  onChange={(e) => setFinishPin(e.target.value)}
-                  placeholder="Enter PIN"
-                  maxLength={4}
-                  style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '5px' }}
-                />
-              </div>
+              {/* Only show PIN for league games */}
+              {!isCasualGame && (
+                <div className="input-group" style={{ marginBottom: '15px' }}>
+                  <label>Enter Admin PIN to confirm</label>
+                  <input
+                    type="password"
+                    value={finishPin}
+                    onChange={(e) => setFinishPin(e.target.value)}
+                    placeholder="Enter PIN"
+                    maxLength={4}
+                    style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '5px' }}
+                  />
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button className="btn btn-primary" onClick={finishRound} style={{ flex: 1 }}>
-                  Finish Round
+                  {isCasualGame ? 'Finish Game' : 'Finish Round'}
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -6454,6 +6811,150 @@ function LivePage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Casual Game Save Modal */}
+      {showCasualSaveModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '18px' }}>Game Complete!</h3>
+            <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
+              Save round results to player profiles.
+            </p>
+
+            {/* List app users with handicap toggle */}
+            {casualRoundData && casualRoundData.filter(p => p.profileId && !p.isGuest).length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#888', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Apply to Handicap Tracking
+                </div>
+                {casualRoundData
+                  .filter(p => p.profileId && !p.isGuest)
+                  .map(player => (
+                    <div
+                      key={player.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        background: '#f8f9fa',
+                        borderRadius: '8px',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: '600', fontSize: '14px' }}>{player.name}</div>
+                        <div style={{ fontSize: '12px', color: '#888' }}>
+                          Score: {player.total || '--'} ({player.front9 || '--'} / {player.back9 || '--'})
+                        </div>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={casualHandicapChoices[player.profileId] !== false}
+                          onChange={(e) => {
+                            setCasualHandicapChoices(prev => ({
+                              ...prev,
+                              [player.profileId]: e.target.checked
+                            }))
+                          }}
+                          style={{ width: '18px', height: '18px', accentColor: '#27ae60' }}
+                        />
+                      </label>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Guest players (info only) */}
+            {casualRoundData && casualRoundData.filter(p => p.isGuest).length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#888', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Guests (no profile)
+                </div>
+                {casualRoundData
+                  .filter(p => p.isGuest)
+                  .map(player => (
+                    <div
+                      key={player.id}
+                      style={{
+                        padding: '10px 12px',
+                        background: '#f8f9fa',
+                        borderRadius: '8px',
+                        marginBottom: '8px',
+                        opacity: 0.7
+                      }}
+                    >
+                      <span style={{ fontWeight: '600', fontSize: '14px' }}>{player.name}</span>
+                      <span style={{ fontSize: '12px', color: '#888', marginLeft: '8px' }}>
+                        Score: {player.total || '--'}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={handleCasualSaveAndExit}
+                disabled={savingCasualRound}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                  color: 'white',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: savingCasualRound ? 'default' : 'pointer',
+                  opacity: savingCasualRound ? 0.7 : 1
+                }}
+              >
+                {savingCasualRound ? 'Saving...' : 'Save & Exit'}
+              </button>
+              <button
+                onClick={handleCasualSaveAndStay}
+                disabled={savingCasualRound}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  border: '2px solid #27ae60',
+                  background: 'white',
+                  color: '#27ae60',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: savingCasualRound ? 'default' : 'pointer',
+                  opacity: savingCasualRound ? 0.7 : 1
+                }}
+              >
+                {savingCasualRound ? 'Saving...' : 'Save & Stay'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

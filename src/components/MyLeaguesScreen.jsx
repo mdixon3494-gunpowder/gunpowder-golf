@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { getLeaguesForProfileWithCounts } from '../lib/leagueService'
 import { useLeague } from '../context/LeagueContext'
 
-function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting }) {
+function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting, onStartCasualGame }) {
   const { isAdmin } = useLeague()
   const [allLeagues, setAllLeagues] = useState([])
   const [loading, setLoading] = useState(true)
@@ -24,10 +24,12 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting 
     fetchLeagues()
   }, [profile?.id])
 
-  // Hide test leagues unless user is an admin
-  const leagues = isAdmin
-    ? allLeagues
-    : allLeagues.filter(m => !m.leagues?.is_test)
+  // Hide test leagues and casual/individual games from the league list
+  const leagues = allLeagues.filter(m => {
+    if (!isAdmin && m.leagues?.is_test) return false
+    if (m.leagues?.type === 'casual' || m.leagues?.type === 'individual') return false
+    return true
+  })
 
   return (
     <div className="app-container">
@@ -40,6 +42,45 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting 
 
       <div className="content">
         <div style={{ maxWidth: '440px', margin: '0 auto' }}>
+          {/* Casual Game - Functional */}
+          <button
+            onClick={onStartCasualGame}
+            style={{
+              background: 'white',
+              padding: '20px',
+              borderRadius: '12px',
+              marginBottom: '12px',
+              border: '2px solid #27ae60',
+              cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left',
+              transition: 'box-shadow 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.boxShadow = '0 2px 12px rgba(39,174,96,0.2)'}
+            onMouseOut={(e) => e.currentTarget.style.boxShadow = 'none'}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: '600', fontSize: '16px', color: '#333' }}>
+                  Casual Game
+                </div>
+                <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                  Play a round with friends &mdash; same formats, no league needed
+                </div>
+              </div>
+              <span style={{
+                background: '#27ae60',
+                color: 'white',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                fontWeight: 'bold'
+              }}>
+                NEW
+              </span>
+            </div>
+          </button>
+
           {/* Individual Play - Coming Soon */}
           <div style={{
             background: '#f8f9fa',
@@ -47,8 +88,7 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting 
             borderRadius: '12px',
             marginBottom: '24px',
             border: '2px solid #e0e0e0',
-            opacity: 0.6,
-            position: 'relative'
+            opacity: 0.6
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
