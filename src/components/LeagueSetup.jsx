@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useLeague } from '../context/LeagueContext'
 import { useAuth } from '../context/AuthContext'
 
-function LeagueSetup() {
+function LeagueSetup({ initialMode, onBack }) {
   const { createNewLeague, joinExistingLeague, checkLeagueCodeAvailable } = useLeague()
   const { profile } = useAuth()
   const [joinCode, setJoinCode] = useState('')
@@ -13,6 +13,13 @@ function LeagueSetup() {
   const [isChecking, setIsChecking] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [leagueName, setLeagueName] = useState('')
+  const joinRef = useRef(null)
+
+  useEffect(() => {
+    if (initialMode === 'join' && joinRef.current) {
+      joinRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [initialMode])
 
   const handleJoin = async () => {
     if (!joinCode.trim()) {
@@ -69,6 +76,23 @@ function LeagueSetup() {
     <div className="app-container">
       <header className="header">
         <h1>Gunpowder Big Boy's Golf</h1>
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              color: 'white',
+              padding: '6px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              marginTop: '8px'
+            }}
+          >
+            &larr; Back to My Leagues
+          </button>
+        )}
       </header>
 
       <div className="content">
@@ -219,7 +243,7 @@ function LeagueSetup() {
             )}
           </div>
 
-          <div style={{
+          <div ref={joinRef} style={{
             background: '#f8f9fa',
             padding: '30px',
             borderRadius: '15px',

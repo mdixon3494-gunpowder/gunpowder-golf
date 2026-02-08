@@ -6,6 +6,7 @@ import { LeagueProvider, useLeague } from './context/LeagueContext'
 // Components
 import Layout from './components/layout/Layout'
 import LeagueSetup from './components/LeagueSetup'
+import MyLeaguesScreen from './components/MyLeaguesScreen'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import { ToastProvider } from './components/common/Toast'
 import LoginScreen from './components/auth/LoginScreen'
@@ -23,13 +24,16 @@ import SettingsPage from './pages/SettingsPage'
 import GPSPage from './pages/GPSPage'
 
 function AppContent() {
-  const { loading: authLoading, isAuthenticated, needsProfileClaim } = useAuth()
-  const { loading: leagueLoading, isSetup } = useLeague()
+  const { loading: authLoading, isAuthenticated, needsProfileClaim, profile } = useAuth()
+  const { loading: leagueLoading, isSetup, switchLeague } = useLeague()
   const [authScreen, setAuthScreen] = useState('login') // 'login' | 'signup'
   const [skippedAuth, setSkippedAuth] = useState(() => {
     // Allow skipping auth if user already has a league code saved
     return !!localStorage.getItem('leagueId')
   })
+  const [showLeagueSelector, setShowLeagueSelector] = useState(false)
+  const [showLeagueSetup, setShowLeagueSetup] = useState(false)
+  const [leagueSetupMode, setLeagueSetupMode] = useState('create') // 'create' | 'join'
 
   // Auth is still loading
   if (authLoading) {
@@ -73,15 +77,74 @@ function AppContent() {
     )
   }
 
+  // Authenticated user wants to see league selector
+  if (showLeagueSelector && isAuthenticated) {
+    return (
+      <MyLeaguesScreen
+        profile={profile}
+        onSelectLeague={async (leagueId) => {
+          await switchLeague(leagueId)
+          setShowLeagueSelector(false)
+          setShowLeagueSetup(false)
+        }}
+        onCreateNew={() => {
+          setLeagueSetupMode('create')
+          setShowLeagueSetup(true)
+          setShowLeagueSelector(false)
+        }}
+        onJoinExisting={() => {
+          setLeagueSetupMode('join')
+          setShowLeagueSetup(true)
+          setShowLeagueSelector(false)
+        }}
+      />
+    )
+  }
+
+  // Show LeagueSetup (from MyLeaguesScreen or for unauthenticated users)
+  if (showLeagueSetup && isAuthenticated) {
+    return (
+      <LeagueSetup
+        initialMode={leagueSetupMode}
+        onBack={() => {
+          setShowLeagueSetup(false)
+          setShowLeagueSelector(true)
+        }}
+      />
+    )
+  }
+
   // No league set up yet
   if (!isSetup) {
+    // Authenticated users see MyLeaguesScreen
+    if (isAuthenticated) {
+      return (
+        <MyLeaguesScreen
+          profile={profile}
+          onSelectLeague={async (leagueId) => {
+            await switchLeague(leagueId)
+          }}
+          onCreateNew={() => {
+            setLeagueSetupMode('create')
+            setShowLeagueSetup(true)
+          }}
+          onJoinExisting={() => {
+            setLeagueSetupMode('join')
+            setShowLeagueSetup(true)
+          }}
+        />
+      )
+    }
+    // Unauthenticated users go straight to LeagueSetup
     return <LeagueSetup />
   }
 
   // Main app
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      <Route path="/" element={
+        <Layout onShowLeagueSelector={() => setShowLeagueSelector(true)} />
+      }>
         <Route index element={<PlayersPage />} />
         <Route path="players" element={<PlayersPage />} />
         <Route path="generate" element={<GeneratePage />} />
@@ -90,7 +153,9 @@ function AppContent() {
         <Route path="gps" element={<GPSPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="scorecard" element={<ScorecardPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings" element={
+          <SettingsPage onShowLeagueSelector={() => setShowLeagueSelector(true)} />
+        } />
       </Route>
     </Routes>
   )

@@ -153,6 +153,67 @@ export function LeagueProvider({ children }) {
   const hasLoadedData = useRef(false)
   const isUpdatingFromRealtime = useRef(false)
 
+  // Shared helper to populate all state from a league's data blob
+  const loadLeagueData = (lid, data) => {
+    setLeagueId(lid)
+
+    // Data migration: Add IDs to rounds that don't have them
+    const migratedPlayers = (data.players || []).map(player => {
+      if (player.scoreHistory && player.scoreHistory.length > 0) {
+        const migratedHistory = player.scoreHistory.map(round => {
+          if (!round.id) {
+            return { ...round, id: Date.now() + Math.random() + player.id }
+          }
+          return round
+        })
+        return { ...player, scoreHistory: migratedHistory }
+      }
+      return player
+    })
+
+    setPlayers(migratedPlayers)
+    setHistory(data.history || [])
+    setPairingRequests(data.pairingRequests || [])
+    setLiveRound(normalizeRound(data.liveRound))
+    setTeams(data.teams || [])
+    setLeagueSettings(data.leagueSettings || {
+      contactInfoVisibility: 'admin',
+      nextRoundDate: '',
+      nextRoundTime: '',
+      nextRoundMessage: ''
+    })
+    setPendingPlayerRequests(data.pendingPlayerRequests || [])
+    setSkinsMatch(data.skinsMatch || null)
+    if (data.payoutFormats) setPayoutFormats(data.payoutFormats)
+    if (data.holeInOnePot) setHoleInOnePot(data.holeInOnePot)
+    if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
+    if (data.defaultStartingHole) setDefaultStartingHole(data.defaultStartingHole)
+    if (data.playerMoneyRecords) setPlayerMoneyRecords(data.playerMoneyRecords)
+    if (data.quickSkinsHistory) setQuickSkinsHistory(data.quickSkinsHistory)
+    if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
+    if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
+    if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
+    if (data.courseMapping) setCourseMapping(data.courseMapping)
+    setCheckedInPlayers([])
+    setManualTeams([])
+    setIsSetup(true)
+    hasLoadedData.current = true
+
+    // Load format template from league metadata (non-blocking)
+    loadFormatTemplate(lid)
+  }
+
+  // Switch to a different league (user is already a member)
+  const switchLeague = async (newLeagueId) => {
+    const data = await CloudStorage.loadData(newLeagueId)
+    if (data) {
+      CloudStorage.setLeagueId(newLeagueId)
+      loadLeagueData(newLeagueId, data)
+      return true
+    }
+    return false
+  }
+
   // Load existing league on mount
   useEffect(() => {
     const loadExistingLeague = async () => {
@@ -164,49 +225,7 @@ export function LeagueProvider({ children }) {
         console.log('Loaded data:', data)
 
         if (data) {
-          setLeagueId(existingLeagueId)
-
-          // Data migration: Add IDs to rounds that don't have them
-          const migratedPlayers = (data.players || []).map(player => {
-            if (player.scoreHistory && player.scoreHistory.length > 0) {
-              const migratedHistory = player.scoreHistory.map(round => {
-                if (!round.id) {
-                  return { ...round, id: Date.now() + Math.random() + player.id }
-                }
-                return round
-              })
-              return { ...player, scoreHistory: migratedHistory }
-            }
-            return player
-          })
-
-          setPlayers(migratedPlayers)
-          setHistory(data.history || [])
-          setPairingRequests(data.pairingRequests || [])
-          setLiveRound(normalizeRound(data.liveRound))
-          setTeams(data.teams || [])
-          setLeagueSettings(data.leagueSettings || {
-            contactInfoVisibility: 'admin',
-            nextRoundDate: '',
-            nextRoundTime: '',
-            nextRoundMessage: ''
-          })
-          setPendingPlayerRequests(data.pendingPlayerRequests || [])
-          setSkinsMatch(data.skinsMatch || null)
-          if (data.payoutFormats) setPayoutFormats(data.payoutFormats)
-          if (data.holeInOnePot) setHoleInOnePot(data.holeInOnePot)
-          if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
-          if (data.defaultStartingHole) setDefaultStartingHole(data.defaultStartingHole)
-          if (data.playerMoneyRecords) setPlayerMoneyRecords(data.playerMoneyRecords)
-          if (data.quickSkinsHistory) setQuickSkinsHistory(data.quickSkinsHistory)
-          if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
-          if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
-          if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
-          if (data.courseMapping) setCourseMapping(data.courseMapping)
-          setIsSetup(true)
-
-          // Load format template from league metadata (non-blocking)
-          loadFormatTemplate(existingLeagueId)
+          loadLeagueData(existingLeagueId, data)
         }
       }
       setLoading(false)
@@ -520,35 +539,8 @@ export function LeagueProvider({ children }) {
     const data = await CloudStorage.loadData(normalizedCode)
 
     if (data) {
-      setLeagueId(normalizedCode)
       CloudStorage.setLeagueId(normalizedCode)
-      setPlayers(data.players || [])
-      setHistory(data.history || [])
-      setPairingRequests(data.pairingRequests || [])
-      setLiveRound(normalizeRound(data.liveRound))
-      setTeams(data.teams || [])
-      setLeagueSettings(data.leagueSettings || {
-        contactInfoVisibility: 'admin',
-        nextRoundDate: '',
-        nextRoundTime: '',
-        nextRoundMessage: ''
-      })
-      setPendingPlayerRequests(data.pendingPlayerRequests || [])
-      if (data.payoutFormats) setPayoutFormats(data.payoutFormats)
-      if (data.holeInOnePot) setHoleInOnePot(data.holeInOnePot)
-      if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
-      if (data.defaultStartingHole) setDefaultStartingHole(data.defaultStartingHole)
-      if (data.playerMoneyRecords) setPlayerMoneyRecords(data.playerMoneyRecords)
-      if (data.quickSkinsHistory) setQuickSkinsHistory(data.quickSkinsHistory)
-      if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
-      if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
-      if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
-      if (data.courseMapping) setCourseMapping(data.courseMapping)
-      setIsSetup(true)
-      hasLoadedData.current = true
-
-      // Load format template (non-blocking)
-      loadFormatTemplate(normalizedCode)
+      loadLeagueData(normalizedCode, data)
 
       // Create league_members row if authenticated with a profile
       if (profileId) {
@@ -614,6 +606,7 @@ export function LeagueProvider({ children }) {
     createNewLeague,
     joinExistingLeague,
     leaveLeague,
+    switchLeague,
     checkLeagueCodeAvailable,
     cloneLeagueToTest,
 

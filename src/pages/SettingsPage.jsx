@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { useAuth } from '../context/AuthContext'
+import { removeLeagueMember } from '../lib/leagueService'
 import CourseMappingTool from '../components/gps/CourseMappingTool'
 import { runAllPendingMigrations, getPendingMigrations } from '../lib/migrations/index'
 import {
@@ -284,7 +285,7 @@ function SiteOwnerAccessSection({
   )
 }
 
-function LeagueInfoSection({ leagueId, onLeave, onCloneToTest, isAdmin }) {
+function LeagueInfoSection({ leagueId, onLeave, onCloneToTest, isAdmin, onSwitchLeague, isAuthenticated }) {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [showCloneForm, setShowCloneForm] = useState(false)
   const [testCode, setTestCode] = useState('')
@@ -446,6 +447,25 @@ function LeagueInfoSection({ leagueId, onLeave, onCloneToTest, isAdmin }) {
         </div>
       )}
 
+      {/* Switch League - primary action for authenticated users */}
+      {isAuthenticated && onSwitchLeague && (
+        <button
+          className="btn"
+          onClick={onSwitchLeague}
+          style={{
+            width: '100%',
+            background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+            color: 'white',
+            fontWeight: '600',
+            marginBottom: '10px',
+            padding: '12px'
+          }}
+        >
+          Switch League
+        </button>
+      )}
+
+      {/* Leave League - secondary danger action */}
       {showLeaveConfirm ? (
         <div style={{
           background: '#fff3cd',
@@ -457,7 +477,7 @@ function LeagueInfoSection({ leagueId, onLeave, onCloneToTest, isAdmin }) {
             Leave this league?
           </p>
           <p style={{ color: '#666', marginBottom: '15px', fontSize: '13px' }}>
-            You can rejoin later using the league code. Your data will remain in the league.
+            Your membership will be removed. You can rejoin later using the league code.
           </p>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
@@ -477,9 +497,17 @@ function LeagueInfoSection({ leagueId, onLeave, onCloneToTest, isAdmin }) {
         </div>
       ) : (
         <button
-          className="btn btn-secondary"
           onClick={() => setShowLeaveConfirm(true)}
-          style={{ width: '100%' }}
+          style={{
+            width: '100%',
+            background: 'none',
+            border: 'none',
+            color: '#e74c3c',
+            fontSize: '13px',
+            cursor: 'pointer',
+            padding: '8px',
+            opacity: 0.7
+          }}
         >
           Leave League
         </button>
@@ -2685,7 +2713,7 @@ function ManageProfilesSection() {
   )
 }
 
-function SettingsPage() {
+function SettingsPage({ onShowLeagueSelector }) {
   const navigate = useNavigate()
   const { user, profile, signOut, unlinkMyProfile } = useAuth()
   const {
@@ -2794,9 +2822,19 @@ function SettingsPage() {
 
       <LeagueInfoSection
         leagueId={leagueId}
-        onLeave={leaveLeague}
+        onLeave={() => {
+          // Remove league_members row if authenticated
+          if (profile?.id) {
+            removeLeagueMember(leagueId, profile.id).catch(err => {
+              console.warn('Could not remove league member row:', err)
+            })
+          }
+          leaveLeague()
+        }}
         onCloneToTest={cloneLeagueToTest}
         isAdmin={isAdmin}
+        onSwitchLeague={onShowLeagueSelector}
+        isAuthenticated={!!user}
       />
 
       <RoundSettingsSection

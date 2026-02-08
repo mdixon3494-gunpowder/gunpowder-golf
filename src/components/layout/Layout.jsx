@@ -1,5 +1,8 @@
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 import { useLeague } from '../../context/LeagueContext'
+import { useAuth } from '../../context/AuthContext'
+import { getLeaguesForProfile } from '../../lib/leagueService'
 
 function SaveIndicator({ status }) {
   if (status === 'saving') {
@@ -71,13 +74,206 @@ function NextRoundBanner({ leagueSettings }) {
   )
 }
 
-function Layout() {
-  const { leagueId, isAdmin, saveStatus, leagueSettings } = useLeague()
+function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague }) {
+  const { isAuthenticated, profile } = useAuth()
+  const [leagues, setLeagues] = useState([])
+  const [isOpen, setIsOpen] = useState(false)
+  const [switching, setSwitching] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    if (!isAuthenticated || !profile?.id) return
+    getLeaguesForProfile(profile.id).then(data => {
+      setLeagues(data || [])
+    }).catch(() => {})
+  }, [isAuthenticated, profile?.id, leagueId])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!isOpen) return
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [isOpen])
+
+  const otherLeagues = leagues.filter(m => m.league_id !== leagueId)
+  const currentMembership = leagues.find(m => m.league_id === leagueId)
+  const currentLeagueName = currentMembership?.leagues?.name
 
   const copyLeagueCode = () => {
     navigator.clipboard.writeText(leagueId)
     alert('League code copied to clipboard!')
   }
+
+  // If not authenticated or has 1 or fewer leagues, show simple code display
+  if (!isAuthenticated || otherLeagues.length === 0) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px'
+      }}>
+        {currentLeagueName && (
+          <span style={{ fontSize: '14px', opacity: 0.9 }}>{currentLeagueName}</span>
+        )}
+        {!currentLeagueName && (
+          <span style={{ fontSize: '14px', opacity: 0.9 }}>League Code:</span>
+        )}
+        <button
+          onClick={copyLeagueCode}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: 'none',
+            padding: '5px 15px',
+            borderRadius: '5px',
+            color: 'white',
+            fontWeight: 'bold',
+            letterSpacing: '2px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          {leagueId}
+        </button>
+      </div>
+    )
+  }
+
+  // Multi-league dropdown
+  const handleSwitch = async (newLeagueId) => {
+    setSwitching(true)
+    setIsOpen(false)
+    await switchLeague(newLeagueId)
+    setSwitching(false)
+  }
+
+  return (
+    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        disabled={switching}
+        style={{
+          background: 'rgba(255,255,255,0.2)',
+          border: 'none',
+          padding: '6px 14px',
+          borderRadius: '6px',
+          color: 'white',
+          cursor: 'pointer',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}
+      >
+        {switching ? (
+          <span>Switching...</span>
+        ) : (
+          <>
+            <span style={{ fontWeight: '600' }}>
+              {currentLeagueName || leagueId}
+            </span>
+            <span style={{ fontSize: '11px', opacity: 0.7 }}>{leagueId}</span>
+            <span style={{ fontSize: '10px' }}>{isOpen ? '\u25B2' : '\u25BC'}</span>
+          </>
+        )}
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          marginTop: '6px',
+          background: 'white',
+          borderRadius: '10px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          minWidth: '220px',
+          zIndex: 1000,
+          overflow: 'hidden'
+        }}>
+          {otherLeagues.map((membership) => {
+            const league = membership.leagues
+            if (!league) return null
+
+            const roleColor = membership.role === 'owner'
+              ? '#27ae60'
+              : membership.role === 'admin'
+                ? '#f39c12'
+                : '#3498db'
+
+            return (
+              <button
+                key={league.id}
+                onClick={() => handleSwitch(league.id)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '12px 16px',
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  borderBottom: '1px solid #f0f0f0'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <div style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>
+                  {league.name || league.id}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
+                  <span style={{
+                    background: roleColor,
+                    color: 'white',
+                    padding: '1px 6px',
+                    borderRadius: '8px',
+                    fontSize: '10px',
+                    fontWeight: '600'
+                  }}>
+                    {membership.role === 'owner' ? 'Owner' : membership.role === 'admin' ? 'Admin' : 'Player'}
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#999' }}>{league.id}</span>
+                </div>
+              </button>
+            )
+          })}
+
+          <button
+            onClick={() => {
+              setIsOpen(false)
+              onShowLeagueSelector()
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '12px 16px',
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              textAlign: 'center',
+              color: '#27ae60',
+              fontWeight: '600',
+              fontSize: '14px'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#f0fff4'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+          >
+            All Leagues
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Layout({ onShowLeagueSelector }) {
+  const { leagueId, isAdmin, saveStatus, leagueSettings, switchLeague } = useLeague()
 
   return (
     <div className="app-container">
@@ -91,23 +287,11 @@ function Layout() {
             justifyContent: 'center',
             gap: '10px'
           }}>
-            <span style={{ fontSize: '14px', opacity: 0.9 }}>League Code:</span>
-            <button
-              onClick={copyLeagueCode}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                padding: '5px 15px',
-                borderRadius: '5px',
-                color: 'white',
-                fontWeight: 'bold',
-                letterSpacing: '2px',
-                cursor: 'pointer',
-                fontSize: '16px'
-              }}
-            >
-              {leagueId}
-            </button>
+            <LeagueSwitcher
+              leagueId={leagueId}
+              onShowLeagueSelector={onShowLeagueSelector}
+              switchLeague={switchLeague}
+            />
             {isAdmin && (
               <span style={{
                 background: '#f39c12',

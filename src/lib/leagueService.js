@@ -80,7 +80,7 @@ export async function removeLeagueMember(leagueId, profileId) {
 export async function getLeaguesForProfile(profileId) {
   const { data, error } = await supabase
     .from('league_members')
-    .select('*, leagues(id, name, owner_id, is_test, visibility, created_at)')
+    .select('*, leagues(id, name, owner_id, is_test, visibility, created_at, updated_at)')
     .eq('profile_id', profileId)
     .order('joined_at', { ascending: false })
 
@@ -89,4 +89,31 @@ export async function getLeaguesForProfile(profileId) {
     return []
   }
   return data || []
+}
+
+export async function getLeaguesForProfileWithCounts(profileId) {
+  const memberships = await getLeaguesForProfile(profileId)
+  if (!memberships.length) return []
+
+  // Fetch member counts for each league in parallel
+  const enriched = await Promise.all(
+    memberships.map(async (membership) => {
+      const leagueId = membership.league_id
+      try {
+        const { count, error } = await supabase
+          .from('league_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('league_id', leagueId)
+
+        return {
+          ...membership,
+          memberCount: error ? 0 : (count || 0)
+        }
+      } catch {
+        return { ...membership, memberCount: 0 }
+      }
+    })
+  )
+
+  return enriched
 }
