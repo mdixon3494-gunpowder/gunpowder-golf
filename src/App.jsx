@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LeagueProvider, useLeague } from './context/LeagueContext'
@@ -25,7 +25,7 @@ import GPSPage from './pages/GPSPage'
 
 function AppContent() {
   const { loading: authLoading, isAuthenticated, needsProfileClaim, profile } = useAuth()
-  const { loading: leagueLoading, isSetup, switchLeague } = useLeague()
+  const { loading: leagueLoading, isSetup, switchLeague, leagueId } = useLeague()
   const [authScreen, setAuthScreen] = useState('login') // 'login' | 'signup'
   const [skippedAuth, setSkippedAuth] = useState(() => {
     // Allow skipping auth if user already has a league code saved
@@ -34,6 +34,14 @@ function AppContent() {
   const [showLeagueSelector, setShowLeagueSelector] = useState(false)
   const [showLeagueSetup, setShowLeagueSetup] = useState(false)
   const [leagueSetupMode, setLeagueSetupMode] = useState('create') // 'create' | 'join'
+
+  // When a league is loaded/joined/created, clear setup screens and show main app
+  useEffect(() => {
+    if (leagueId && isSetup) {
+      setShowLeagueSetup(false)
+      setShowLeagueSelector(false)
+    }
+  }, [leagueId])
 
   // Auth is still loading
   if (authLoading) {
