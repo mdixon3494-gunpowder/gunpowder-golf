@@ -53,6 +53,12 @@ export async function backfillRoundHistory(onProgress) {
     const leagueData = typeof league.data === 'string' ? JSON.parse(league.data) : league.data
     if (!leagueData?.players) continue
 
+    // Skip test/cloned leagues
+    if (leagueData.isTestLeague) {
+      log(`Skipping test league: ${league.id}`)
+      continue
+    }
+
     for (const player of leagueData.players) {
       if (!player.profileId || !player.scoreHistory?.length) continue
 

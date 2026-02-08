@@ -157,6 +157,9 @@ export function LeagueProvider({ children }) {
   // League type: 'league' | 'casual' | 'individual'
   const [leagueType, setLeagueType] = useState('league')
 
+  // Test league flag (cloned leagues)
+  const [isTestLeague, setIsTestLeague] = useState(false)
+
   // Format template for the league
   const [formatTemplate, setFormatTemplate] = useState(null)
 
@@ -205,6 +208,7 @@ export function LeagueProvider({ children }) {
     if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
     if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
     if (data.courseMapping) setCourseMapping(data.courseMapping)
+    setIsTestLeague(Boolean(data.isTestLeague))
     setCheckedInPlayers([])
     setManualTeams([])
     setIsSetup(true)
@@ -543,12 +547,38 @@ export function LeagueProvider({ children }) {
     const testLeagueId = check.normalizedCode
 
     // Clone all current data to the test league
+    // Strip profileId from cloned players to prevent test rounds from
+    // interfering with real players' round_history and handicap calculations
+    const stripProfileId = (obj) => {
+      if (obj == null) return obj
+      const clone = JSON.parse(JSON.stringify(obj))
+      const strip = (item) => { if (item && typeof item === 'object') { delete item.profileId } }
+      // Strip from top-level players array
+      if (Array.isArray(clone)) clone.forEach(strip)
+      // Strip from nested team players
+      if (clone.teams) clone.teams.forEach(t => { if (t.players) t.players.forEach(strip) })
+      return clone
+    }
+
+    const clonedPlayers = JSON.parse(JSON.stringify(players)).map(p => {
+      delete p.profileId
+      return p
+    })
+
+    const clonedLiveRound = liveRound ? stripProfileId(liveRound) : null
+
+    const clonedTeams = JSON.parse(JSON.stringify(teams)).map(team => {
+      if (Array.isArray(team)) return team.map(p => { delete p.profileId; return p })
+      if (team.players) team.players.forEach(p => { delete p.profileId })
+      return team
+    })
+
     const clonedData = {
-      players: JSON.parse(JSON.stringify(players)),
+      players: clonedPlayers,
       history: JSON.parse(JSON.stringify(history)),
       pairingRequests: JSON.parse(JSON.stringify(pairingRequests)),
-      liveRound: liveRound ? JSON.parse(JSON.stringify(liveRound)) : null,
-      teams: JSON.parse(JSON.stringify(teams)),
+      liveRound: clonedLiveRound,
+      teams: clonedTeams,
       leagueSettings: JSON.parse(JSON.stringify(leagueSettings)),
       pendingPlayerRequests: JSON.parse(JSON.stringify(pendingPlayerRequests)),
       payoutFormats: JSON.parse(JSON.stringify(payoutFormats)),
@@ -717,6 +747,9 @@ export function LeagueProvider({ children }) {
   }
 
   const saveLeagueRoundHistory = async (roundPlayers) => {
+    // Skip saving for test leagues to avoid polluting real player data
+    if (isTestLeague) return []
+
     // roundPlayers: array of { profileId, scores, front9, back9, total, handicap, tee }
     const entries = roundPlayers
       .filter(p => p.profileId)
