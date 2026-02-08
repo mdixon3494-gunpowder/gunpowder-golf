@@ -135,14 +135,20 @@ export function LeagueProvider({ children }) {
   const [manualTeams, setManualTeams] = useState([])
 
   // Admin state
-  const [isAdmin, setIsAdmin] = useState(() => {
+  const [isAdminPIN, setIsAdminPIN] = useState(() => {
     return localStorage.getItem('gunpowder_admin') === 'true'
   })
 
   // Site Owner state (higher privilege than admin)
-  const [isSiteOwner, setIsSiteOwner] = useState(() => {
+  const [isSiteOwnerPIN, setIsSiteOwnerPIN] = useState(() => {
     return localStorage.getItem('gunpowder_site_owner') === 'true'
   })
+
+  // Profile-based site owner (auto-detected from profiles.is_site_owner)
+  const [isSiteOwnerProfile, setIsSiteOwnerProfile] = useState(false)
+
+  // "View As" role override for testing (null = no override, use real role)
+  const [viewAsRole, setViewAsRole] = useState(null) // null | 'admin' | 'user'
 
   // Course mapping data for GPS
   const [courseMapping, setCourseMapping] = useState(null)
@@ -567,10 +573,25 @@ export function LeagueProvider({ children }) {
     hasLoadedData.current = false
   }
 
+  // Sync site owner status from profile
+  const syncSiteOwnerFromProfile = (profile) => {
+    if (profile?.is_site_owner) {
+      setIsSiteOwnerProfile(true)
+    }
+  }
+
+  // Computed roles (respecting "View As" override)
+  const actualSiteOwner = isSiteOwnerPIN || isSiteOwnerProfile
+  const actualAdmin = isAdminPIN || actualSiteOwner
+
+  // When viewing as a lower role, downgrade privileges
+  const isSiteOwner = viewAsRole ? false : actualSiteOwner
+  const isAdmin = viewAsRole === 'user' ? false : (viewAsRole === 'admin' ? true : actualAdmin)
+
   // Admin actions
   const adminLogin = (pin) => {
     if (pin === '1234') {
-      setIsAdmin(true)
+      setIsAdminPIN(true)
       localStorage.setItem('gunpowder_admin', 'true')
       return true
     }
@@ -578,14 +599,14 @@ export function LeagueProvider({ children }) {
   }
 
   const adminLogout = () => {
-    setIsAdmin(false)
+    setIsAdminPIN(false)
     localStorage.removeItem('gunpowder_admin')
   }
 
   // Site Owner actions
   const siteOwnerLogin = (pin) => {
     if (pin === '3494') {
-      setIsSiteOwner(true)
+      setIsSiteOwnerPIN(true)
       localStorage.setItem('gunpowder_site_owner', 'true')
       return true
     }
@@ -593,8 +614,9 @@ export function LeagueProvider({ children }) {
   }
 
   const siteOwnerLogout = () => {
-    setIsSiteOwner(false)
+    setIsSiteOwnerPIN(false)
     localStorage.removeItem('gunpowder_site_owner')
+    setViewAsRole(null)
   }
 
   const value = {
@@ -619,6 +641,10 @@ export function LeagueProvider({ children }) {
     isSiteOwner,
     siteOwnerLogin,
     siteOwnerLogout,
+    syncSiteOwnerFromProfile,
+    actualSiteOwner,
+    viewAsRole,
+    setViewAsRole,
 
     // GPS Course Mapping
     courseMapping,

@@ -110,10 +110,13 @@ function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
 
 function SiteOwnerAccessSection({
   isSiteOwner,
+  actualSiteOwner,
   onLogin,
   onLogout,
   courseMapping,
-  onUpdateCourseMapping
+  onUpdateCourseMapping,
+  viewAsRole,
+  onSetViewAsRole
 }) {
   const [showPinModal, setShowPinModal] = useState(false)
   const [pin, setPin] = useState('')
@@ -151,7 +154,14 @@ function SiteOwnerAccessSection({
     }
   }
 
-  if (isSiteOwner) {
+  // Show site owner panel if they have actual site owner access (even when "viewing as" a lower role)
+  if (actualSiteOwner) {
+    const viewAsOptions = [
+      { value: null, label: 'Site Owner', desc: 'Full access' },
+      { value: 'admin', label: 'Admin', desc: 'Admin features only' },
+      { value: 'user', label: 'Regular User', desc: 'No admin features' }
+    ]
+
     return (
       <>
         <div style={{
@@ -163,26 +173,62 @@ function SiteOwnerAccessSection({
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
             <div>
-              <div style={{ fontWeight: 'bold', fontSize: '18px' }}>Site Owner Mode</div>
+              <div style={{ fontWeight: 'bold', fontSize: '18px' }}>
+                Site Owner Mode
+                {viewAsRole && (
+                  <span style={{
+                    background: 'rgba(255,255,255,0.25)',
+                    padding: '2px 8px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    marginLeft: '8px',
+                    verticalAlign: 'middle'
+                  }}>
+                    Viewing as {viewAsRole === 'admin' ? 'Admin' : 'User'}
+                  </span>
+                )}
+              </div>
               <div style={{ fontSize: '13px', opacity: 0.9, marginTop: '4px' }}>
                 You have access to course mapping and advanced features
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                color: 'white',
-                padding: '10px 20px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              Logout
-            </button>
           </div>
+
+          {/* View As toggle */}
+          <div style={{
+            background: 'rgba(255,255,255,0.15)',
+            borderRadius: '8px',
+            padding: '12px',
+            marginBottom: '15px'
+          }}>
+            <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '8px', fontWeight: '600' }}>
+              VIEW AS
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {viewAsOptions.map(opt => (
+                <button
+                  key={opt.label}
+                  onClick={() => onSetViewAsRole(opt.value)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 4px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    background: viewAsRole === opt.value
+                      ? 'rgba(255,255,255,0.9)'
+                      : 'rgba(255,255,255,0.15)',
+                    color: viewAsRole === opt.value ? '#8e44ad' : 'white'
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button
             className="btn"
             onClick={() => setShowMappingTool(true)}
@@ -2742,8 +2788,11 @@ function SettingsPage({ onShowLeagueSelector }) {
     leagueSettings,
     setLeagueSettings,
     isSiteOwner,
+    actualSiteOwner,
     siteOwnerLogin,
     siteOwnerLogout,
+    viewAsRole,
+    setViewAsRole,
     courseMapping,
     setCourseMapping
   } = useLeague()
@@ -2865,8 +2914,8 @@ function SettingsPage({ onShowLeagueSelector }) {
         isAdmin={isAdmin}
       />
 
-      {/* Site Owner Tools */}
-      {isSiteOwner && (
+      {/* Site Owner Tools - visible when actually site owner (even when "viewing as" lower role) */}
+      {actualSiteOwner && (
         <>
           <ManageProfilesSection />
           <MigrationSection
@@ -2877,13 +2926,16 @@ function SettingsPage({ onShowLeagueSelector }) {
         </>
       )}
 
-      {/* Site Owner Access - hidden by default, triple-tap reveals */}
+      {/* Site Owner Access - auto-shown for profile-based owners, triple-tap for PIN */}
       <SiteOwnerAccessSection
         isSiteOwner={isSiteOwner}
+        actualSiteOwner={actualSiteOwner}
         onLogin={siteOwnerLogin}
         onLogout={siteOwnerLogout}
         courseMapping={courseMapping}
         onUpdateCourseMapping={setCourseMapping}
+        viewAsRole={viewAsRole}
+        onSetViewAsRole={setViewAsRole}
       />
     </div>
   )

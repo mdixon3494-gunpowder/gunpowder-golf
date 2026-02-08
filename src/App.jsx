@@ -25,7 +25,7 @@ import GPSPage from './pages/GPSPage'
 
 function AppContent() {
   const { loading: authLoading, isAuthenticated, needsProfileClaim, profile } = useAuth()
-  const { loading: leagueLoading, isSetup, switchLeague, leagueId } = useLeague()
+  const { loading: leagueLoading, isSetup, switchLeague, leagueId, syncSiteOwnerFromProfile } = useLeague()
   const [authScreen, setAuthScreen] = useState('login') // 'login' | 'signup'
   const [skippedAuth, setSkippedAuth] = useState(() => {
     // Allow skipping auth if user already has a league code saved
@@ -42,6 +42,13 @@ function AppContent() {
       setShowLeagueSelector(false)
     }
   }, [leagueId])
+
+  // Sync site owner flag from profile when profile loads
+  useEffect(() => {
+    if (profile) {
+      syncSiteOwnerFromProfile(profile)
+    }
+  }, [profile])
 
   // Auth is still loading
   if (authLoading) {
