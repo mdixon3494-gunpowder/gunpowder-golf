@@ -14,6 +14,7 @@ import { ToastProvider } from './components/common/Toast'
 import LoginScreen from './components/auth/LoginScreen'
 import SignupScreen from './components/auth/SignupScreen'
 import ClaimProfileScreen from './components/auth/ClaimProfileScreen'
+import { backfillRoundHistory } from './lib/migrations/003_backfill_round_history'
 
 // Pages
 import PlayersPage from './pages/PlayersPage'
@@ -58,6 +59,15 @@ function AppContent() {
       syncSiteOwnerFromProfile(profile)
     }
   }, [profile])
+
+  // Run backfill migration for authenticated users with a profile (one-time)
+  useEffect(() => {
+    if (isAuthenticated && profile?.id) {
+      backfillRoundHistory().catch(err => {
+        console.warn('Backfill migration failed:', err)
+      })
+    }
+  }, [isAuthenticated, profile?.id])
 
   // Auth is still loading
   if (authLoading) {

@@ -15,12 +15,20 @@ function IndividualRoundSetup({ onBack }) {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState(null)
 
-  // Pre-fill handicap and tee from most recent round (any type)
+  // Pre-fill handicap from profile.handicap_index, fallback to most recent round
+  // Pre-fill tee from most recent round
   useEffect(() => {
     if (!profile?.id) return
+
+    // Use calculated handicap_index if available
+    if (profile.handicap_index != null) {
+      setHandicap(Math.round(profile.handicap_index))
+    }
+
+    // Still fetch most recent round for tee preference (and handicap fallback)
     getRoundHistory(profile.id, 1).then(rounds => {
       if (rounds.length > 0) {
-        if (rounds[0].handicap_used != null) {
+        if (profile.handicap_index == null && rounds[0].handicap_used != null) {
           setHandicap(rounds[0].handicap_used)
         }
         if (rounds[0].metadata?.tee) {
@@ -28,7 +36,7 @@ function IndividualRoundSetup({ onBack }) {
         }
       }
     }).catch(() => {})
-  }, [profile?.id])
+  }, [profile?.id, profile?.handicap_index])
 
   const generateRoundCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase()

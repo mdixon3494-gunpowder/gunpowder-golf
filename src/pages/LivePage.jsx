@@ -5954,7 +5954,8 @@ function LivePage() {
     isCasualGame,
     isIndividualRound,
     saveCasualRoundHistory,
-    saveIndividualRoundHistory
+    saveIndividualRoundHistory,
+    saveLeagueRoundHistory
   } = useLeague()
 
   // Leaderboard view state - defaults based on starting hole (front if 1-9, back if 10-18)
@@ -6461,6 +6462,31 @@ function LivePage() {
     setPlayers(updatedPlayers)
     setHistory([roundData, ...history])
     setShowFinishConfirm(false)
+
+    // For league rounds, also save to round_history table (non-blocking)
+    if (!isCasualGame && !isIndividualRound) {
+      const roundPlayersForHistory = liveRound.teams.flatMap(t => t.players)
+        .filter(p => !p.isDNF)
+        .map(p => {
+          const scores = p.scores || {}
+          let front9 = 0, back9 = 0
+          for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += scores[h]
+          for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += scores[h]
+          const playerData = players.find(pl => pl.id === p.id)
+          return {
+            profileId: playerData?.profileId || null,
+            scores,
+            front9,
+            back9,
+            total: front9 + back9,
+            handicap: p.handicap || 0,
+            tee: p.tee || playerData?.defaultTee || 'blue'
+          }
+        })
+      saveLeagueRoundHistory(roundPlayersForHistory).catch(err => {
+        console.warn('Failed to save league round history:', err)
+      })
+    }
 
     // For individual rounds, show summary modal before cleaning up
     if (isIndividualRound) {

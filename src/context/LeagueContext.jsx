@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { DEFAULT_HANDICAP_SETTINGS, DEFAULT_COURSE_TEES } from '../utils/handicapCalculation'
 import { addLeagueMember } from '../lib/leagueService'
 import { getTemplateById, getDefaultTemplate } from '../lib/formatTemplateService'
-import { saveRoundHistory } from '../lib/roundHistoryService'
+import { saveRoundHistory, recalculateAndStoreHandicap } from '../lib/roundHistoryService'
 
 const LeagueContext = createContext(null)
 
@@ -662,6 +662,7 @@ export function LeagueProvider({ children }) {
         source_id: leagueId,
         round_type: 'casual',
         date: new Date().toISOString().split('T')[0],
+        course_name: 'Gunpowder Golf Course',
         holes_played: 18,
         total_score: p.total || null,
         front_nine: p.front9 || null,
@@ -670,11 +671,20 @@ export function LeagueProvider({ children }) {
         handicap_used: p.handicap || null,
         applied_to_handicap: applyChoices[p.profileId] !== false,
         format_name: null,
-        metadata: null
+        metadata: { tee: p.tee || 'blue' }
       }))
 
     if (entries.length === 0) return []
-    return await saveRoundHistory(entries)
+    const result = await saveRoundHistory(entries)
+
+    // Recalculate handicap for each player (non-blocking)
+    entries.forEach(e => {
+      if (e.applied_to_handicap) {
+        recalculateAndStoreHandicap(e.profile_id, courseTees).catch(() => {})
+      }
+    })
+
+    return result
   }
 
   const saveIndividualRoundHistory = async (profileId, roundData) => {
@@ -684,6 +694,7 @@ export function LeagueProvider({ children }) {
       source_id: leagueId,
       round_type: 'individual',
       date: new Date().toISOString().split('T')[0],
+      course_name: 'Gunpowder Golf Course',
       holes_played: roundData.holesPlayed || 18,
       total_score: roundData.total || null,
       front_nine: roundData.front9 || null,
@@ -697,7 +708,49 @@ export function LeagueProvider({ children }) {
         startingHole: roundData.startingHole || 1
       }
     }
-    return await saveRoundHistory([entry])
+    const result = await saveRoundHistory([entry])
+
+    // Recalculate handicap (non-blocking)
+    recalculateAndStoreHandicap(profileId, courseTees).catch(() => {})
+
+    return result
+  }
+
+  const saveLeagueRoundHistory = async (roundPlayers) => {
+    // roundPlayers: array of { profileId, scores, front9, back9, total, handicap, tee }
+    const entries = roundPlayers
+      .filter(p => p.profileId)
+      .map(p => ({
+        profile_id: p.profileId,
+        source_id: leagueId,
+        round_type: 'league',
+        date: new Date().toISOString().split('T')[0],
+        course_name: 'Gunpowder Golf Course',
+        holes_played: 18,
+        total_score: p.total || null,
+        front_nine: p.front9 || null,
+        back_nine: p.back9 || null,
+        scores: p.scores || null,
+        handicap_used: p.handicap || null,
+        applied_to_handicap: true,
+        format_name: null,
+        metadata: { tee: p.tee || 'blue' }
+      }))
+
+    if (entries.length === 0) return []
+    try {
+      const result = await saveRoundHistory(entries)
+
+      // Recalculate handicap for each player (non-blocking)
+      entries.forEach(e => {
+        recalculateAndStoreHandicap(e.profile_id, courseTees).catch(() => {})
+      })
+
+      return result
+    } catch (err) {
+      console.warn('saveLeagueRoundHistory failed:', err.message)
+      return []
+    }
   }
 
   const value = {
@@ -717,6 +770,7 @@ export function LeagueProvider({ children }) {
     cloneLeagueToTest,
     saveCasualRoundHistory,
     saveIndividualRoundHistory,
+    saveLeagueRoundHistory,
 
     // Admin
     isAdmin,
