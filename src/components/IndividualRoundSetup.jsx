@@ -3,23 +3,22 @@ import { useAuth } from '../context/AuthContext'
 import { useLeague } from '../context/LeagueContext'
 import { supabase } from '../lib/supabase'
 import { addLeagueMember } from '../lib/leagueService'
-import { getRoundHistoryByType } from '../lib/roundHistoryService'
+import { getRoundHistory } from '../lib/roundHistoryService'
 
 function IndividualRoundSetup({ onBack }) {
   const { profile } = useAuth()
   const { switchLeague } = useLeague()
 
-  const [holes, setHoles] = useState(18)
   const [startingHole, setStartingHole] = useState(1)
   const [tee, setTee] = useState('blue')
   const [handicap, setHandicap] = useState(0)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState(null)
 
-  // Pre-fill handicap from most recent individual round
+  // Pre-fill handicap and tee from most recent round (any type)
   useEffect(() => {
     if (!profile?.id) return
-    getRoundHistoryByType(profile.id, 'individual', 1).then(rounds => {
+    getRoundHistory(profile.id, 1).then(rounds => {
       if (rounds.length > 0) {
         if (rounds[0].handicap_used != null) {
           setHandicap(rounds[0].handicap_used)
@@ -45,7 +44,6 @@ function IndividualRoundSetup({ onBack }) {
 
     try {
       const roundId = generateRoundCode()
-      const effectiveStartingHole = holes === 9 ? startingHole : 1
 
       // Build player object
       const playerData = {
@@ -67,8 +65,8 @@ function IndividualRoundSetup({ onBack }) {
       const liveRound = {
         id: Date.now(),
         date: new Date().toLocaleDateString('en-CA'),
-        holesPlayed: holes,
-        startingHole: effectiveStartingHole,
+        holesPlayed: 18,
+        startingHole,
         teams: [{
           id: 0,
           name: profile.display_name,
@@ -99,8 +97,8 @@ function IndividualRoundSetup({ onBack }) {
         leagueSettings: { contactInfoVisibility: 'admin' },
         individualRoundInfo: {
           courseName: 'Gunpowder Golf Course',
-          holes,
-          startingHole: effectiveStartingHole,
+          holes: 18,
+          startingHole,
           tee,
           handicap,
           createdBy: profile.id
@@ -188,7 +186,7 @@ function IndividualRoundSetup({ onBack }) {
             </div>
           </div>
 
-          {/* Holes */}
+          {/* Starting Hole */}
           <div style={{
             background: 'white',
             padding: '20px',
@@ -196,58 +194,28 @@ function IndividualRoundSetup({ onBack }) {
             marginBottom: '16px',
             border: '1px solid #e0e0e0'
           }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: '#333' }}>Holes</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: '#333' }}>Starting Hole</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {[9, 18].map(h => (
+              {[{ val: 1, label: 'Hole 1 (Front)' }, { val: 10, label: 'Hole 10 (Back)' }].map(opt => (
                 <button
-                  key={h}
-                  onClick={() => setHoles(h)}
+                  key={opt.val}
+                  onClick={() => setStartingHole(opt.val)}
                   style={{
                     flex: 1,
                     padding: '10px',
                     borderRadius: '8px',
-                    border: `2px solid ${holes === h ? '#3498db' : '#e0e0e0'}`,
-                    background: holes === h ? '#ebf5fb' : 'white',
-                    color: holes === h ? '#3498db' : '#666',
+                    border: `2px solid ${startingHole === opt.val ? '#3498db' : '#e0e0e0'}`,
+                    background: startingHole === opt.val ? '#ebf5fb' : 'white',
+                    color: startingHole === opt.val ? '#3498db' : '#666',
                     fontWeight: '600',
                     cursor: 'pointer',
-                    fontSize: '15px'
+                    fontSize: '14px'
                   }}
                 >
-                  {h}
+                  {opt.label}
                 </button>
               ))}
             </div>
-
-            {/* Starting Hole (only for 9 holes) */}
-            {holes === 9 && (
-              <div style={{ marginTop: '12px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px', color: '#555' }}>
-                  Starting Hole
-                </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {[{ val: 1, label: 'Front 9 (1-9)' }, { val: 10, label: 'Back 9 (10-18)' }].map(opt => (
-                    <button
-                      key={opt.val}
-                      onClick={() => setStartingHole(opt.val)}
-                      style={{
-                        flex: 1,
-                        padding: '10px',
-                        borderRadius: '8px',
-                        border: `2px solid ${startingHole === opt.val ? '#3498db' : '#e0e0e0'}`,
-                        background: startingHole === opt.val ? '#ebf5fb' : 'white',
-                        color: startingHole === opt.val ? '#3498db' : '#666',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        fontSize: '13px'
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Tee */}
