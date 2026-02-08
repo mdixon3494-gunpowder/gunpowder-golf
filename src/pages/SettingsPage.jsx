@@ -2023,6 +2023,116 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
         </div>
       )}
 
+      {/* Soft/Hard Caps (Sandbagger Protection) */}
+      {settings.calculationMode === 'auto' && (
+        <div style={{ marginBottom: '20px', padding: '15px', background: settings.capsEnabled ? '#e8f0fe' : '#f8f9fa', borderRadius: '8px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={settings.capsEnabled || false}
+              onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, capsEnabled: e.target.checked })}
+              disabled={!isAdmin}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ fontWeight: '600' }}>Enable Soft/Hard Caps (Sandbagger Protection)</span>
+          </label>
+          <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+            Limits how much a player's handicap can rise above their lowest recorded index (rolling 12 months).
+            Protects against sandbagging while allowing gradual handicap increases.
+          </p>
+
+          {settings.capsEnabled && (
+            <div style={{ marginTop: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                    Soft Cap Threshold
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.softCapThreshold ?? 3.0}
+                    onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, softCapThreshold: parseFloat(e.target.value) || 3.0 })}
+                    disabled={!isAdmin}
+                    min="0.5"
+                    max="10"
+                    step="0.5"
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  />
+                  <p style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                    Soft cap triggers when handicap exceeds low index + this value
+                  </p>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                    Soft Cap Reduction
+                  </label>
+                  <select
+                    value={settings.softCapReduction ?? 0.5}
+                    onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, softCapReduction: parseFloat(e.target.value) })}
+                    disabled={!isAdmin}
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  >
+                    <option value={0.25}>25% of excess</option>
+                    <option value={0.5}>50% of excess</option>
+                    <option value={0.75}>75% of excess</option>
+                  </select>
+                  <p style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                    How much of the increase above the soft cap is kept
+                  </p>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                    Hard Cap Threshold
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.hardCapThreshold ?? 5.0}
+                    onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, hardCapThreshold: parseFloat(e.target.value) || 5.0 })}
+                    disabled={!isAdmin}
+                    min="1"
+                    max="15"
+                    step="0.5"
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  />
+                  <p style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                    Maximum allowed increase above low index (absolute ceiling)
+                  </p>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                    Min Rounds Before Caps Apply
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.capMinRounds ?? 10}
+                    onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, capMinRounds: parseInt(e.target.value) || 10 })}
+                    disabled={!isAdmin}
+                    min="1"
+                    max="20"
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  />
+                  <p style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                    Players with fewer rounds are exempt from caps
+                  </p>
+                </div>
+              </div>
+              <div style={{
+                padding: '10px',
+                background: '#f0f4f8',
+                borderRadius: '6px',
+                fontSize: '12px',
+                color: '#555'
+              }}>
+                <strong>How it works:</strong> Each player's lowest handicap index over the past 12 months (their "Low Index") is tracked.
+                If their current handicap rises more than {settings.softCapThreshold ?? 3.0} above their Low Index,
+                the increase is reduced to {((settings.softCapReduction ?? 0.5) * 100)}%.
+                Their handicap can never exceed their Low Index + {settings.hardCapThreshold ?? 5.0} (hard cap).
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Min Rounds & Max Handicap */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
         <div>

@@ -10,7 +10,8 @@ import {
   recalculatePlayerHandicaps,
   getCourseHandicapForTee,
   getEffectiveHandicap,
-  DEFAULT_COURSE_TEES
+  DEFAULT_COURSE_TEES,
+  DEFAULT_HANDICAP_SETTINGS
 } from '../utils/handicapCalculation'
 
 function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapScope, leagueId, courseTees, handicapSettings }) {
@@ -69,6 +70,22 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
             }}>
               Index: {formatHandicap(activeHandicap)}{isUsingManual ? ' (M)' : ''}
             </span>
+            {player.capApplied && (
+              <span
+                title={`Raw: ${formatHandicap(player.rawHandicap)} | Low Index: ${formatHandicap(player.lowIndex)}`}
+                style={{
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  background: '#e74c3c',
+                  color: 'white',
+                  fontWeight: '700',
+                  cursor: 'help'
+                }}
+              >
+                CAP
+              </span>
+            )}
             <span style={{
               padding: '3px 8px',
               borderRadius: '4px',
@@ -298,7 +315,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees }) {
   )
 }
 
-function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTees, leagueId, handicapSettings }) {
+function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTees, leagueId, handicapSettings, onUpdateHandicapSettings }) {
   const [name, setName] = useState(player.name)
   const [skillRating, setSkillRating] = useState(player.skillRating?.toString() || '5')
   const [handicap, setHandicap] = useState(player.handicap?.toString() || '')
@@ -309,6 +326,13 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
   const [emergencyPhone, setEmergencyPhone] = useState(player.emergencyPhone || '')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletePin, setDeletePin] = useState('')
+
+  const settings = { ...DEFAULT_HANDICAP_SETTINGS, ...handicapSettings }
+  const currentExemption = settings.capExemptions?.[player.id] || null
+
+  const [exemptionType, setExemptionType] = useState(currentExemption?.type || 'none')
+  const [exemptionReason, setExemptionReason] = useState(currentExemption?.reason || '')
+  const [exemptionDate, setExemptionDate] = useState(currentExemption?.expiresAt || '')
 
   // Calculate current handicaps for display
   const calculatedHandicaps = getAllHandicaps(player, leagueId, courseTees, handicapSettings?.maxHandicap || 54, handicapSettings)
@@ -331,6 +355,21 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
       emergencyName: emergencyName.trim(),
       emergencyPhone: emergencyPhone.trim()
     })
+
+    // Save cap exemption changes if caps are enabled
+    if (settings.capsEnabled && onUpdateHandicapSettings) {
+      const updatedExemptions = { ...(settings.capExemptions || {}) }
+      if (exemptionType === 'none') {
+        delete updatedExemptions[player.id]
+      } else {
+        updatedExemptions[player.id] = {
+          type: exemptionType,
+          reason: exemptionReason.trim(),
+          expiresAt: exemptionType === 'until_date' ? exemptionDate : null
+        }
+      }
+      onUpdateHandicapSettings({ ...settings, capExemptions: updatedExemptions })
+    }
   }
 
   const handleRecalculateHandicap = () => {
@@ -403,6 +442,70 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                   <span>Gunpowder: <strong>{formatHandicap(calculatedHandicaps.gunpowderHandicap)}</strong></span>
                 </div>
               </div>
+
+              {/* Cap Exemptions (admin only, when caps enabled) */}
+              {isAdmin && settings.capsEnabled && (
+                <div style={{
+                  background: '#f0f4f8',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  marginBottom: '15px'
+                }}>
+                  <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '13px' }}>
+                    Cap Status
+                  </div>
+                  <div style={{ display: 'flex', gap: '15px', fontSize: '12px', marginBottom: '10px' }}>
+                    <span>Low Index: <strong>{player.lowIndex != null ? formatHandicap(player.lowIndex) : '--'}</strong></span>
+                    {player.capApplied && (
+                      <span style={{ color: '#e74c3c' }}>
+                        Raw: <strong>{formatHandicap(player.rawHandicap)}</strong> (capped to {formatHandicap(player.handicap)})
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px', fontWeight: '500' }}>
+                      Cap Exemption
+                    </label>
+                    <select
+                      value={exemptionType}
+                      onChange={(e) => setExemptionType(e.target.value)}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                    >
+                      <option value="none">None (caps apply normally)</option>
+                      <option value="indefinite">Waive Indefinitely</option>
+                      <option value="until_date">Waive Until Date</option>
+                      <option value="reset">Reset Low Index</option>
+                    </select>
+                  </div>
+                  {exemptionType === 'until_date' && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px', fontWeight: '500' }}>
+                        Waive Until
+                      </label>
+                      <input
+                        type="date"
+                        value={exemptionDate}
+                        onChange={(e) => setExemptionDate(e.target.value)}
+                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                      />
+                    </div>
+                  )}
+                  {exemptionType !== 'none' && (
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px', fontWeight: '500' }}>
+                        Reason (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={exemptionReason}
+                        onChange={(e) => setExemptionReason(e.target.value)}
+                        placeholder="e.g., Recovering from injury"
+                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div className="input-group" style={{ marginBottom: '0' }}>
@@ -1954,7 +2057,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
 }
 
 function PlayersPage() {
-  const { players, setPlayers, isAdmin, leagueSettings, handicapSettings, courseTees, leagueId } = useLeague()
+  const { players, setPlayers, isAdmin, leagueSettings, handicapSettings, setHandicapSettings, courseTees, leagueId } = useLeague()
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingPlayer, setEditingPlayer] = useState(null)
   const [viewingPlayer, setViewingPlayer] = useState(null)
@@ -2094,6 +2197,7 @@ function PlayersPage() {
           courseTees={courseTees}
           leagueId={leagueId}
           handicapSettings={handicapSettings}
+          onUpdateHandicapSettings={setHandicapSettings}
         />
       )}
 

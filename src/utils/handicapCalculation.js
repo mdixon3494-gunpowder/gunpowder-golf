@@ -27,7 +27,14 @@ export const DEFAULT_HANDICAP_SETTINGS = {
   // Update cycle settings
   updateMode: 'immediate',  // 'immediate' or 'monthly'
   lockedHandicaps: {},      // Player ID -> locked handicap value (for monthly mode)
-  lastUpdateDate: null      // ISO date string of last monthly update
+  lastUpdateDate: null,     // ISO date string of last monthly update
+  // Soft/Hard cap settings (sandbagger protection)
+  capsEnabled: false,
+  softCapThreshold: 3.0,    // Soft cap triggers at lowIndex + this
+  softCapReduction: 0.5,    // Reduce increases by 50%
+  hardCapThreshold: 5.0,    // Absolute max above lowIndex
+  capMinRounds: 10,         // Exempt players with fewer rounds
+  capExemptions: {}         // playerId -> { type: 'indefinite'|'until_date'|'reset', reason: '', expiresAt: null }
 }
 
 /**
@@ -154,8 +161,9 @@ export function calculateHandicap(rounds, courseTees = DEFAULT_COURSE_TEES, maxH
   const bestDiffs = [...differentials].sort((a, b) => a - b).slice(0, numToUse)
   const avgDiff = bestDiffs.reduce((a, b) => a + b, 0) / bestDiffs.length
 
-  // Round to one decimal place and cap at max
-  return Math.min(maxHandicap, Math.round(avgDiff * 10) / 10)
+  // Apply WHS 0.96 multiplier, round to one decimal place, and cap at max
+  const adjusted = avgDiff * 0.96
+  return Math.min(maxHandicap, Math.round(adjusted * 10) / 10)
 }
 
 /**
@@ -290,23 +298,141 @@ export function getEffectiveHandicap(player, handicapSettings, leagueId = null, 
 }
 
 /**
+ * Update the low index tracking for a player (rolling 12 months)
+ * @param {Object} player - Player object
+ * @param {Number} newHandicap - Newly calculated handicap
+ * @returns {Object} Updated player object with lowIndex and lowIndexHistory
+ */
+export function updateLowIndex(player, newHandicap) {
+  if (newHandicap === null || newHandicap === undefined) return player
+
+  const today = new Date().toISOString().split('T')[0]
+  const twelveMonthsAgo = new Date()
+  twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1)
+
+  // Start with existing history or empty array
+  let history = [...(player.lowIndexHistory || [])]
+
+  // Add current entry
+  history.push({ handicap: newHandicap, date: today })
+
+  // Prune entries older than 12 months
+  history = history.filter(entry => new Date(entry.date) >= twelveMonthsAgo)
+
+  // Calculate low index from remaining entries
+  const lowIndex = Math.min(...history.map(e => e.handicap))
+
+  return {
+    ...player,
+    lowIndex,
+    lowIndexHistory: history
+  }
+}
+
+/**
+ * Apply soft/hard caps to a raw handicap (sandbagger protection)
+ * @param {Number} rawHandicap - The raw calculated handicap
+ * @param {Object} player - Player object (needs lowIndex, scoreHistory for round count)
+ * @param {Object} settings - Handicap settings (merged with defaults)
+ * @returns {Object} { handicap: number, capApplied: boolean }
+ */
+export function applyCaps(rawHandicap, player, settings) {
+  if (rawHandicap === null || rawHandicap === undefined) {
+    return { handicap: rawHandicap, capApplied: false }
+  }
+
+  // Caps disabled
+  if (!settings?.capsEnabled) {
+    return { handicap: rawHandicap, capApplied: false }
+  }
+
+  // Count player's rounds
+  const roundCount = (player.scoreHistory || []).length + (player.externalRounds || []).length
+  if (roundCount < (settings.capMinRounds || 10)) {
+    return { handicap: rawHandicap, capApplied: false }
+  }
+
+  // No low index yet
+  const lowIndex = player.lowIndex
+  if (lowIndex === null || lowIndex === undefined) {
+    return { handicap: rawHandicap, capApplied: false }
+  }
+
+  // Check exemptions
+  const exemption = settings.capExemptions?.[player.id]
+  if (exemption) {
+    if (exemption.type === 'indefinite') {
+      return { handicap: rawHandicap, capApplied: false }
+    }
+    if (exemption.type === 'until_date' && exemption.expiresAt) {
+      if (new Date() < new Date(exemption.expiresAt)) {
+        return { handicap: rawHandicap, capApplied: false }
+      }
+      // Exemption expired, fall through to apply caps
+    }
+    if (exemption.type === 'reset') {
+      // Treat current handicap as the low index (effectively disabling caps)
+      return { handicap: rawHandicap, capApplied: false }
+    }
+  }
+
+  const softThreshold = settings.softCapThreshold ?? 3.0
+  const softReduction = settings.softCapReduction ?? 0.5
+  const hardThreshold = settings.hardCapThreshold ?? 5.0
+  const maxHandicap = settings.maxHandicap ?? 54
+
+  let result = rawHandicap
+
+  // Soft cap
+  if (rawHandicap > lowIndex + softThreshold) {
+    const excess = rawHandicap - (lowIndex + softThreshold)
+    result = (lowIndex + softThreshold) + (excess * softReduction)
+  }
+
+  // Hard cap
+  if (result > lowIndex + hardThreshold) {
+    result = lowIndex + hardThreshold
+  }
+
+  // Still respect max handicap
+  result = Math.min(result, maxHandicap)
+
+  // Round to one decimal
+  result = Math.round(result * 10) / 10
+
+  const capApplied = result !== rawHandicap
+  return { handicap: result, capApplied }
+}
+
+/**
  * Recalculate and update all handicaps for a player
  * This should be called after a round is finished
  * @param {Object} player - Player object to update
  * @param {String} leagueId - Current league ID
  * @param {Object} courseTees - Course tee configuration
  * @param {Number} maxHandicap - Maximum allowed handicap
- * @param {Object} handicapSettings - Handicap settings (for freeze period)
+ * @param {Object} handicapSettings - Handicap settings (for freeze period and caps)
  * @returns {Object} Updated player object with new handicap values
  */
 export function recalculatePlayerHandicaps(player, leagueId = null, courseTees = DEFAULT_COURSE_TEES, maxHandicap = 54, handicapSettings = null) {
-  const allHandicaps = getAllHandicaps(player, leagueId, courseTees, maxHandicap, handicapSettings)
+  const settings = { ...DEFAULT_HANDICAP_SETTINGS, ...handicapSettings }
+  const allHandicaps = getAllHandicaps(player, leagueId, courseTees, maxHandicap, settings)
+
+  const rawTrueHandicap = allHandicaps.trueHandicap
+
+  // Update low index tracking based on raw true handicap
+  let updatedPlayer = updateLowIndex(player, rawTrueHandicap)
+
+  // Apply caps to the true handicap
+  const { handicap: cappedHandicap, capApplied } = applyCaps(rawTrueHandicap, updatedPlayer, settings)
 
   return {
-    ...player,
-    // Store the true handicap as the main handicap
-    handicap: allHandicaps.trueHandicap,
-    handicapSource: allHandicaps.trueHandicap !== null ? 'auto' : player.handicapSource,
+    ...updatedPlayer,
+    // Store the capped handicap as the main handicap
+    handicap: cappedHandicap,
+    rawHandicap: rawTrueHandicap,
+    capApplied,
+    handicapSource: rawTrueHandicap !== null ? 'auto' : player.handicapSource,
     // Store all calculated values for display
     calculatedHandicaps: allHandicaps
   }
