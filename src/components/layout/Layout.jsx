@@ -74,7 +74,7 @@ function NextRoundBanner({ leagueSettings }) {
   )
 }
 
-function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague }) {
+function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin }) {
   const { isAuthenticated, profile } = useAuth()
   const [leagues, setLeagues] = useState([])
   const [isOpen, setIsOpen] = useState(false)
@@ -100,7 +100,11 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [isOpen])
 
-  const otherLeagues = leagues.filter(m => m.league_id !== leagueId)
+  // Hide test leagues unless user is an admin
+  const visibleLeagues = isAdmin
+    ? leagues
+    : leagues.filter(m => !m.leagues?.is_test)
+  const otherLeagues = visibleLeagues.filter(m => m.league_id !== leagueId)
   const currentMembership = leagues.find(m => m.league_id === leagueId)
   const currentLeagueName = currentMembership?.leagues?.name
 
@@ -291,6 +295,7 @@ function Layout({ onShowLeagueSelector }) {
               leagueId={leagueId}
               onShowLeagueSelector={onShowLeagueSelector}
               switchLeague={switchLeague}
+              isAdmin={isAdmin}
             />
             {isAdmin && (
               <span style={{

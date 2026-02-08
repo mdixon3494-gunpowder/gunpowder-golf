@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { getLeaguesForProfileWithCounts } from '../lib/leagueService'
+import { useLeague } from '../context/LeagueContext'
 
 function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting }) {
-  const [leagues, setLeagues] = useState([])
+  const { isAdmin } = useLeague()
+  const [allLeagues, setAllLeagues] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -13,7 +15,7 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting 
       }
       try {
         const data = await getLeaguesForProfileWithCounts(profile.id)
-        setLeagues(data)
+        setAllLeagues(data)
       } catch (err) {
         console.error('Error fetching leagues:', err)
       }
@@ -21,6 +23,11 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting 
     }
     fetchLeagues()
   }, [profile?.id])
+
+  // Hide test leagues unless user is an admin
+  const leagues = isAdmin
+    ? allLeagues
+    : allLeagues.filter(m => !m.leagues?.is_test)
 
   return (
     <div className="app-container">
