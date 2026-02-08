@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useLeague } from '../context/LeagueContext'
+import { useAuth } from '../context/AuthContext'
 
 function LeagueSetup() {
   const { createNewLeague, joinExistingLeague, checkLeagueCodeAvailable } = useLeague()
+  const { profile } = useAuth()
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState('')
   const [showCustomCode, setShowCustomCode] = useState(false)
@@ -10,6 +12,7 @@ function LeagueSetup() {
   const [customCodeError, setCustomCodeError] = useState('')
   const [isChecking, setIsChecking] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [leagueName, setLeagueName] = useState('')
 
   const handleJoin = async () => {
     if (!joinCode.trim()) {
@@ -17,9 +20,16 @@ function LeagueSetup() {
       return
     }
 
-    const success = await joinExistingLeague(joinCode)
-    if (!success) {
-      setError('League code not found. Please check the code and try again.')
+    try {
+      const success = await joinExistingLeague(joinCode, {
+        profileId: profile?.id || null
+      })
+      if (!success) {
+        setError('League code not found. Please check the code and try again.')
+      }
+    } catch (err) {
+      console.error('Join league error:', err)
+      setError('Error joining league: ' + err.message)
     }
   }
 
@@ -28,7 +38,10 @@ function LeagueSetup() {
     setCustomCodeError('')
 
     try {
-      const result = await createNewLeague(useCustomCode ? customCode : null)
+      const result = await createNewLeague(useCustomCode ? customCode : null, {
+        leagueName: leagueName.trim() || undefined,
+        profileId: profile?.id || null
+      })
       if (!result.success) {
         setCustomCodeError(result.error)
       }
@@ -73,6 +86,29 @@ function LeagueSetup() {
             <p style={{ marginBottom: '20px', opacity: 0.9 }}>
               Start a new league and invite your friends with the league code.
             </p>
+
+            {/* League Name Field */}
+            <div style={{ marginBottom: '15px', textAlign: 'left' }}>
+              <label style={{ display: 'block', fontSize: '13px', marginBottom: '5px', opacity: 0.9 }}>
+                League Name (optional)
+              </label>
+              <input
+                type="text"
+                value={leagueName}
+                onChange={(e) => setLeagueName(e.target.value)}
+                placeholder="e.g. Big Boy's League"
+                maxLength={50}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  background: 'rgba(255,255,255,0.15)',
+                  color: 'white',
+                  fontSize: '15px'
+                }}
+              />
+            </div>
 
             {!showCustomCode ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

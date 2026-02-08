@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { DEFAULT_HANDICAP_SETTINGS, DEFAULT_COURSE_TEES } from '../utils/handicapCalculation'
+import { addLeagueMember } from '../lib/leagueService'
+import { getTemplateById, getDefaultTemplate } from '../lib/formatTemplateService'
 
 const LeagueContext = createContext(null)
 
@@ -39,7 +41,6 @@ const CloudStorage = {
         .select('data')
         .eq('id', leagueId)
         .single()
-
       if (error) {
         console.error('Supabase load error:', error)
         return null
@@ -146,6 +147,9 @@ export function LeagueProvider({ children }) {
   // Course mapping data for GPS
   const [courseMapping, setCourseMapping] = useState(null)
 
+  // Format template for the league
+  const [formatTemplate, setFormatTemplate] = useState(null)
+
   const hasLoadedData = useRef(false)
   const isUpdatingFromRealtime = useRef(false)
 
@@ -200,6 +204,9 @@ export function LeagueProvider({ children }) {
           if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
           if (data.courseMapping) setCourseMapping(data.courseMapping)
           setIsSetup(true)
+
+          // Load format template from league metadata (non-blocking)
+          loadFormatTemplate(existingLeagueId)
         }
       }
       setLoading(false)
@@ -343,6 +350,30 @@ export function LeagueProvider({ children }) {
     }
   }, [leagueId, liveRound?.id])
 
+  // Load format template for a league (checks league metadata for template_id, falls back to default)
+  const loadFormatTemplate = async (lid) => {
+    try {
+      const { data: leagueMeta } = await supabase
+        .from('leagues')
+        .select('format_template_id')
+        .eq('id', lid)
+        .single()
+
+      if (leagueMeta?.format_template_id) {
+        const template = await getTemplateById(leagueMeta.format_template_id)
+        if (template) {
+          setFormatTemplate(template)
+          return
+        }
+      }
+      // Fall back to default template
+      const defaultTemplate = await getDefaultTemplate()
+      if (defaultTemplate) setFormatTemplate(defaultTemplate)
+    } catch (err) {
+      console.warn('Could not load format template:', err)
+    }
+  }
+
   // League actions
   const checkLeagueCodeAvailable = async (code) => {
     const normalizedCode = code.toUpperCase().trim().replace(/[^A-Z0-9]/g, '')
@@ -356,7 +387,7 @@ export function LeagueProvider({ children }) {
     return { available: true, normalizedCode }
   }
 
-  const createNewLeague = async (customCode = null) => {
+  const createNewLeague = async (customCode = null, { leagueName, profileId } = {}) => {
     let newLeagueId
 
     if (customCode) {
@@ -399,6 +430,19 @@ export function LeagueProvider({ children }) {
     CloudStorage.setLeagueId(newLeagueId)
     setIsSetup(true)
     hasLoadedData.current = true
+
+    // Get default format template id for the new league
+    let formatTemplateId = null
+    try {
+      const defaultTemplate = await getDefaultTemplate()
+      if (defaultTemplate) {
+        formatTemplateId = defaultTemplate.id
+        setFormatTemplate(defaultTemplate)
+      }
+    } catch (err) {
+      console.warn('Could not load default template for new league:', err)
+    }
+
     await CloudStorage.saveData(newLeagueId, {
       players: [],
       history: [],
@@ -406,6 +450,30 @@ export function LeagueProvider({ children }) {
       liveRound: null,
       teams: []
     })
+
+    // Set league metadata columns (non-blocking)
+    try {
+      await supabase
+        .from('leagues')
+        .update({
+          name: leagueName || `League ${newLeagueId}`,
+          owner_id: profileId || null,
+          format_template_id: formatTemplateId
+        })
+        .eq('id', newLeagueId)
+    } catch (err) {
+      console.warn('Could not set league metadata:', err)
+    }
+
+    // Create league_members row if authenticated with a profile
+    if (profileId) {
+      try {
+        await addLeagueMember(newLeagueId, profileId, 'owner')
+      } catch (err) {
+        console.warn('Could not create league member row:', err)
+      }
+    }
+
     return { success: true, leagueId: newLeagueId }
   }
 
@@ -447,7 +515,7 @@ export function LeagueProvider({ children }) {
     return { success: true, testLeagueId }
   }
 
-  const joinExistingLeague = async (code) => {
+  const joinExistingLeague = async (code, { profileId } = {}) => {
     const normalizedCode = code.toUpperCase().trim()
     const data = await CloudStorage.loadData(normalizedCode)
 
@@ -478,6 +546,19 @@ export function LeagueProvider({ children }) {
       if (data.courseMapping) setCourseMapping(data.courseMapping)
       setIsSetup(true)
       hasLoadedData.current = true
+
+      // Load format template (non-blocking)
+      loadFormatTemplate(normalizedCode)
+
+      // Create league_members row if authenticated with a profile
+      if (profileId) {
+        try {
+          await addLeagueMember(normalizedCode, profileId, 'player')
+        } catch (err) {
+          console.warn('Could not create league member row:', err)
+        }
+      }
+
       return true
     }
     return false
@@ -549,6 +630,9 @@ export function LeagueProvider({ children }) {
     // GPS Course Mapping
     courseMapping,
     setCourseMapping,
+
+    // Format template
+    formatTemplate,
 
     // Core data
     players,

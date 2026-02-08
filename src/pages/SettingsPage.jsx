@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
+import { useAuth } from '../context/AuthContext'
 import CourseMappingTool from '../components/gps/CourseMappingTool'
+import { runAllPendingMigrations, getPendingMigrations } from '../lib/migrations/index'
 import {
   DEFAULT_HANDICAP_SETTINGS,
   DEFAULT_COURSE_TEES,
@@ -2120,8 +2122,572 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
   )
 }
 
+function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
+  const [signingOut, setSigningOut] = useState(false)
+  const [unlinking, setUnlinking] = useState(false)
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false)
+
+  if (!user) {
+    return (
+      <div style={{
+        background: '#f8f9fa',
+        padding: '20px',
+        borderRadius: '10px',
+        marginBottom: '20px',
+        border: '1px solid #e0e0e0'
+      }}>
+        <h3 style={{ marginBottom: '10px' }}>Account</h3>
+        <p style={{ color: '#666', fontSize: '14px' }}>
+          Not signed in. Sign in to link your player profile and access your leagues across devices.
+        </p>
+      </div>
+    )
+  }
+
+  const handleSignOut = async () => {
+    setSigningOut(true)
+    try {
+      await onSignOut()
+    } catch (err) {
+      console.error('Sign out error:', err)
+      setSigningOut(false)
+    }
+  }
+
+  const handleUnlink = async () => {
+    setUnlinking(true)
+    try {
+      await onUnlinkProfile()
+    } catch (err) {
+      console.error('Unlink profile error:', err)
+      setUnlinking(false)
+      setShowUnlinkConfirm(false)
+    }
+  }
+
+  return (
+    <div style={{
+      background: 'white',
+      padding: '20px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      border: '1px solid #e0e0e0'
+    }}>
+      <h3 style={{ marginBottom: '15px' }}>Account</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontWeight: '600' }}>{profile?.display_name || 'No profile'}</div>
+          <div style={{ color: '#666', fontSize: '13px' }}>{user.email}</div>
+          {profile && (
+            <div style={{ color: '#999', fontSize: '12px', marginTop: '4px' }}>
+              Profile ID: {profile.id.slice(0, 8)}...
+            </div>
+          )}
+        </div>
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          style={{
+            background: '#e74c3c',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            opacity: signingOut ? 0.6 : 1
+          }}
+        >
+          {signingOut ? 'Signing out...' : 'Sign Out'}
+        </button>
+      </div>
+
+      {profile && (
+        <div style={{ marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+          {!showUnlinkConfirm ? (
+            <button
+              onClick={() => setShowUnlinkConfirm(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#e67e22',
+                cursor: 'pointer',
+                fontSize: '13px',
+                padding: 0,
+                textDecoration: 'underline'
+              }}
+            >
+              Wrong profile? Unlink and choose a different one
+            </button>
+          ) : (
+            <div style={{
+              background: '#fff3cd',
+              padding: '12px',
+              borderRadius: '8px',
+              border: '1px solid #ffc107'
+            }}>
+              <p style={{ fontSize: '13px', marginBottom: '10px', color: '#856404' }}>
+                This will unlink <strong>{profile.display_name}</strong> from your account.
+                You'll be taken back to the profile selection screen to choose or create a different one.
+              </p>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={handleUnlink}
+                  disabled={unlinking}
+                  style={{
+                    background: '#e67e22',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    opacity: unlinking ? 0.6 : 1
+                  }}
+                >
+                  {unlinking ? 'Unlinking...' : 'Yes, Unlink Profile'}
+                </button>
+                <button
+                  onClick={() => setShowUnlinkConfirm(false)}
+                  style={{
+                    background: '#f0f0f0',
+                    color: '#333',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '13px'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MigrationSection({ leagueId, players, onPlayersUpdate }) {
+  const [running, setRunning] = useState(false)
+  const [logs, setLogs] = useState([])
+  const [results, setResults] = useState(null)
+  const [pendingCount, setPendingCount] = useState(null)
+
+  const checkPending = async () => {
+    const pending = await getPendingMigrations()
+    setPendingCount(pending.length)
+  }
+
+  const handleRunMigrations = async () => {
+    setRunning(true)
+    setLogs([])
+    setResults(null)
+
+    try {
+      const result = await runAllPendingMigrations(
+        (msg) => setLogs(prev => [...prev, msg]),
+        { leagueId, players }
+      )
+      setResults(result)
+      await checkPending()
+
+      // If profiles migration returned updated players, save them
+      const profileResult = result.results.find(r => r.id === 'migrate_profiles_v1')
+      if (profileResult?.success && profileResult.result?.updatedPlayers) {
+        onPlayersUpdate(profileResult.result.updatedPlayers)
+      }
+    } catch (err) {
+      setLogs(prev => [...prev, `ERROR: ${err.message}`])
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  return (
+    <div style={{
+      background: '#fff3cd',
+      padding: '20px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      border: '1px solid #ffc107'
+    }}>
+      <h3 style={{ marginBottom: '15px' }}>Data Migrations</h3>
+      <p style={{ color: '#666', fontSize: '14px', marginBottom: '15px' }}>
+        Run data migrations to set up profiles and league metadata for multi-league support.
+      </p>
+
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+        <button
+          className="btn btn-primary"
+          onClick={handleRunMigrations}
+          disabled={running}
+        >
+          {running ? 'Running...' : 'Run Migrations'}
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={checkPending}
+        >
+          Check Pending
+        </button>
+      </div>
+
+      {pendingCount !== null && (
+        <div style={{ marginBottom: '10px', fontSize: '14px' }}>
+          {pendingCount === 0
+            ? <span style={{ color: '#27ae60' }}>All migrations have been run.</span>
+            : <span style={{ color: '#e67e22' }}>{pendingCount} pending migration(s)</span>
+          }
+        </div>
+      )}
+
+      {logs.length > 0 && (
+        <div style={{
+          background: '#1a1a2e',
+          color: '#e0e0e0',
+          padding: '12px',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          maxHeight: '200px',
+          overflow: 'auto',
+          marginBottom: '10px'
+        }}>
+          {logs.map((log, i) => (
+            <div key={i} style={{ marginBottom: '2px' }}>{log}</div>
+          ))}
+        </div>
+      )}
+
+      {results && (
+        <div style={{ fontSize: '14px' }}>
+          <strong>Results:</strong> Ran {results.ran} migration(s).
+          {results.results.map((r, i) => (
+            <div key={i} style={{ marginLeft: '10px', marginTop: '4px' }}>
+              {r.success ? '✓' : '✗'} {r.name}
+              {r.error && <span style={{ color: '#e74c3c' }}> - {r.error}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+    </div>
+  )
+}
+
+function ManageProfilesSection() {
+  const [tab, setTab] = useState('claimed') // 'claimed' | 'ghost'
+  const [claimedProfiles, setClaimedProfiles] = useState([])
+  const [ghostProfiles, setGhostProfiles] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [unlinkingId, setUnlinkingId] = useState(null)
+  const [assigningId, setAssigningId] = useState(null)
+  const [assignEmail, setAssignEmail] = useState('')
+  const [savingId, setSavingId] = useState(null)
+
+  const loadAllProfiles = async () => {
+    setLoading(true)
+    const { getClaimedProfiles, getGhostProfiles } = await import('../lib/profileService')
+    const [claimed, ghosts] = await Promise.all([
+      getClaimedProfiles(),
+      getGhostProfiles()
+    ])
+    setClaimedProfiles(claimed)
+    setGhostProfiles(ghosts)
+    setLoading(false)
+    setLoaded(true)
+  }
+
+  const handleUnlink = async (profileToUnlink) => {
+    if (!window.confirm(`Unlink "${profileToUnlink.display_name}" from their account? They will need to re-claim a profile on next login.`)) {
+      return
+    }
+    setUnlinkingId(profileToUnlink.id)
+    try {
+      const { unlinkProfile } = await import('../lib/profileService')
+      await unlinkProfile(profileToUnlink.id)
+      setClaimedProfiles(prev => prev.filter(p => p.id !== profileToUnlink.id))
+      // Move to ghost list
+      setGhostProfiles(prev => [...prev, { ...profileToUnlink, user_id: null }].sort((a, b) => a.display_name.localeCompare(b.display_name)))
+    } catch (err) {
+      console.error('Error unlinking profile:', err)
+      alert('Failed to unlink profile: ' + err.message)
+    } finally {
+      setUnlinkingId(null)
+    }
+  }
+
+  const handleAssignEmail = async (ghostProfile) => {
+    if (!assignEmail.trim() || !assignEmail.includes('@')) {
+      alert('Please enter a valid email address')
+      return
+    }
+    setSavingId(ghostProfile.id)
+    try {
+      const { assignEmailToProfile } = await import('../lib/profileService')
+      const updated = await assignEmailToProfile(ghostProfile.id, assignEmail.trim())
+      if (updated) {
+        setGhostProfiles(prev => prev.map(p => p.id === ghostProfile.id ? { ...p, email: assignEmail.trim() } : p))
+      }
+      setAssigningId(null)
+      setAssignEmail('')
+    } catch (err) {
+      console.error('Error assigning email:', err)
+      alert('Failed to assign email: ' + err.message)
+    } finally {
+      setSavingId(null)
+    }
+  }
+
+  const handleClearEmail = async (ghostProfile) => {
+    setSavingId(ghostProfile.id)
+    try {
+      const { assignEmailToProfile } = await import('../lib/profileService')
+      await assignEmailToProfile(ghostProfile.id, null)
+      setGhostProfiles(prev => prev.map(p => p.id === ghostProfile.id ? { ...p, email: null } : p))
+    } catch (err) {
+      console.error('Error clearing email:', err)
+    } finally {
+      setSavingId(null)
+    }
+  }
+
+  const tabStyle = (isActive) => ({
+    padding: '8px 16px',
+    border: 'none',
+    borderBottom: isActive ? '3px solid #3498db' : '3px solid transparent',
+    background: 'none',
+    cursor: 'pointer',
+    fontWeight: isActive ? '600' : '400',
+    color: isActive ? '#3498db' : '#666',
+    fontSize: '14px'
+  })
+
+  return (
+    <div style={{
+      background: '#f0f4ff',
+      padding: '20px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      border: '1px solid #b8d4fe'
+    }}>
+      <h3 style={{ marginBottom: '10px' }}>Manage Profiles</h3>
+      <p style={{ color: '#666', fontSize: '14px', marginBottom: '15px' }}>
+        Manage claimed profiles and pre-assign emails to ghost profiles for auto-linking on first login.
+      </p>
+
+      {!loaded ? (
+        <button
+          className="btn btn-primary"
+          onClick={loadAllProfiles}
+          disabled={loading}
+        >
+          {loading ? 'Loading...' : 'Load Profiles'}
+        </button>
+      ) : (
+        <div>
+          {/* Tabs */}
+          <div style={{ borderBottom: '1px solid #ddd', marginBottom: '15px' }}>
+            <button style={tabStyle(tab === 'claimed')} onClick={() => setTab('claimed')}>
+              Claimed ({claimedProfiles.length})
+            </button>
+            <button style={tabStyle(tab === 'ghost')} onClick={() => setTab('ghost')}>
+              Ghost / Unclaimed ({ghostProfiles.length})
+            </button>
+          </div>
+
+          {/* Claimed Tab */}
+          {tab === 'claimed' && (
+            claimedProfiles.length === 0 ? (
+              <p style={{ color: '#666', fontSize: '14px' }}>No claimed profiles.</p>
+            ) : (
+              <div>
+                {claimedProfiles.map(p => (
+                  <div key={p.id} style={{
+                    background: 'white',
+                    padding: '12px 15px',
+                    borderRadius: '8px',
+                    border: '1px solid #e0e0e0',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: '600', fontSize: '14px' }}>{p.display_name}</div>
+                      <div style={{ color: '#666', fontSize: '12px' }}>
+                        {p.email || 'No email'} | ID: {p.id.slice(0, 8)}...
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleUnlink(p)}
+                      disabled={unlinkingId === p.id}
+                      style={{
+                        background: '#e67e22',
+                        color: 'white',
+                        border: 'none',
+                        padding: '6px 14px',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        opacity: unlinkingId === p.id ? 0.6 : 1
+                      }}
+                    >
+                      {unlinkingId === p.id ? '...' : 'Unlink'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {/* Ghost Tab */}
+          {tab === 'ghost' && (
+            ghostProfiles.length === 0 ? (
+              <p style={{ color: '#666', fontSize: '14px' }}>No ghost profiles.</p>
+            ) : (
+              <div>
+                <p style={{ color: '#666', fontSize: '12px', marginBottom: '10px' }}>
+                  Assign an email to a ghost profile so it auto-links when that user signs up or logs in.
+                </p>
+                {ghostProfiles.map(p => (
+                  <div key={p.id} style={{
+                    background: 'white',
+                    padding: '12px 15px',
+                    borderRadius: '8px',
+                    border: '1px solid #e0e0e0',
+                    marginBottom: '8px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: '600', fontSize: '14px' }}>{p.display_name}</div>
+                        <div style={{ color: '#666', fontSize: '12px' }}>
+                          {p.email ? (
+                            <span>
+                              Pre-assigned: <strong>{p.email}</strong>
+                              <button
+                                onClick={() => handleClearEmail(p)}
+                                disabled={savingId === p.id}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#e74c3c',
+                                  cursor: 'pointer',
+                                  fontSize: '11px',
+                                  marginLeft: '8px',
+                                  padding: 0,
+                                  textDecoration: 'underline'
+                                }}
+                              >
+                                clear
+                              </button>
+                            </span>
+                          ) : 'No email assigned'}
+                        </div>
+                      </div>
+                      {!p.email && assigningId !== p.id && (
+                        <button
+                          onClick={() => { setAssigningId(p.id); setAssignEmail('') }}
+                          style={{
+                            background: '#27ae60',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 14px',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}
+                        >
+                          Assign Email
+                        </button>
+                      )}
+                    </div>
+                    {assigningId === p.id && (
+                      <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <input
+                          type="email"
+                          value={assignEmail}
+                          onChange={(e) => setAssignEmail(e.target.value)}
+                          placeholder="user@example.com"
+                          style={{
+                            flex: 1,
+                            padding: '6px 10px',
+                            borderRadius: '5px',
+                            border: '1px solid #ccc',
+                            fontSize: '13px'
+                          }}
+                        />
+                        <button
+                          onClick={() => handleAssignEmail(p)}
+                          disabled={savingId === p.id}
+                          style={{
+                            background: '#27ae60',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            opacity: savingId === p.id ? 0.6 : 1
+                          }}
+                        >
+                          {savingId === p.id ? '...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => { setAssigningId(null); setAssignEmail('') }}
+                          style={{
+                            background: '#f0f0f0',
+                            color: '#333',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          <button
+            onClick={loadAllProfiles}
+            disabled={loading}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#3498db',
+              cursor: 'pointer',
+              fontSize: '13px',
+              padding: 0,
+              marginTop: '10px',
+              textDecoration: 'underline'
+            }}
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SettingsPage() {
   const navigate = useNavigate()
+  const { user, profile, signOut, unlinkMyProfile } = useAuth()
   const {
     leagueId,
     isAdmin,
@@ -2134,6 +2700,7 @@ function SettingsPage() {
     holeInOnePot,
     setHoleInOnePot,
     players,
+    setPlayers,
     liveRound,
     setLiveRound,
     setSkinsMatch,
@@ -2200,6 +2767,9 @@ function SettingsPage() {
     <div>
       <h2 style={{ marginBottom: '20px' }}>Settings</h2>
 
+      {/* Account Section */}
+      <AccountSection user={user} profile={profile} onSignOut={signOut} onUnlinkProfile={unlinkMyProfile} />
+
       <AdminLoginSection
         isAdmin={isAdmin}
         onLogin={adminLogin}
@@ -2256,6 +2826,18 @@ function SettingsPage() {
         onUpdate={setPayoutFormats}
         isAdmin={isAdmin}
       />
+
+      {/* Site Owner Tools */}
+      {isSiteOwner && (
+        <>
+          <ManageProfilesSection />
+          <MigrationSection
+            leagueId={leagueId}
+            players={players}
+            onPlayersUpdate={setPlayers}
+          />
+        </>
+      )}
 
       {/* Site Owner Access - hidden by default, triple-tap reveals */}
       <SiteOwnerAccessSection

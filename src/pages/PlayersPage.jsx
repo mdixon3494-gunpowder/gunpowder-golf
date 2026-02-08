@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
+import { createProfile } from '../lib/profileService'
 import {
   getAllHandicaps,
   formatHandicap,
@@ -1967,7 +1968,22 @@ function PlayersPage() {
     return true
   }).sort((a, b) => a.name.localeCompare(b.name))
 
-  const handleAddPlayer = (newPlayer) => {
+  const handleAddPlayer = async (newPlayer) => {
+    // Create a ghost profile for the new player (non-blocking on failure)
+    try {
+      const ghostProfile = await createProfile({
+        displayName: newPlayer.name,
+        email: newPlayer.email || null,
+        phone: newPlayer.phone || null,
+        defaultTee: newPlayer.defaultTee || 'blue'
+      })
+      if (ghostProfile) {
+        newPlayer.profile_id = ghostProfile.id
+      }
+    } catch (err) {
+      console.warn('Could not create ghost profile for new player:', err)
+    }
+
     setPlayers([...players, newPlayer])
     setShowAddForm(false)
   }

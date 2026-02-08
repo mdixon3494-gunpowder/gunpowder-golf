@@ -1,0 +1,321 @@
+import { supabase, supabaseUrl, supabaseAnonKey } from './supabase'
+
+/**
+ * Profile CRUD operations
+ * Handles both authenticated user profiles and ghost profiles (user_id = null)
+ */
+
+export async function getProfileByUserId(userId) {
+  // Try Supabase client with AbortSignal
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .limit(1)
+      .abortSignal(controller.signal)
+
+    clearTimeout(timeoutId)
+
+    if (error) {
+      console.error('Error fetching profile by user_id:', error)
+      throw error
+    }
+    return data?.[0] || null
+  } catch (err) {
+    clearTimeout(timeoutId)
+    console.warn('Supabase client profile query failed, trying direct fetch:', err.message)
+
+    // Fallback: direct REST API call
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const fallbackController = new AbortController()
+      const fallbackTimeout = setTimeout(() => fallbackController.abort(), 5000)
+
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?user_id=eq.${userId}&limit=1`,
+        {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${token || supabaseAnonKey}`,
+            'Accept': 'application/json'
+          },
+          signal: fallbackController.signal
+        }
+      )
+
+      clearTimeout(fallbackTimeout)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Direct fetch succeeded:', data?.length, 'results')
+        return data?.[0] || null
+      }
+      console.error('Direct fetch failed:', response.status, response.statusText)
+      return null
+    } catch (fallbackErr) {
+      console.error('Direct fetch also failed:', fallbackErr.message)
+      return null
+    }
+  }
+}
+
+export async function getProfileById(profileId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', profileId)
+    .single()
+
+  if (error) {
+    console.error('Error fetching profile by id:', error)
+  }
+  return data || null
+}
+
+export async function createProfile({ userId = null, displayName, email = null, phone = null, defaultTee = 'blue' }) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({
+      user_id: userId,
+      display_name: displayName,
+      email,
+      phone,
+      default_tee: defaultTee
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating profile:', error)
+    throw error
+  }
+  return data
+}
+
+export async function updateProfile(profileId, updates) {
+  const mappedUpdates = {}
+  if (updates.displayName !== undefined) mappedUpdates.display_name = updates.displayName
+  if (updates.email !== undefined) mappedUpdates.email = updates.email
+  if (updates.phone !== undefined) mappedUpdates.phone = updates.phone
+  if (updates.defaultTee !== undefined) mappedUpdates.default_tee = updates.defaultTee
+  if (updates.avatarUrl !== undefined) mappedUpdates.avatar_url = updates.avatarUrl
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(mappedUpdates)
+    .eq('id', profileId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating profile:', error)
+    throw error
+  }
+  return data
+}
+
+export async function getGhostProfiles() {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .is('user_id', null)
+      .order('display_name')
+      .abortSignal(controller.signal)
+
+    clearTimeout(timeoutId)
+
+    if (error) {
+      console.error('Error fetching ghost profiles:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    clearTimeout(timeoutId)
+    console.error('Ghost profiles query failed:', err.message)
+    return []
+  }
+}
+
+export async function getGhostProfileByEmail(email) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .is('user_id', null)
+      .eq('email', email)
+      .limit(1)
+      .abortSignal(controller.signal)
+
+    clearTimeout(timeoutId)
+
+    if (error) {
+      console.error('Error fetching ghost profile by email:', error)
+      return null
+    }
+    return data?.[0] || null
+  } catch (err) {
+    clearTimeout(timeoutId)
+    console.error('Ghost profile by email query failed:', err.message)
+    return null
+  }
+}
+
+export async function assignEmailToProfile(profileId, email) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ email })
+    .eq('id', profileId)
+    .is('user_id', null)
+    .select()
+
+  if (error) {
+    console.error('Error assigning email to profile:', error)
+    throw error
+  }
+  return data?.[0] || null
+}
+
+export async function unlinkProfile(profileId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ user_id: null })
+    .eq('id', profileId)
+    .select()
+
+  if (error) {
+    console.error('Error unlinking profile:', error)
+    throw error
+  }
+  return data?.[0] || null
+}
+
+export async function getClaimedProfiles() {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .not('user_id', 'is', null)
+      .order('display_name')
+      .abortSignal(controller.signal)
+
+    clearTimeout(timeoutId)
+
+    if (error) {
+      console.error('Error fetching claimed profiles:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    clearTimeout(timeoutId)
+    console.error('Claimed profiles query failed:', err.message)
+    return []
+  }
+}
+
+export async function searchGhostProfilesByName(name) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .is('user_id', null)
+      .ilike('display_name', `%${name}%`)
+      .abortSignal(controller.signal)
+
+    clearTimeout(timeoutId)
+
+    if (error) {
+      console.error('Error searching ghost profiles:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    clearTimeout(timeoutId)
+    console.warn('Ghost profile search failed, trying direct fetch:', err.message)
+
+    // Fallback: direct REST API call
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const fallbackController = new AbortController()
+      const fallbackTimeout = setTimeout(() => fallbackController.abort(), 5000)
+
+      const encodedName = encodeURIComponent(`%${name}%`)
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?user_id=is.null&display_name=ilike.${encodedName}`,
+        {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${token || supabaseAnonKey}`,
+            'Accept': 'application/json'
+          },
+          signal: fallbackController.signal
+        }
+      )
+
+      clearTimeout(fallbackTimeout)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Direct ghost profile search succeeded:', data?.length, 'results')
+        return data || []
+      }
+      return []
+    } catch (fallbackErr) {
+      console.error('Direct ghost search also failed:', fallbackErr.message)
+      return []
+    }
+  }
+}
+
+export async function claimProfile(profileId, userId, email = null) {
+  // First check if this profile is already claimed by this user
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', profileId)
+    .eq('user_id', userId)
+
+  if (existing && existing.length > 0) {
+    return existing[0] // Already claimed by this user
+  }
+
+  // Try to claim it - also sync email from auth account
+  const updateFields = { user_id: userId }
+  if (email) updateFields.email = email
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updateFields)
+    .eq('id', profileId)
+    .is('user_id', null)
+    .select()
+
+  if (error) {
+    console.error('Error claiming profile:', error)
+    throw error
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('Profile has already been claimed by another user')
+  }
+
+  return data[0]
+}
