@@ -582,7 +582,9 @@ function TeamsPage() {
     setPairingRequests,
     players,
     courseTees,
-    isCasualGame
+    isCasualGame,
+    roundFormatOverride,
+    setRoundFormatOverride
   } = useLeague()
 
   const balance = teams.length > 0 ? calculateTeamBalance(teams) : null
@@ -610,6 +612,7 @@ function TeamsPage() {
     const round = {
       id: Date.now(),
       date: new Date().toISOString(),
+      ...(roundFormatOverride ? { formatConfig: roundFormatOverride } : {}),
       teams: teams.map((team, idx) => ({
         id: idx,
         name: getTeamName(team),
@@ -637,10 +640,11 @@ function TeamsPage() {
 
     setLiveRound(round)
 
-    // Clear check-in state
+    // Clear check-in state and format override
     setCheckedInPlayers([])
     setManualTeams([])
     setPairingRequests([])
+    if (roundFormatOverride) setRoundFormatOverride(null)
 
     navigate('/live')
   }

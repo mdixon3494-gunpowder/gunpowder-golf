@@ -135,6 +135,9 @@ export function LeagueProvider({ children }) {
   const [checkedInPlayers, setCheckedInPlayers] = useState([])
   const [manualTeams, setManualTeams] = useState([])
 
+  // Per-round format override (ephemeral, not persisted)
+  const [roundFormatOverride, setRoundFormatOverride] = useState(null)
+
   // Admin state
   const [isAdminPIN, setIsAdminPIN] = useState(() => {
     return localStorage.getItem('gunpowder_admin') === 'true'
@@ -867,6 +870,10 @@ export function LeagueProvider({ children }) {
     setCheckedInPlayers,
     manualTeams,
     setManualTeams,
+
+    // Round format override
+    roundFormatOverride,
+    setRoundFormatOverride,
 
     // Handicap settings
     handicapSettings,

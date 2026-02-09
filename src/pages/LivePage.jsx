@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
+import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore } from '../utils/formatScoring'
 import {
   recalculatePlayerHandicaps,
   DEFAULT_COURSE_TEES,
@@ -45,38 +46,81 @@ function formatRelativeToPar(score) {
 // Leaderboard Component
 function Leaderboard({ liveRound, view, setView }) {
 
-  // Calculate holes completed for a team (based on all active players having a score)
-  const getHolesCompleted = (team) => {
-    const activePlayers = team.players.filter(p => !p.isDNF)
-    if (activePlayers.length === 0) return 0
+  const { entries, displayMode, sortDirection, matchResult } = getLeaderboardData(liveRound)
 
-    let holesCompleted = 0
-    for (let hole = 1; hole <= 18; hole++) {
-      const allHaveScore = activePlayers.every(p => {
-        const score = p.scores?.[hole]
-        return score !== undefined && score !== null && score !== ''
-      })
-      if (allHaveScore) {
-        holesCompleted = hole
-      } else {
-        break
-      }
-    }
-    return holesCompleted
+  // If no leaderboard for this format (e.g. skins), show nothing
+  if (!displayMode || entries.length === 0) return null
+
+  // Match Play: special display
+  if (displayMode === 'matchplay' && matchResult) {
+    return (
+      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%)',
+          color: 'white',
+          padding: '12px 15px',
+          textAlign: 'center'
+        }}>
+          <span style={{ fontSize: '18px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            Match Play
+          </span>
+        </div>
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1a472a', marginBottom: '8px' }}>
+            {matchResult.holesUp === 0 ? 'ALL SQUARE' : (
+              <>
+                {entries.find(e => e.isLeader)?.name || ''}
+                <span style={{ color: '#e74c3c', marginLeft: '10px' }}>
+                  {matchResult.isDecided
+                    ? `${matchResult.holesUp}&${matchResult.holesRemaining}`
+                    : `${matchResult.holesUp} UP`
+                  }
+                </span>
+              </>
+            )}
+          </div>
+          <div style={{ fontSize: '14px', color: '#666' }}>
+            {matchResult.thru >= 18 ? 'Final' : matchResult.thru > 0 ? `thru ${matchResult.thru}` : '--'}
+          </div>
+          <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '30px' }}>
+            {entries.map(e => (
+              <div key={e.id}>
+                <div style={{ fontWeight: '600', fontSize: '15px' }}>{e.name}</div>
+                <div style={{ fontSize: '13px', color: '#888' }}>{e.holesWon} holes won</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
-  const teamsWithScores = liveRound.teams.map(team => {
-    const front9 = calculateTeamScore(team, 1, 9)
-    const back9 = calculateTeamScore(team, 10, 18)
-    const total = front9 + back9
-    const holesCompleted = getHolesCompleted(team)
-
-    return { ...team, front9, back9, total, holesCompleted }
-  }).sort((a, b) => {
-    if (view === 'front') return a.front9 - b.front9
-    if (view === 'back') return a.back9 - b.back9
-    return a.total - b.total
+  // Sort entries
+  const sorted = [...entries].sort((a, b) => {
+    const aVal = view === 'front' ? a.front9 : view === 'back' ? a.back9 : a.total
+    const bVal = view === 'front' ? b.front9 : view === 'back' ? b.back9 : b.total
+    return sortDirection === 'desc' ? bVal - aVal : aVal - bVal
   })
+
+  // Format label for header
+  const formatConfig = liveRound.formatConfig
+  const formatLabel = formatConfig?.format ? (FORMAT_CONFIGS[formatConfig.format]?.label || '') : ''
+
+  // Score display helper
+  const renderScore = (score) => {
+    if (displayMode === 'relative') {
+      return (
+        <span style={{ color: score < 0 ? '#27ae60' : score > 0 ? '#e74c3c' : '#333' }}>
+          {formatRelativeToPar(score)}
+        </span>
+      )
+    }
+    if (displayMode === 'points') {
+      return <span style={{ color: '#b8860b' }}>{score} pts</span>
+    }
+    // gross or net: plain number
+    return <span style={{ color: '#333' }}>{score}</span>
+  }
 
   return (
     <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
@@ -88,14 +132,21 @@ function Leaderboard({ liveRound, view, setView }) {
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <span style={{
-          fontSize: '18px',
-          fontWeight: '600',
-          textTransform: 'uppercase',
-          letterSpacing: '2px'
-        }}>
-          Leaderboard
-        </span>
+        <div>
+          <span style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '2px'
+          }}>
+            Leaderboard
+          </span>
+          {formatLabel && (
+            <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>
+              {formatLabel}{displayMode === 'net' ? ' (net)' : ''}
+            </div>
+          )}
+        </div>
         <select
           value={view}
           onChange={(e) => setView(e.target.value)}
@@ -118,15 +169,15 @@ function Leaderboard({ liveRound, view, setView }) {
       </div>
 
       <div style={{ padding: '10px' }}>
-        {teamsWithScores.map((team, idx) => {
-          const displayScore = view === 'front' ? team.front9 : view === 'back' ? team.back9 : team.total
+        {sorted.map((entry, idx) => {
+          const displayScore = view === 'front' ? entry.front9 : view === 'back' ? entry.back9 : entry.total
           return (
-            <div key={team.id} style={{
+            <div key={entry.id} style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '12px',
-              background: idx === 0 ? '#fff8e1' : (idx % 2 === 0 ? '#f8f9fa' : 'white'),
+              background: idx === 0 ? (displayMode === 'points' ? '#fff8e1' : '#fff8e1') : (idx % 2 === 0 ? '#f8f9fa' : 'white'),
               borderRadius: '8px',
               marginBottom: '8px',
               border: idx === 0 ? '2px solid #f9a825' : 'none'
@@ -147,24 +198,20 @@ function Leaderboard({ liveRound, view, setView }) {
                   {idx + 1}
                 </span>
                 <div>
-                  <div style={{ fontWeight: '600' }}>{team.name}</div>
+                  <div style={{ fontWeight: '600' }}>{entry.name}</div>
                   <div style={{ fontSize: '12px', color: '#666' }}>
-                    {team.holesCompleted === 18 ? (
+                    {entry.holesCompleted === 18 ? (
                       <span style={{ color: '#27ae60', fontWeight: '600' }}>F</span>
-                    ) : team.holesCompleted > 0 ? (
-                      <span>thru {team.holesCompleted}</span>
+                    ) : entry.holesCompleted > 0 ? (
+                      <span>thru {entry.holesCompleted}</span>
                     ) : (
                       <span>--</span>
                     )}
                   </div>
                 </div>
               </div>
-              <div style={{
-                fontSize: '20px',
-                fontWeight: 'bold',
-                color: displayScore < 0 ? '#27ae60' : displayScore > 0 ? '#e74c3c' : '#333'
-              }}>
-                {formatRelativeToPar(displayScore)}
+              <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                {renderScore(displayScore)}
               </div>
             </div>
           )
@@ -6278,15 +6325,29 @@ function LivePage() {
       return
     }
 
+    const formatKey = liveRound.formatConfig?.format || null
+    const formatSettings = liveRound.formatConfig || {}
+
     const roundData = {
       id: liveRound.id,
       date: liveRound.date,
-      teams: liveRound.teams.map(team => ({
-        ...team,
-        front9Score: calculateTeamScore(team, 1, 9),
-        back9Score: calculateTeamScore(team, 10, 18),
-        totalScore: calculateTeamScore(team, 1, 9) + calculateTeamScore(team, 10, 18)
-      })),
+      ...(liveRound.formatConfig ? { formatConfig: liveRound.formatConfig } : {}),
+      teams: liveRound.teams.map(team => {
+        let front9Score, back9Score
+        if (formatKey && FORMAT_CONFIGS[formatKey]) {
+          front9Score = calculateFormatScore(formatKey, team, 1, 9, formatSettings)
+          back9Score = calculateFormatScore(formatKey, team, 10, 18, formatSettings)
+        } else {
+          front9Score = calculateTeamScore(team, 1, 9)
+          back9Score = calculateTeamScore(team, 10, 18)
+        }
+        return {
+          ...team,
+          front9Score,
+          back9Score,
+          totalScore: front9Score + back9Score
+        }
+      }),
       skinsMatch: skinsMatch ? { ...skinsMatch } : null
     }
 

@@ -29,6 +29,17 @@ function CasualGameSetup({ onBack }) {
   const [teamSize, setTeamSize] = useState(2)
   const [enableGreenies, setEnableGreenies] = useState(true)
 
+  // Format-specific settings
+  const [formatSettings, setFormatSettings] = useState({
+    useHandicaps: false,           // bestball
+    scrambleHandicapPct: 10,       // scramble
+    retireesScoresToCount: 2,      // retirees
+    retireesBonusPer9: -2,         // retirees 3-player bonus
+    retireesExtraStrokes: 2,       // retirees 3-player extra HC strokes
+    useNet: true,                  // stableford
+  })
+  const [scrambleTeamNames, setScrambleTeamNames] = useState({})
+
   // Skins-specific settings
   const [skinsSettings, setSkinsSettings] = useState({
     costPerSkin: '',
@@ -120,7 +131,7 @@ function CasualGameSetup({ onBack }) {
     ))
   }
 
-  const isTeamFormat = format === 'bestball' || format === 'matchplay'
+  const isTeamFormat = ['bestball', 'scramble', 'retirees', 'matchplay'].includes(format)
 
   const generateGameCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -172,9 +183,15 @@ function CasualGameSetup({ onBack }) {
       const liveRound = {
         id: Date.now(),
         date: new Date().toLocaleDateString('en-CA'),
+        formatConfig: {
+          format,
+          ...formatSettings
+        },
         teams: teamsData.map((team, idx) => ({
           id: idx,
-          name: isTeamFormat ? getTeamName(team) : (team.length > 1 ? `Group ${idx + 1}` : team[0]?.name || `Group ${idx + 1}`),
+          name: format === 'scramble'
+            ? (scrambleTeamNames[idx] || `Team ${idx + 1}`)
+            : isTeamFormat ? getTeamName(team) : (team.length > 1 ? `Group ${idx + 1}` : team[0]?.name || `Group ${idx + 1}`),
           players: team.map(p => ({
             id: p.id,
             name: p.name,
@@ -235,6 +252,7 @@ function CasualGameSetup({ onBack }) {
           courseName,
           holes,
           format,
+          formatSettings,
           teamSize: isTeamFormat ? teamSize : null,
           enableGreenies,
           createdBy: profile?.id
@@ -278,11 +296,15 @@ function CasualGameSetup({ onBack }) {
   }
 
   const formats = [
-    { key: 'stroke', label: 'Stroke Play', desc: 'Individual scores' },
-    { key: 'bestball', label: 'Best Ball', desc: 'Team best score per hole' },
-    { key: 'matchplay', label: 'Match Play', desc: 'Hole-by-hole team battle' },
-    { key: 'skins', label: 'Skins', desc: 'Win holes outright' },
-    { key: 'track', label: 'Just Track Scores', desc: 'No competition' }
+    { key: 'stroke',     label: 'Stroke Play',         desc: 'Total strokes, lowest wins' },
+    { key: 'stroke_net', label: 'Stroke Play (Net)',    desc: 'Handicap-adjusted strokes' },
+    { key: 'bestball',   label: 'Best Ball',            desc: '1 best score per hole per team' },
+    { key: 'scramble',   label: 'Scramble',             desc: 'Pick best shot, all play from there' },
+    { key: 'retirees',   label: '2 Best Balls (Net)',   desc: '2 best net scores per hole' },
+    { key: 'stableford', label: 'Stableford',           desc: 'Points-based scoring' },
+    { key: 'matchplay',  label: 'Match Play',           desc: 'Hole-by-hole battle' },
+    { key: 'skins',      label: 'Skins',                desc: 'Win holes outright' },
+    { key: 'track',      label: 'Just Track Scores',    desc: 'No competition' },
   ]
 
   return (
@@ -529,6 +551,28 @@ function CasualGameSetup({ onBack }) {
                 </div>
               ))}
             </div>
+
+            {/* Scramble Team Names */}
+            {format === 'scramble' && gamePlayers.length >= teamSize * 2 && (
+              <div style={{ marginTop: '16px', padding: '12px', background: '#fff8e1', borderRadius: '8px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px', color: '#333' }}>
+                  Team Names (optional)
+                </label>
+                {Array.from({ length: Math.ceil(gamePlayers.length / teamSize) }, (_, i) => (
+                  <input
+                    key={i}
+                    type="text"
+                    value={scrambleTeamNames[i] || ''}
+                    onChange={(e) => setScrambleTeamNames({ ...scrambleTeamNames, [i]: e.target.value })}
+                    placeholder={`Team ${i + 1}`}
+                    style={{
+                      width: '100%', padding: '8px 10px', borderRadius: '6px',
+                      border: '1px solid #ddd', fontSize: '14px', marginBottom: '6px'
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Section 3: Format */}
@@ -595,6 +639,65 @@ function CasualGameSetup({ onBack }) {
                 </div>
               </div>
             )}
+
+            {/* Format-specific settings */}
+            {format === 'bestball' && (
+              <div style={{ padding: '12px', background: '#f0fff4', borderRadius: '8px', marginBottom: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={formatSettings.useHandicaps}
+                    onChange={(e) => setFormatSettings({ ...formatSettings, useHandicaps: e.target.checked })}
+                    style={{ width: '18px', height: '18px', accentColor: '#27ae60' }}
+                  />
+                  <span style={{ fontSize: '14px', fontWeight: '500' }}>Use Handicaps (Net Best Ball)</span>
+                </label>
+              </div>
+            )}
+
+            {format === 'retirees' && (
+              <div style={{ padding: '12px', background: '#f0fff4', borderRadius: '8px', marginBottom: '12px' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '13px' }}>
+                    Best scores to count per hole
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {[1, 2, 3].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setFormatSettings({ ...formatSettings, retireesScoresToCount: n })}
+                        style={{
+                          flex: 1, padding: '8px', borderRadius: '6px',
+                          border: `2px solid ${formatSettings.retireesScoresToCount === n ? '#27ae60' : '#e0e0e0'}`,
+                          background: formatSettings.retireesScoresToCount === n ? '#f0fff4' : 'white',
+                          fontWeight: '600', cursor: 'pointer', fontSize: '14px',
+                          color: formatSettings.retireesScoresToCount === n ? '#27ae60' : '#666'
+                        }}
+                      >{n}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ fontSize: '13px', color: '#666', marginTop: '8px' }}>
+                  <strong>3-player team rules:</strong> {formatSettings.retireesBonusPer9} per 9, +{formatSettings.retireesExtraStrokes} extra HC strokes
+                </div>
+              </div>
+            )}
+
+            {format === 'stableford' && (
+              <div style={{ padding: '12px', background: '#f0fff4', borderRadius: '8px', marginBottom: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={formatSettings.useNet}
+                    onChange={(e) => setFormatSettings({ ...formatSettings, useNet: e.target.checked })}
+                    style={{ width: '18px', height: '18px', accentColor: '#27ae60' }}
+                  />
+                  <span style={{ fontSize: '14px', fontWeight: '500' }}>Use Net Scoring (handicap-adjusted)</span>
+                </label>
+              </div>
+            )}
+
+            {/* Scramble team naming (shown in Players section overflow) */}
 
             {/* Simple greenies toggle for non-skins formats */}
             {format !== 'skins' && (

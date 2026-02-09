@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { generateTeams } from '../utils/teamGeneration'
 import { formatHandicap, formatCourseHandicap, getEffectiveHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
+import { FORMAT_CONFIGS } from '../utils/formatScoring'
 
 function PlayerCheckInCard({ player, isSelected, isInManualTeam, onToggle, showSkill, courseTees }) {
   const playerTee = player.defaultTee || 'blue'
@@ -425,7 +426,9 @@ function GeneratePage() {
     setManualTeams,
     handicapSettings,
     courseTees,
-    leagueId
+    leagueId,
+    roundFormatOverride,
+    setRoundFormatOverride
   } = useLeague()
 
   const [creatingManualTeam, setCreatingManualTeam] = useState(false)
@@ -662,6 +665,103 @@ function GeneratePage() {
             onAdd={addPairingRequest}
             onRemove={removePairingRequest}
           />
+
+          {/* Round Format Override (admin only) */}
+          {isAdmin && (
+            <div style={{
+              background: 'white',
+              border: '1px solid #e0e0e0',
+              borderRadius: '10px',
+              padding: '15px',
+              marginBottom: '20px'
+            }}>
+              <div
+                onClick={() => setRoundFormatOverride(roundFormatOverride === null ? { format: 'bigboys' } : null)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <h3 style={{ margin: 0, fontSize: '16px' }}>Round Format</h3>
+                <span style={{ fontSize: '13px', color: '#888' }}>
+                  {roundFormatOverride
+                    ? FORMAT_CONFIGS[roundFormatOverride.format]?.label || 'Custom'
+                    : 'Big Boys (default)'}
+                  {' '}
+                  {roundFormatOverride ? '▲' : '▼'}
+                </span>
+              </div>
+
+              {roundFormatOverride && (
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {Object.entries(FORMAT_CONFIGS)
+                      .filter(([key]) => key !== 'skins' && key !== 'track')
+                      .map(([key, cfg]) => (
+                        <button
+                          key={key}
+                          onClick={() => setRoundFormatOverride({ ...roundFormatOverride, format: key })}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            border: `2px solid ${roundFormatOverride.format === key ? '#27ae60' : '#e0e0e0'}`,
+                            background: roundFormatOverride.format === key ? '#f0fff4' : 'white',
+                            color: roundFormatOverride.format === key ? '#27ae60' : '#666',
+                            fontWeight: roundFormatOverride.format === key ? '600' : 'normal',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          {cfg.label}
+                        </button>
+                      ))}
+                  </div>
+
+                  {/* Format-specific settings */}
+                  {roundFormatOverride.format === 'bestball' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={roundFormatOverride.useHandicaps || false}
+                        onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, useHandicaps: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#27ae60' }}
+                      />
+                      <span style={{ fontSize: '13px' }}>Use Handicaps</span>
+                    </label>
+                  )}
+
+                  {roundFormatOverride.format === 'retirees' && (
+                    <div style={{ marginTop: '10px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: '600' }}>Scores to count per hole: </label>
+                      <select
+                        value={roundFormatOverride.retireesScoresToCount || 2}
+                        onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, retireesScoresToCount: parseInt(e.target.value) })}
+                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                      >
+                        <option value={1}>1</option>
+                        <option value={2}>2</option>
+                        <option value={3}>3</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {roundFormatOverride.format === 'stableford' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={roundFormatOverride.useNet !== false}
+                        onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, useNet: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#27ae60' }}
+                      />
+                      <span style={{ fontSize: '13px' }}>Net Scoring</span>
+                    </label>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Generate Button */}
           <button
