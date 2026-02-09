@@ -1869,6 +1869,25 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
         </p>
       </div>
 
+      {/* GHIN Override Toggle */}
+      {settings.calculationMode === 'auto' && (
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={settings.allowGhinOverride || false}
+              onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, allowGhinOverride: e.target.checked })}
+              disabled={!isAdmin}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ fontWeight: '600' }}>Allow GHIN Index Override</span>
+          </label>
+          <p style={{ fontSize: '12px', color: '#666', marginTop: '6px', marginLeft: '28px' }}>
+            When enabled, players with an official GHIN index will use that instead of the app-calculated handicap (True scope only).
+          </p>
+        </div>
+      )}
+
       {/* Update Cycle Mode */}
       {settings.calculationMode === 'auto' && (
         <div style={{ marginBottom: '20px' }}>
@@ -1929,6 +1948,70 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Max Hole Score for Handicap */}
+      {settings.calculationMode === 'auto' && (
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+            Max Hole Score (for Handicap)
+          </label>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+            <button
+              onClick={() => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreMode: 'none' })}
+              disabled={!isAdmin}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '6px',
+                border: (settings.maxHoleScoreMode || 'none') === 'none' ? '2px solid #27ae60' : '2px solid #ddd',
+                background: (settings.maxHoleScoreMode || 'none') === 'none' ? '#e8f5e9' : 'white',
+                fontWeight: (settings.maxHoleScoreMode || 'none') === 'none' ? '600' : 'normal',
+                cursor: isAdmin ? 'pointer' : 'not-allowed',
+                opacity: isAdmin ? 1 : 0.7
+              }}
+            >
+              No Max
+            </button>
+            <button
+              onClick={() => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreMode: 'fixed' })}
+              disabled={!isAdmin}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '6px',
+                border: settings.maxHoleScoreMode === 'fixed' ? '2px solid #27ae60' : '2px solid #ddd',
+                background: settings.maxHoleScoreMode === 'fixed' ? '#e8f5e9' : 'white',
+                fontWeight: settings.maxHoleScoreMode === 'fixed' ? '600' : 'normal',
+                cursor: isAdmin ? 'pointer' : 'not-allowed',
+                opacity: isAdmin ? 1 : 0.7
+              }}
+            >
+              Fixed Max
+            </button>
+          </div>
+          {settings.maxHoleScoreMode === 'fixed' && (
+            <div style={{ marginTop: '8px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                Max Score Per Hole
+              </label>
+              <input
+                type="number"
+                value={settings.maxHoleScoreFixed ?? 10}
+                onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreFixed: parseInt(e.target.value) || 10 })}
+                disabled={!isAdmin}
+                min="5"
+                max="15"
+                style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+              />
+            </div>
+          )}
+          <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+            {settings.maxHoleScoreMode === 'fixed'
+              ? `Hole scores above ${settings.maxHoleScoreFixed ?? 10} are capped for handicap calculation only. Actual scores are preserved.`
+              : 'No cap on individual hole scores for handicap calculation.'}
+          </p>
         </div>
       )}
 
@@ -2006,6 +2089,67 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                   </div>
                 </div>
               </div>
+              {/* Freeze Mode Toggle */}
+              <div style={{ marginTop: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>
+                  Freeze Behavior
+                </label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => isAdmin && onUpdateHandicap({ ...settings, freezeMode: 'exclude' })}
+                    disabled={!isAdmin}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: (settings.freezeMode || 'exclude') === 'exclude' ? '2px solid #e67e22' : '2px solid #ddd',
+                      background: (settings.freezeMode || 'exclude') === 'exclude' ? '#fff3e0' : 'white',
+                      fontWeight: (settings.freezeMode || 'exclude') === 'exclude' ? '600' : 'normal',
+                      cursor: isAdmin ? 'pointer' : 'not-allowed',
+                      fontSize: '13px'
+                    }}
+                  >
+                    Exclude Rounds
+                  </button>
+                  <button
+                    onClick={() => isAdmin && onUpdateHandicap({ ...settings, freezeMode: 'batch' })}
+                    disabled={!isAdmin}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: settings.freezeMode === 'batch' ? '2px solid #e67e22' : '2px solid #ddd',
+                      background: settings.freezeMode === 'batch' ? '#fff3e0' : 'white',
+                      fontWeight: settings.freezeMode === 'batch' ? '600' : 'normal',
+                      cursor: isAdmin ? 'pointer' : 'not-allowed',
+                      fontSize: '13px'
+                    }}
+                  >
+                    Batch Update
+                  </button>
+                </div>
+                <p style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
+                  {(settings.freezeMode || 'exclude') === 'exclude'
+                    ? "Rounds during the freeze period don't count toward handicap."
+                    : 'Rounds during freeze count toward handicap, but recalculation is deferred until freeze ends.'}
+                </p>
+                {settings.freezeMode === 'batch' && (
+                  <div style={{ marginTop: '10px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px', fontWeight: '500' }}>
+                      Grace Period (rounds after freeze before recalculation)
+                    </label>
+                    <input
+                      type="number"
+                      value={settings.freezeGracePeriod ?? 0}
+                      onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, freezeGracePeriod: parseInt(e.target.value) || 0 })}
+                      disabled={!isAdmin}
+                      min="0"
+                      max="10"
+                      style={{ width: '80px', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                  </div>
+                )}
+              </div>
               {todayInFreeze && (
                 <div style={{
                   marginTop: '12px',
@@ -2015,7 +2159,9 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                   fontSize: '13px',
                   color: '#c62828'
                 }}>
-                  Currently in freeze period - rounds played now will not affect handicaps
+                  {(settings.freezeMode || 'exclude') === 'exclude'
+                    ? 'Currently in freeze period - rounds played now will not affect handicaps'
+                    : 'Currently in freeze period - rounds are recorded but handicap recalculation is deferred'}
                 </div>
               )}
             </>
@@ -2130,6 +2276,25 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 9-Hole Round Support */}
+      {settings.calculationMode === 'auto' && (
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={settings.allow9HoleRounds || false}
+              onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, allow9HoleRounds: e.target.checked })}
+              disabled={!isAdmin}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <span style={{ fontWeight: '600' }}>Enable 9-Hole Round Handicap</span>
+          </label>
+          <p style={{ fontSize: '12px', color: '#666', marginTop: '6px', marginLeft: '28px' }}>
+            Pairs of 9-hole rounds are combined into 18-hole equivalents for handicap calculation.
+          </p>
         </div>
       )}
 

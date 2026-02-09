@@ -35,7 +35,9 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
   // Effective handicap is always for the configured scope
   const activeHandicap = effectiveHandicap
   const calculatedForScope = getCalculatedHandicap()
-  const isUsingManual = effectiveHandicap !== calculatedForScope && effectiveHandicap === player.handicap
+  const settings = { ...DEFAULT_HANDICAP_SETTINGS, ...handicapSettings }
+  const isUsingGhin = settings.allowGhinOverride && player.ghinIndex != null && settings.handicapScope === 'true' && effectiveHandicap === player.ghinIndex
+  const isUsingManual = !isUsingGhin && effectiveHandicap !== calculatedForScope && effectiveHandicap === player.handicap
   const playerTee = player.defaultTee || 'blue'
   const courseHandicap = getCourseHandicapForTee(activeHandicap, playerTee, courseTees)
 
@@ -64,11 +66,11 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
               padding: '3px 8px',
               borderRadius: '4px',
               fontSize: '12px',
-              background: isUsingManual ? '#e67e22' : '#27ae60',
+              background: isUsingGhin ? '#1565c0' : isUsingManual ? '#e67e22' : '#27ae60',
               color: 'white',
               fontWeight: '600'
             }}>
-              Index: {formatHandicap(activeHandicap)}{isUsingManual ? ' (M)' : ''}
+              Index: {formatHandicap(activeHandicap)}{isUsingGhin ? ' (GHIN)' : isUsingManual ? ' (M)' : ''}
             </span>
             {player.capApplied && (
               <span
@@ -324,8 +326,14 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
   const [email, setEmail] = useState(player.email || '')
   const [emergencyName, setEmergencyName] = useState(player.emergencyName || '')
   const [emergencyPhone, setEmergencyPhone] = useState(player.emergencyPhone || '')
+  const [ghinIndex, setGhinIndex] = useState(player.ghinIndex?.toString() || '')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletePin, setDeletePin] = useState('')
+  const [showBulkImport, setShowBulkImport] = useState(false)
+  const [bulkScores, setBulkScores] = useState('')
+  const [bulkCourseRating, setBulkCourseRating] = useState('72')
+  const [bulkSlopeRating, setBulkSlopeRating] = useState('113')
+  const [bulkImportResult, setBulkImportResult] = useState(null)
 
   const settings = { ...DEFAULT_HANDICAP_SETTINGS, ...handicapSettings }
   const currentExemption = settings.capExemptions?.[player.id] || null
@@ -349,6 +357,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
       skillRating: parseFloat(skillRating) || 5,
       handicap: handicap ? parseFloat(handicap) : null,
       handicapSource: handicap ? 'manual' : player.handicapSource,
+      ghinIndex: ghinIndex ? parseFloat(ghinIndex) : null,
       defaultTee: defaultTee,
       phone: phone.trim(),
       email: email.trim(),
@@ -370,6 +379,68 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
       }
       onUpdateHandicapSettings({ ...settings, capExemptions: updatedExemptions })
     }
+  }
+
+  const handleBulkImport = () => {
+    const lines = bulkScores.trim().split('\n').filter(l => l.trim())
+    if (lines.length === 0) return
+
+    const courseRating = parseFloat(bulkCourseRating) || 72
+    const slopeRating = parseFloat(bulkSlopeRating) || 113
+    const today = new Date()
+    const newRounds = []
+
+    lines.forEach((line, i) => {
+      const parts = line.trim().split(',')
+      const score = parseInt(parts[0])
+      if (!score || score <= 0) return
+
+      let date
+      if (parts[1] && parts[1].trim().match(/^\d{4}-\d{2}-\d{2}$/)) {
+        date = parts[1].trim()
+      } else {
+        const d = new Date(today)
+        d.setDate(d.getDate() - (lines.length - i))
+        date = d.toISOString().split('T')[0]
+      }
+
+      newRounds.push({
+        id: `import_${Date.now()}_${i}`,
+        date,
+        courseName: 'Historical',
+        courseRating,
+        slopeRating,
+        score
+      })
+    })
+
+    if (newRounds.length === 0) {
+      setBulkImportResult('No valid scores found')
+      return
+    }
+
+    const updatedExternalRounds = [...(player.externalRounds || []), ...newRounds]
+    const updatedPlayer = recalculatePlayerHandicaps(
+      { ...player, externalRounds: updatedExternalRounds },
+      leagueId,
+      courseTees
+    )
+
+    onSave({
+      ...updatedPlayer,
+      name: name.trim(),
+      skillRating: parseFloat(skillRating) || 5,
+      handicap: updatedPlayer.handicap,
+      ghinIndex: ghinIndex ? parseFloat(ghinIndex) : null,
+      defaultTee,
+      phone: phone.trim(),
+      email: email.trim(),
+      emergencyName: emergencyName.trim(),
+      emergencyPhone: emergencyPhone.trim()
+    })
+
+    setBulkImportResult(`Imported ${newRounds.length} rounds`)
+    setBulkScores('')
   }
 
   const handleRecalculateHandicap = () => {
@@ -539,6 +610,20 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                     </button>
                   </div>
                 </div>
+                {settings.allowGhinOverride && (
+                  <div className="input-group" style={{ marginBottom: '0' }}>
+                    <label>GHIN Index Override</label>
+                    <input
+                      type="number"
+                      value={ghinIndex}
+                      onChange={(e) => setGhinIndex(e.target.value)}
+                      placeholder="Official GHIN index"
+                      min="-5"
+                      max="54"
+                      step="0.1"
+                    />
+                  </div>
+                )}
                 <div className="input-group" style={{ marginBottom: '0' }}>
                   <label>Default Tee</label>
                   <select
@@ -595,6 +680,94 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                   />
                 </div>
               </div>
+
+              {/* Bulk Import Scores (admin only) */}
+              {isAdmin && (
+                <div style={{ marginTop: '15px' }}>
+                  <button
+                    onClick={() => setShowBulkImport(!showBulkImport)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#3498db',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      padding: '4px 0'
+                    }}
+                  >
+                    {showBulkImport ? 'Hide' : 'Import Historical Scores'}
+                  </button>
+                  {showBulkImport && (
+                    <div style={{
+                      background: '#f8f9fa',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      marginTop: '8px'
+                    }}>
+                      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', fontWeight: '500' }}>
+                            Course Rating
+                          </label>
+                          <input
+                            type="number"
+                            value={bulkCourseRating}
+                            onChange={(e) => setBulkCourseRating(e.target.value)}
+                            step="0.1"
+                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', fontWeight: '500' }}>
+                            Slope Rating
+                          </label>
+                          <input
+                            type="number"
+                            value={bulkSlopeRating}
+                            onChange={(e) => setBulkSlopeRating(e.target.value)}
+                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                          />
+                        </div>
+                      </div>
+                      <textarea
+                        value={bulkScores}
+                        onChange={(e) => setBulkScores(e.target.value)}
+                        placeholder={"One score per line:\n85\n92\n88,2024-06-15\n91,2024-07-20"}
+                        rows={5}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          borderRadius: '4px',
+                          border: '1px solid #ddd',
+                          fontSize: '13px',
+                          fontFamily: 'monospace',
+                          resize: 'vertical',
+                          marginBottom: '8px'
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          className="btn btn-small btn-primary"
+                          onClick={handleBulkImport}
+                          disabled={!bulkScores.trim()}
+                        >
+                          Import
+                        </button>
+                        {bulkImportResult && (
+                          <span style={{ fontSize: '12px', color: '#27ae60', fontWeight: '500' }}>
+                            {bulkImportResult}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
+                        Format: score or score,YYYY-MM-DD. Scores without dates get sequential past dates.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button className="btn btn-primary" onClick={handleSave}>Save Changes</button>

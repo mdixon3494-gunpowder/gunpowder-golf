@@ -10,6 +10,7 @@ function IndividualRoundSetup({ onBack }) {
   const { switchLeague } = useLeague()
 
   const [startingHole, setStartingHole] = useState(1)
+  const [holesPlayed, setHolesPlayed] = useState(18)
   const [tee, setTee] = useState('blue')
   const [handicap, setHandicap] = useState(0)
   const [creating, setCreating] = useState(false)
@@ -73,7 +74,7 @@ function IndividualRoundSetup({ onBack }) {
       const liveRound = {
         id: Date.now(),
         date: new Date().toLocaleDateString('en-CA'),
-        holesPlayed: 18,
+        holesPlayed,
         startingHole,
         teams: [{
           id: 0,
@@ -105,7 +106,7 @@ function IndividualRoundSetup({ onBack }) {
         leagueSettings: { contactInfoVisibility: 'admin' },
         individualRoundInfo: {
           courseName: 'Gunpowder Golf Course',
-          holes: 18,
+          holes: holesPlayed,
           startingHole,
           tee,
           handicap,
@@ -215,6 +216,38 @@ function IndividualRoundSetup({ onBack }) {
                     border: `2px solid ${startingHole === opt.val ? '#3498db' : '#e0e0e0'}`,
                     background: startingHole === opt.val ? '#ebf5fb' : 'white',
                     color: startingHole === opt.val ? '#3498db' : '#666',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '14px'
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Holes */}
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            marginBottom: '16px',
+            border: '1px solid #e0e0e0'
+          }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: '#333' }}>Holes</h3>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[{ val: 18, label: '18 Holes' }, { val: 9, label: '9 Holes' }].map(opt => (
+                <button
+                  key={opt.val}
+                  onClick={() => setHolesPlayed(opt.val)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: `2px solid ${holesPlayed === opt.val ? '#3498db' : '#e0e0e0'}`,
+                    background: holesPlayed === opt.val ? '#ebf5fb' : 'white',
+                    color: holesPlayed === opt.val ? '#3498db' : '#666',
                     fontWeight: '600',
                     cursor: 'pointer',
                     fontSize: '14px'

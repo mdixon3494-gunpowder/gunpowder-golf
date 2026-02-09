@@ -5949,6 +5949,7 @@ function LivePage() {
     setQuickSkinsHistory,
     defaultStartingHole,
     handicapSettings,
+    setHandicapSettings,
     courseTees,
     leagueId,
     isCasualGame,
@@ -6386,7 +6387,9 @@ function LivePage() {
           greeniesWon: greeniesWon,
           isComplete: hasAllHoles,
           holesCompleted: holesCompleted,
-          tee: teeUsed
+          tee: teeUsed,
+          holesPlayed: liveRound.holesPlayed || 18,
+          startingHole: liveRound.startingHole || 1
         }
       ]
 
@@ -6416,6 +6419,7 @@ function LivePage() {
       // Recalculate handicaps if auto mode is enabled and conditions are met
       if (handicapSettings?.calculationMode === 'auto') {
         const teesConfig = courseTees || DEFAULT_COURSE_TEES
+        const freezeMode = handicapSettings?.freezeMode || 'exclude'
 
         // Check if this round is in the freeze period
         const roundDate = liveRound.date
@@ -6424,8 +6428,22 @@ function LivePage() {
         // Check if we should update handicaps (immediate mode or monthly mode with new month)
         const shouldUpdate = shouldUpdateHandicaps(handicapSettings)
 
-        // Only recalculate if not in freeze period and update mode allows it
-        if (!isInFreezePeriod && shouldUpdate) {
+        // Determine if recalculation should happen
+        let shouldRecalculate = false
+        if (isInFreezePeriod) {
+          // During freeze: never recalculate (both modes)
+          shouldRecalculate = false
+        } else if (freezeMode === 'batch' && handicapSettings?.freezeEnabled) {
+          // After freeze in batch mode: check grace period
+          const gracePeriod = handicapSettings?.freezeGracePeriod || 0
+          const postFreezeRounds = handicapSettings?.postFreezeRoundsPlayed || 0
+          shouldRecalculate = shouldUpdate && postFreezeRounds >= gracePeriod
+        } else {
+          // Normal (exclude mode or no freeze): recalculate if shouldUpdate
+          shouldRecalculate = shouldUpdate
+        }
+
+        if (shouldRecalculate) {
           updatedPlayer = recalculatePlayerHandicaps(
             updatedPlayer,
             leagueId,
@@ -6462,6 +6480,23 @@ function LivePage() {
     setPlayers(updatedPlayers)
     setHistory([roundData, ...history])
     setShowFinishConfirm(false)
+
+    // Track post-freeze rounds for batch mode grace period
+    if (handicapSettings?.freezeEnabled && (handicapSettings?.freezeMode === 'batch')) {
+      const isInFreezePeriod = isDateInFreezePeriod(liveRound.date, handicapSettings)
+      if (isInFreezePeriod) {
+        // Entering freeze: reset counter
+        if ((handicapSettings?.postFreezeRoundsPlayed || 0) > 0) {
+          setHandicapSettings({ ...handicapSettings, postFreezeRoundsPlayed: 0 })
+        }
+      } else {
+        // After freeze: increment counter
+        setHandicapSettings({
+          ...handicapSettings,
+          postFreezeRoundsPlayed: (handicapSettings?.postFreezeRoundsPlayed || 0) + 1
+        })
+      }
+    }
 
     // For league rounds, also save to round_history table (non-blocking)
     if (!isCasualGame && !isIndividualRound) {

@@ -24,10 +24,21 @@ export const DEFAULT_HANDICAP_SETTINGS = {
   freezeStartDay: 1,
   freezeEndMonth: 3,        // March
   freezeEndDay: 31,
+  // Freeze mode settings
+  freezeMode: 'exclude',       // 'exclude' | 'batch'
+  freezeGracePeriod: 0,
+  postFreezeRoundsPlayed: 0,
   // Update cycle settings
   updateMode: 'immediate',  // 'immediate' or 'monthly'
   lockedHandicaps: {},      // Player ID -> locked handicap value (for monthly mode)
   lastUpdateDate: null,     // ISO date string of last monthly update
+  // GHIN override
+  allowGhinOverride: false,
+  // Max hole score for handicap calculation
+  maxHoleScoreMode: 'none',    // 'none' | 'fixed'
+  maxHoleScoreFixed: 10,
+  // 9-hole round support
+  allow9HoleRounds: false,
   // Soft/Hard cap settings (sandbagger protection)
   capsEnabled: false,
   softCapThreshold: 3.0,    // Soft cap triggers at lowIndex + this
@@ -115,6 +126,108 @@ export function calculateDifferential(score, courseRating, slopeRating) {
 }
 
 /**
+ * Apply max hole score cap to per-hole scores and return adjusted total
+ * @param {Object} scores - Per-hole scores object { 1: 5, 2: 8, ... }
+ * @param {String} mode - 'none' or 'fixed'
+ * @param {Number} fixedMax - Maximum score per hole when mode is 'fixed'
+ * @returns {Number|null} Adjusted total, or null if no per-hole scores
+ */
+export function applyMaxHoleScore(scores, mode, fixedMax = 10) {
+  if (mode === 'none' || !scores) return null
+  let total = 0
+  let hasScores = false
+  for (let h = 1; h <= 18; h++) {
+    const val = scores[h]
+    if (val === undefined || val === null || val === '' || val === 'X' || val === 'x') continue
+    const score = parseInt(val)
+    if (isNaN(score)) continue
+    hasScores = true
+    total += mode === 'fixed' ? Math.min(score, fixedMax) : score
+  }
+  return hasScores ? total : null
+}
+
+/**
+ * Combine pairs of 9-hole rounds into 18-hole equivalents for handicap calculation
+ * @param {Array} rounds - Array of round objects (may include 9-hole and 18-hole)
+ * @returns {Array} Array of 18-hole rounds (original 18s + combined 9-hole pairs)
+ */
+export function combineNineHoleRounds(rounds) {
+  const eighteenHole = []
+  const nineHoleFront = [] // startingHole 1
+  const nineHoleBack = []  // startingHole 10
+  const nineHoleOther = [] // no startingHole info
+
+  rounds.forEach(r => {
+    if (r.holesPlayed === 9) {
+      if (r.startingHole === 1) nineHoleFront.push(r)
+      else if (r.startingHole === 10) nineHoleBack.push(r)
+      else nineHoleOther.push(r)
+    } else {
+      eighteenHole.push(r)
+    }
+  })
+
+  const combined = []
+
+  // First pass: pair front+back chronologically
+  const usedFront = new Set()
+  const usedBack = new Set()
+  for (let f = 0; f < nineHoleFront.length; f++) {
+    for (let b = 0; b < nineHoleBack.length; b++) {
+      if (usedBack.has(b)) continue
+      usedFront.add(f)
+      usedBack.add(b)
+      const front = nineHoleFront[f]
+      const back = nineHoleBack[b]
+      combined.push(makeCombinedRound(front, back))
+      break
+    }
+  }
+
+  // Gather unpaired 9-hole rounds
+  const unpaired = [
+    ...nineHoleFront.filter((_, i) => !usedFront.has(i)),
+    ...nineHoleBack.filter((_, i) => !usedBack.has(i)),
+    ...nineHoleOther
+  ].sort((a, b) => new Date(a.date) - new Date(b.date))
+
+  // Second pass: pair any remaining unpaired 9-hole rounds
+  for (let i = 0; i < unpaired.length - 1; i += 2) {
+    combined.push(makeCombinedRound(unpaired[i], unpaired[i + 1]))
+  }
+
+  return [...eighteenHole, ...combined].sort((a, b) => new Date(b.date) - new Date(a.date))
+}
+
+function makeCombinedRound(r1, r2) {
+  const score1 = r1.score || r1.total || r1.totalScore || 0
+  const score2 = r2.score || r2.total || r2.totalScore || 0
+  const laterDate = new Date(r1.date) > new Date(r2.date) ? r1.date : r2.date
+
+  // Merge per-hole scores if available
+  let mergedScores = null
+  if (r1.scores || r2.scores) {
+    mergedScores = { ...(r1.scores || {}), ...(r2.scores || {}) }
+  }
+
+  return {
+    ...r1,
+    date: laterDate,
+    score: score1 + score2,
+    total: score1 + score2,
+    totalScore: score1 + score2,
+    scores: mergedScores,
+    holesPlayed: 18,
+    combined: true,
+    // Use the rating/slope from the first round (they should be similar for same course)
+    tee: r1.tee || r2.tee,
+    courseRating: r1.courseRating || r2.courseRating,
+    slopeRating: r1.slopeRating || r2.slopeRating
+  }
+}
+
+/**
  * Calculate handicap from an array of rounds
  * Uses best 40% of most recent 20 rounds (minimum 3 rounds required)
  * Optionally filters out rounds that fall within a freeze period
@@ -126,8 +239,13 @@ export function calculateHandicap(rounds, courseTees = DEFAULT_COURSE_TEES, maxH
     return score && score > 0
   })
 
-  // Filter out rounds in freeze period if enabled
-  if (handicapSettings?.freezeEnabled) {
+  // Combine 9-hole round pairs if enabled
+  if (handicapSettings?.allow9HoleRounds) {
+    validRounds = combineNineHoleRounds(validRounds)
+  }
+
+  // Filter out rounds in freeze period if enabled (only in 'exclude' mode; 'batch' mode includes them)
+  if (handicapSettings?.freezeEnabled && (handicapSettings?.freezeMode || 'exclude') === 'exclude') {
     validRounds = validRounds.filter(r => !isDateInFreezePeriod(r.date, handicapSettings))
   }
 
@@ -136,9 +254,21 @@ export function calculateHandicap(rounds, courseTees = DEFAULT_COURSE_TEES, maxH
 
   if (validRounds.length < 3) return null
 
+  // Max hole score settings
+  const maxMode = handicapSettings?.maxHoleScoreMode || 'none'
+  const maxFixed = handicapSettings?.maxHoleScoreFixed || 10
+
   // Calculate differential for each round
   const differentials = validRounds.map(r => {
-    const score = r.score || r.total || r.totalScore
+    let score = r.score || r.total || r.totalScore
+
+    // Apply max hole score cap if round has per-hole scores
+    if (maxMode !== 'none' && r.scores) {
+      const adjustedTotal = applyMaxHoleScore(r.scores, maxMode, maxFixed)
+      if (adjustedTotal !== null) {
+        score = adjustedTotal
+      }
+    }
 
     // Get rating/slope - check for tee first, then explicit values, then defaults
     let rating, slope
@@ -179,7 +309,9 @@ export function getAllPlayerRounds(player, leagueId = null) {
     leagueId: leagueId,
     score: r.total || r.totalScore,
     // League rounds at Gunpowder use player's default tee or 'blue'
-    tee: r.tee || player.defaultTee || 'blue'
+    tee: r.tee || player.defaultTee || 'blue',
+    holesPlayed: r.holesPlayed || 18,
+    startingHole: r.startingHole || 1
   }))
 
   const externalRounds = (player.externalRounds || []).map(r => ({
@@ -276,6 +408,11 @@ export function getEffectiveHandicap(player, handicapSettings, leagueId = null, 
     return player.handicap
   }
 
+  // GHIN override: use official GHIN index when enabled (only for 'true' scope)
+  if (settings.allowGhinOverride && player.ghinIndex != null && handicapScope === 'true') {
+    return player.ghinIndex
+  }
+
   // If monthly update mode and we have a locked handicap, use it
   if (updateMode === 'monthly' && lockedHandicaps?.[player.id] !== undefined) {
     return lockedHandicaps[player.id]
@@ -284,8 +421,8 @@ export function getEffectiveHandicap(player, handicapSettings, leagueId = null, 
   // Auto mode - calculate based on scope
   const rounds = getRoundsByScope(player, handicapScope, leagueId)
 
-  // Filter out freeze period rounds
-  const validRounds = settings.freezeEnabled
+  // Filter out freeze period rounds (only in 'exclude' mode; 'batch' mode includes them)
+  const validRounds = (settings.freezeEnabled && (settings.freezeMode || 'exclude') === 'exclude')
     ? rounds.filter(r => !isDateInFreezePeriod(r.date, settings))
     : rounds
 
