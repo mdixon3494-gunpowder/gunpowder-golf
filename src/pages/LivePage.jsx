@@ -4,6 +4,7 @@ import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
 import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore } from '../utils/formatScoring'
+import NassauTracker from '../components/NassauTracker'
 import {
   recalculatePlayerHandicaps,
   DEFAULT_COURSE_TEES,
@@ -5987,6 +5988,8 @@ function LivePage() {
     setTeams,
     skinsMatch,
     setSkinsMatch,
+    nassauMatch,
+    setNassauMatch,
     isAdmin,
     payoutFormats,
     holeInOnePot,
@@ -6348,7 +6351,8 @@ function LivePage() {
           totalScore: front9Score + back9Score
         }
       }),
-      skinsMatch: skinsMatch ? { ...skinsMatch } : null
+      skinsMatch: skinsMatch ? { ...skinsMatch } : null,
+      nassauMatch: nassauMatch ? { ...nassauMatch } : null
     }
 
     const updatedPlayers = players.map(player => {
@@ -6681,6 +6685,7 @@ function LivePage() {
     setLiveRound(null)
     setTeams([])
     setSkinsMatch(null)
+    setNassauMatch(null)
     navigate('/history')
   }
 
@@ -6698,6 +6703,7 @@ function LivePage() {
     setLiveRound(null)
     setTeams([])
     setSkinsMatch(null)
+    setNassauMatch(null)
     setShowCasualSaveModal(false)
     setSavingCasualRound(false)
     // Navigate back - use leaveLeague behavior to return to MyLeaguesScreen
@@ -6717,6 +6723,7 @@ function LivePage() {
     setLiveRound(null)
     setTeams([])
     setSkinsMatch(null)
+    setNassauMatch(null)
     setShowCasualSaveModal(false)
     setSavingCasualRound(false)
   }
@@ -6786,11 +6793,13 @@ function LivePage() {
 
       setLiveRound(null)
       setSkinsMatch(null)
+      setNassauMatch(null)
       setQuickSkinsMode(false)
       navigate('/history')
     } else if (confirm('End Quick Skins game without saving? All data will be lost.')) {
       setLiveRound(null)
       setSkinsMatch(null)
+      setNassauMatch(null)
       setQuickSkinsMode(false)
       navigate(isCasualGame ? '/history' : '/settings')
     }
@@ -6804,6 +6813,7 @@ function LivePage() {
         { id: 'scoring', label: 'Scores' },
         { id: 'skins', label: 'Skins' },
         ...(liveRound?.quickSkinsGreenieSettings ? [{ id: 'greenies', label: 'Greenies' }] : []),
+        ...(nassauMatch ? [{ id: 'nassau', label: 'Nassau' }] : []),
         ...(isCasualGame ? [{ id: 'manage', label: 'Manage' }] : [])
       ]
     : [
@@ -6811,6 +6821,7 @@ function LivePage() {
         { id: 'scoring', label: 'Scores' },
         { id: 'greenies', label: 'Greenies' },
         { id: 'skins', label: 'Skins' },
+        { id: 'nassau', label: 'Nassau' },
         { id: 'money', label: 'Money' },
         { id: 'manage', label: 'Manage' }
       ]
@@ -6931,6 +6942,17 @@ function LivePage() {
           setLiveRound={setLiveRound}
           skinsMatch={skinsMatch}
           setSkinsMatch={setSkinsMatch}
+          isAdmin={isAdmin}
+          leaguePlayers={players}
+          isCasualGame={isCasualGame}
+        />
+      )}
+      {subTab === 'nassau' && (
+        <NassauTracker
+          liveRound={liveRound}
+          setLiveRound={setLiveRound}
+          nassauMatch={nassauMatch}
+          setNassauMatch={setNassauMatch}
           isAdmin={isAdmin}
           leaguePlayers={players}
           isCasualGame={isCasualGame}

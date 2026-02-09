@@ -131,6 +131,9 @@ export function LeagueProvider({ children }) {
   const [quickSkinsMode, setQuickSkinsMode] = useState(false)
   const [quickSkinsHistory, setQuickSkinsHistory] = useState([])
 
+  // Nassau
+  const [nassauMatch, setNassauMatch] = useState(null)
+
   // Check-in state (persists across navigation)
   const [checkedInPlayers, setCheckedInPlayers] = useState([])
   const [manualTeams, setManualTeams] = useState([])
@@ -201,6 +204,7 @@ export function LeagueProvider({ children }) {
     })
     setPendingPlayerRequests(data.pendingPlayerRequests || [])
     setSkinsMatch(data.skinsMatch || null)
+    setNassauMatch(data.nassauMatch || null)
     if (data.payoutFormats) setPayoutFormats(data.payoutFormats)
     if (data.holeInOnePot) setHoleInOnePot(data.holeInOnePot)
     if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
@@ -299,6 +303,7 @@ export function LeagueProvider({ children }) {
           defaultStartingHole,
           playerMoneyRecords,
           skinsMatch,
+          nassauMatch,
           quickSkinsHistory,
           quickSkinsMode,
           handicapSettings,
@@ -311,7 +316,7 @@ export function LeagueProvider({ children }) {
     }
   }, [players, history, pairingRequests, liveRound, teams, leagueId, isSetup,
       leagueSettings, pendingPlayerRequests, payoutFormats, holeInOnePot,
-      moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, quickSkinsHistory, quickSkinsMode,
+      moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, nassauMatch, quickSkinsHistory, quickSkinsMode,
       handicapSettings, courseTees, courseMapping])
 
   // Mark data as loaded
@@ -480,6 +485,7 @@ export function LeagueProvider({ children }) {
     setDefaultStartingHole(1)
     setPlayerMoneyRecords({})
     setSkinsMatch(null)
+    setNassauMatch(null)
     setQuickSkinsHistory([])
     setQuickSkinsMode(false)
     setHandicapSettings(DEFAULT_HANDICAP_SETTINGS)
@@ -861,6 +867,10 @@ export function LeagueProvider({ children }) {
     skinsMatch,
     setSkinsMatch,
     quickSkinsMode,
+
+    // Nassau
+    nassauMatch,
+    setNassauMatch,
     setQuickSkinsMode,
     quickSkinsHistory,
     setQuickSkinsHistory,

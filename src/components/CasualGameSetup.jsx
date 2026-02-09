@@ -8,7 +8,7 @@ import { generateTeams, getTeamName } from '../utils/teamGeneration'
 
 function CasualGameSetup({ onBack }) {
   const { profile } = useAuth()
-  const { switchLeague, setSkinsMatch, setQuickSkinsMode } = useLeague()
+  const { switchLeague, setSkinsMatch, setQuickSkinsMode, setNassauMatch } = useLeague()
 
   // Game info
   const defaultName = `Casual - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
@@ -56,6 +56,10 @@ function CasualGameSetup({ onBack }) {
     wrapUnwonGreenies: false,
     wrapTo: 'front'
   })
+
+  // Nassau settings
+  const [nassauEnabled, setNassauEnabled] = useState(false)
+  const [nassauSettings, setNassauSettings] = useState({ betAmount: 2, useHandicaps: false })
 
   // Creating
   const [creating, setCreating] = useState(false)
@@ -239,6 +243,23 @@ function CasualGameSetup({ onBack }) {
         }
       }
 
+      // Build nassauMatch data if enabled (non-skins formats)
+      let nassauMatchData = null
+      if (!isSkins && nassauEnabled) {
+        nassauMatchData = {
+          settings: {
+            betAmount: parseFloat(nassauSettings.betAmount) || 2,
+            useHandicaps: nassauSettings.useHandicaps
+          },
+          participants: playersData.map(p => String(p.id)),
+          participantDetails: Object.fromEntries(
+            playersData.map(p => [String(p.id), { joinedOnHole: 1, leftOnHole: null, isSettled: false, settledOnHole: null }])
+          ),
+          presses: [],
+          settlements: []
+        }
+      }
+
       // JSONB data blob
       const gameData = {
         players: playersData,
@@ -247,6 +268,7 @@ function CasualGameSetup({ onBack }) {
         history: [],
         leagueSettings: { contactInfoVisibility: 'admin' },
         ...(isSkins ? { quickSkinsMode: true, skinsMatch: skinsMatchData } : {}),
+        ...(nassauMatchData ? { nassauMatch: nassauMatchData } : {}),
         casualGameInfo: {
           gameName,
           courseName,
@@ -733,6 +755,83 @@ function CasualGameSetup({ onBack }) {
                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                   }} />
                 </button>
+              </div>
+            )}
+
+            {/* Nassau toggle for non-skins formats */}
+            {format !== 'skins' && (
+              <div style={{ padding: '10px 0' }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '14px', fontWeight: '500' }}>Nassau (3-bet match play)</span>
+                  <button
+                    onClick={() => setNassauEnabled(!nassauEnabled)}
+                    style={{
+                      width: '50px',
+                      height: '28px',
+                      borderRadius: '14px',
+                      border: 'none',
+                      background: nassauEnabled ? '#2e7d32' : '#ccc',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <div style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      background: 'white',
+                      position: 'absolute',
+                      top: '3px',
+                      left: nassauEnabled ? '25px' : '3px',
+                      transition: 'left 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                    }} />
+                  </button>
+                </div>
+                {nassauEnabled && (
+                  <div style={{ marginTop: '12px', padding: '12px', background: '#f5f5f5', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '13px' }}>
+                        Bet Amount Per Segment ($)
+                      </label>
+                      <input
+                        type="number"
+                        value={nassauSettings.betAmount}
+                        onChange={e => setNassauSettings({ ...nassauSettings, betAmount: parseFloat(e.target.value) || 2 })}
+                        min="0.5"
+                        step="0.5"
+                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px' }}
+                      />
+                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        3 bets per pair: front 9, back 9, overall
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontWeight: '600', fontSize: '13px' }}>Use Handicaps</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {[true, false].map(val => (
+                          <button
+                            key={String(val)}
+                            onClick={() => setNassauSettings({ ...nassauSettings, useHandicaps: val })}
+                            style={{
+                              padding: '6px 14px', borderRadius: '6px',
+                              border: `2px solid ${nassauSettings.useHandicaps === val ? '#2e7d32' : '#e0e0e0'}`,
+                              background: nassauSettings.useHandicaps === val ? '#e8f5e9' : 'white',
+                              fontWeight: nassauSettings.useHandicaps === val ? '600' : 'normal',
+                              color: nassauSettings.useHandicaps === val ? '#2e7d32' : '#666',
+                              cursor: 'pointer', fontSize: '13px'
+                            }}
+                          >{val ? 'Yes' : 'No'}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
