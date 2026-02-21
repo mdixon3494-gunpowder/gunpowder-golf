@@ -1631,6 +1631,110 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
   )
 }
 
+function SideGamesSettingsSection({ leagueSettings, onUpdate, isAdmin }) {
+  const sideGames = leagueSettings.sideGames || { enabled: false, allowSkins: true, allowNassau: true }
+
+  const updateSideGames = (updates) => {
+    onUpdate({ ...leagueSettings, sideGames: { ...sideGames, ...updates } })
+  }
+
+  return (
+    <div style={{
+      background: 'white',
+      padding: '20px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      border: '1px solid #e0e0e0'
+    }}>
+      <h3 style={{ marginBottom: '15px' }}>Side Games</h3>
+      <p style={{ color: '#666', fontSize: '13px', marginBottom: '15px' }}>
+        Enable side games (Skins, Nassau) that run alongside league rounds. Wolf is available in casual games only.
+      </p>
+
+      {isAdmin ? (
+        <>
+          {/* Master toggle */}
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            cursor: 'pointer',
+            marginBottom: sideGames.enabled ? '15px' : '0',
+            padding: '12px',
+            background: sideGames.enabled ? '#e8f5e9' : '#f8f9fa',
+            borderRadius: '8px',
+            border: sideGames.enabled ? '2px solid #27ae60' : '2px solid #e0e0e0'
+          }}>
+            <input
+              type="checkbox"
+              checked={sideGames.enabled}
+              onChange={(e) => updateSideGames({ enabled: e.target.checked })}
+              style={{ width: '20px', height: '20px' }}
+            />
+            <span style={{ fontWeight: '600', color: sideGames.enabled ? '#27ae60' : '#666' }}>
+              Enable Side Games
+            </span>
+          </label>
+
+          {/* Per-game checkboxes */}
+          {sideGames.enabled && (
+            <div style={{ padding: '0 12px' }}>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                marginBottom: '10px'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={sideGames.allowSkins !== false}
+                  onChange={(e) => updateSideGames({ allowSkins: e.target.checked })}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <span>Side Skins</span>
+              </label>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                marginBottom: '10px'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={sideGames.allowNassau !== false}
+                  onChange={(e) => updateSideGames({ allowNassau: e.target.checked })}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <span>Side Nassau</span>
+              </label>
+              <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+                Wolf is only available in casual games.
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{
+          background: '#f8f9fa',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          fontSize: '14px'
+        }}>
+          Side Games: <strong>{sideGames.enabled ? 'Enabled' : 'Disabled'}</strong>
+          {sideGames.enabled && (
+            <span style={{ marginLeft: '10px', fontSize: '12px', color: '#666' }}>
+              ({[sideGames.allowSkins !== false && 'Skins', sideGames.allowNassau !== false && 'Nassau'].filter(Boolean).join(', ') || 'None selected'})
+            </span>
+          )}
+          <span style={{ color: '#999', marginLeft: '10px', fontSize: '12px' }}>(Admin only)</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
   return (
     <div style={{
@@ -3164,6 +3268,12 @@ function SettingsPage({ onShowLeagueSelector }) {
       <RoundSettingsSection
         defaultStartingHole={defaultStartingHole}
         onUpdate={setDefaultStartingHole}
+        isAdmin={isAdmin}
+      />
+
+      <SideGamesSettingsSection
+        leagueSettings={leagueSettings}
+        onUpdate={setLeagueSettings}
         isAdmin={isAdmin}
       />
 

@@ -6009,6 +6009,7 @@ function LivePage() {
     setHandicapSettings,
     courseTees,
     leagueId,
+    leagueSettings,
     isCasualGame,
     isIndividualRound,
     saveCasualRoundHistory,
@@ -6819,6 +6820,10 @@ function LivePage() {
   }
 
   // Define tabs based on mode
+  const sideGames = leagueSettings?.sideGames || {}
+  const showSkinTab = (match) => match?.participants?.length && (isCasualGame || (sideGames.enabled && sideGames.allowSkins !== false))
+  const showNassauTab = (match) => match?.participants?.length && (isCasualGame || (sideGames.enabled && sideGames.allowNassau !== false))
+
   const subTabs = isIndividualRound
     ? [{ id: 'scoring', label: 'Scores' }]
     : effectiveQuickSkinsMode
@@ -6826,7 +6831,7 @@ function LivePage() {
         { id: 'scoring', label: 'Scores' },
         { id: 'skins', label: 'Skins' },
         ...(liveRound?.quickSkinsGreenieSettings ? [{ id: 'greenies', label: 'Greenies' }] : []),
-        ...(nassauMatch?.participants?.length ? [{ id: 'nassau', label: 'Nassau' }] : []),
+        ...(showNassauTab(nassauMatch) ? [{ id: 'nassau', label: isCasualGame ? 'Nassau' : 'Side Nassau' }] : []),
         ...(wolfMatch?.participants?.length ? [{ id: 'wolf', label: 'Wolf' }] : []),
         ...(isCasualGame ? [{ id: 'manage', label: 'Manage' }] : [])
       ]
@@ -6834,8 +6839,8 @@ function LivePage() {
         { id: 'leaderboard', label: 'Board' },
         { id: 'scoring', label: 'Scores' },
         { id: 'greenies', label: 'Greenies' },
-        ...(skinsMatch?.participants?.length ? [{ id: 'skins', label: 'Side Skins' }] : []),
-        ...(nassauMatch?.participants?.length ? [{ id: 'nassau', label: 'Nassau' }] : []),
+        ...(showSkinTab(skinsMatch) ? [{ id: 'skins', label: isCasualGame ? 'Skins' : 'Side Skins' }] : []),
+        ...(showNassauTab(nassauMatch) ? [{ id: 'nassau', label: isCasualGame ? 'Nassau' : 'Side Nassau' }] : []),
         ...(wolfMatch?.participants?.length ? [{ id: 'wolf', label: 'Wolf' }] : []),
         { id: 'money', label: 'Money' },
         { id: 'manage', label: 'Manage' }

@@ -247,12 +247,12 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
           borderRadius: '10px',
           textAlign: 'center'
         }}>
-          <h3 style={{ marginBottom: '15px' }}>No Nassau Match Active</h3>
+          <h3 style={{ marginBottom: '15px' }}>No {isCasualGame ? 'Nassau' : 'Side Nassau'} Match Active</h3>
           <p style={{ color: '#666', marginBottom: '20px' }}>
-            Set up a Nassau match — 3-bet match play (front 9, back 9, overall) between every pair of players.
+            Set up a {isCasualGame ? 'Nassau' : 'Side Nassau'} match — 3-bet match play (front 9, back 9, overall) between every pair of players.
           </p>
           <button className="btn btn-primary" onClick={() => setShowSetup(true)}>
-            Setup Nassau Match
+            Setup {isCasualGame ? 'Nassau' : 'Side Nassau'} Match
           </button>
         </div>
 
@@ -260,7 +260,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
           <div className="modal-overlay" onClick={() => setShowSetup(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
               <div className="modal-header" style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)' }}>
-                <h3 style={{ color: 'white', margin: 0 }}>Nassau Match Settings</h3>
+                <h3 style={{ color: 'white', margin: 0 }}>{isCasualGame ? 'Nassau' : 'Side Nassau'} Match Settings</h3>
                 <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'white' }}>&times;</button>
               </div>
               <div className="modal-body">
@@ -292,7 +292,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                   onClick={setupNassau}
                   style={{ width: '100%', marginTop: '10px' }}
                 >
-                  Start Nassau Match
+                  Start {isCasualGame ? 'Nassau' : 'Side Nassau'} Match
                 </button>
               </div>
             </div>
@@ -319,7 +319,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span>Nassau Match</span>
+          <span>{isCasualGame ? 'Nassau' : 'Side Nassau'} Match</span>
           <span style={{ fontSize: '13px', opacity: 0.9 }}>
             ${nassauMatch.settings.betAmount}/bet - {nassauPlayers.length} players - {pairKeys.length} {pairKeys.length === 1 ? 'match' : 'matches'}
           </span>
@@ -730,10 +730,10 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
         <div className="modal-overlay" onClick={() => setShowCancelConfirm(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '350px' }}>
             <div className="modal-header" style={{ background: 'linear-gradient(135deg, #c62828 0%, #e53935 100%)' }}>
-              <h3 style={{ color: 'white', margin: 0 }}>Cancel Nassau Match?</h3>
+              <h3 style={{ color: 'white', margin: 0 }}>Cancel {isCasualGame ? 'Nassau' : 'Side Nassau'} Match?</h3>
             </div>
             <div className="modal-body" style={{ textAlign: 'center' }}>
-              <p>This will remove the Nassau match and all results. This cannot be undone.</p>
+              <p>This will remove the {isCasualGame ? 'Nassau' : 'Side Nassau'} match and all results. This cannot be undone.</p>
               {!isCasualGame && (
                 <input
                   type="password"

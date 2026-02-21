@@ -455,6 +455,196 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
   )
 }
 
+function NassauSetupModal({ onClose, nassauMatch, onSave }) {
+  const [settings, setSettings] = useState(nassauMatch?.settings || {
+    betAmount: 2,
+    useHandicaps: false
+  })
+
+  const handleSave = () => {
+    onSave({
+      settings: { ...settings, betAmount: parseFloat(settings.betAmount) || 2 },
+      participants: nassauMatch?.participants || [],
+      participantDetails: nassauMatch?.participantDetails || {},
+      presses: nassauMatch?.presses || [],
+      settlements: nassauMatch?.settlements || []
+    })
+    onClose()
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)' }}>
+          <h2 style={{ margin: 0, color: 'white' }}>{nassauMatch ? 'Edit' : 'Set Up'} Side Nassau</h2>
+          <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
+        </div>
+        <div style={{ padding: '20px' }}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Bet Amount Per Segment ($)</label>
+            <input
+              type="number"
+              value={settings.betAmount}
+              onChange={(e) => setSettings({ ...settings, betAmount: parseFloat(e.target.value) || 2 })}
+              min="0.5"
+              step="0.5"
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '16px' }}
+            />
+            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+              Each pair bets this amount on front 9, back 9, and overall (3 bets total)
+            </div>
+          </div>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Use Handicaps</label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid #2e7d32' : '2px solid #ddd', background: settings.useHandicaps ? '#e8f5e9' : 'white', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+              <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid #2e7d32' : '2px solid #ddd', background: !settings.useHandicaps ? '#e8f5e9' : 'white', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+            </div>
+            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+              Net strokes applied per hole based on player handicaps
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleSave} style={{ flex: 1, background: '#2e7d32' }}>
+              {nassauMatch ? 'Save Changes' : 'Create Side Nassau'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function NassauOptInSection({ teams, nassauMatch, setNassauMatch, liveRound, isAdmin, isCasualGame }) {
+  const [showSetup, setShowSetup] = useState(false)
+
+  // Get all unique players from teams
+  const allPlayers = []
+  const seen = new Set()
+  teams.forEach(team => {
+    team.forEach(player => {
+      if (!seen.has(player.id)) {
+        seen.add(player.id)
+        allPlayers.push(player)
+      }
+    })
+  })
+
+  const togglePlayer = (playerId) => {
+    const canToggle = !liveRound || isAdmin
+    if (!canToggle) return
+
+    const playerIdStr = String(playerId)
+    const inNassau = nassauMatch.participants.includes(playerIdStr)
+    let newParticipants
+    let newDetails = { ...(nassauMatch.participantDetails || {}) }
+    if (inNassau) {
+      newParticipants = nassauMatch.participants.filter(id => id !== playerIdStr)
+      delete newDetails[playerIdStr]
+    } else {
+      newParticipants = [...nassauMatch.participants, playerIdStr]
+      newDetails[playerIdStr] = { joinedOnHole: 1, leftOnHole: null, isSettled: false, settledOnHole: null }
+    }
+    setNassauMatch({ ...nassauMatch, participants: newParticipants, participantDetails: newDetails })
+  }
+
+  const cancelNassau = () => {
+    if (confirm('Cancel Side Nassau match?')) {
+      setNassauMatch(null)
+    }
+  }
+
+  const nassauLabel = isCasualGame ? 'Nassau' : 'Side Nassau'
+
+  if (!nassauMatch) {
+    return (
+      <div style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+        <h3 style={{ marginBottom: '10px', color: 'white' }}>{nassauLabel}</h3>
+        <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>
+          Set up a {nassauLabel.toLowerCase()} match — 3-bet match play (front 9, back 9, overall) between every pair.
+        </p>
+        <button className="btn" onClick={() => setShowSetup(true)} style={{ background: 'white', color: '#2e7d32', fontWeight: '600' }}>
+          Set Up {nassauLabel}
+        </button>
+        {showSetup && <NassauSetupModal onClose={() => setShowSetup(false)} nassauMatch={null} onSave={setNassauMatch} />}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ background: '#e8f5e9', border: '2px solid #2e7d32', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+        <h3 style={{ margin: 0, color: '#2e7d32' }}>{nassauLabel} Active</h3>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={() => setShowSetup(true)} style={{ background: '#2e7d32', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Edit</button>
+          <button onClick={cancelNassau} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Cancel</button>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+        <span>${nassauMatch.settings.betAmount}/bet</span>
+        <span>| 3 bets/pair (front, back, overall)</span>
+        {nassauMatch.settings.useHandicaps && <span>| Net (handicaps)</span>}
+      </div>
+
+      {!isCasualGame && (
+        <div style={{ marginBottom: '15px' }}>
+          <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px' }}>
+            Tap your name to {nassauMatch.participants.length > 0 ? 'join or leave' : 'join'}:
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {allPlayers.map(player => {
+              const inNassau = nassauMatch.participants.includes(String(player.id))
+              const canToggle = !liveRound || isAdmin
+              return (
+                <button
+                  key={player.id}
+                  onClick={() => togglePlayer(player.id)}
+                  disabled={!canToggle}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '20px',
+                    border: inNassau ? '2px solid #2e7d32' : '2px solid #ddd',
+                    background: inNassau ? '#e8f5e9' : 'white',
+                    color: inNassau ? '#2e7d32' : '#666',
+                    fontSize: '13px',
+                    fontWeight: inNassau ? '600' : 'normal',
+                    cursor: canToggle ? 'pointer' : 'not-allowed',
+                    opacity: canToggle ? 1 : 0.7
+                  }}
+                >
+                  {inNassau ? '✓ ' : ''}{player.name}
+                </button>
+              )
+            })}
+          </div>
+          {liveRound && !isAdmin && (
+            <p style={{ fontSize: '11px', color: '#999', marginTop: '8px' }}>
+              Round in progress. Contact admin to change Nassau participation.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div style={{ textAlign: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px', fontSize: '13px' }}>
+        {isCasualGame ? (
+          <span style={{ color: '#2e7d32' }}><strong>{allPlayers.length}</strong> player{allPlayers.length !== 1 ? 's' : ''} - All playing Nassau</span>
+        ) : (
+          <>
+            <strong>{nassauMatch.participants.length}</strong> player{nassauMatch.participants.length !== 1 ? 's' : ''} in Nassau
+            {nassauMatch.participants.length >= 2 && <span style={{ color: '#2e7d32' }}> - Ready to play</span>}
+            {nassauMatch.participants.length < 2 && nassauMatch.participants.length > 0 && (
+              <span style={{ color: '#e65100' }}> (need at least 2)</span>
+            )}
+          </>
+        )}
+      </div>
+
+      {showSetup && <NassauSetupModal onClose={() => setShowSetup(false)} nassauMatch={nassauMatch} onSave={setNassauMatch} />}
+    </div>
+  )
+}
+
 function TeamsPage() {
   const navigate = useNavigate()
   const {
@@ -465,12 +655,15 @@ function TeamsPage() {
     isAdmin,
     skinsMatch,
     setSkinsMatch,
+    nassauMatch,
+    setNassauMatch,
     setCheckedInPlayers,
     setManualTeams,
     setPairingRequests,
     players,
     courseTees,
     isCasualGame,
+    leagueSettings,
     roundFormatOverride,
     setRoundFormatOverride
   } = useLeague()
@@ -566,16 +759,29 @@ function TeamsPage() {
             </div>
           )}
 
-          {/* Skins opt-in section */}
-          <SkinsOptInSection
-            teams={teams}
-            skinsMatch={skinsMatch}
-            setSkinsMatch={setSkinsMatch}
-            liveRound={liveRound}
-            setLiveRound={setLiveRound}
-            isAdmin={isAdmin}
-            isCasualGame={isCasualGame}
-          />
+          {/* Side games opt-in sections */}
+          {(isCasualGame || (leagueSettings.sideGames?.enabled && leagueSettings.sideGames?.allowSkins !== false)) && (
+            <SkinsOptInSection
+              teams={teams}
+              skinsMatch={skinsMatch}
+              setSkinsMatch={setSkinsMatch}
+              liveRound={liveRound}
+              setLiveRound={setLiveRound}
+              isAdmin={isAdmin}
+              isCasualGame={isCasualGame}
+            />
+          )}
+
+          {(isCasualGame || (leagueSettings.sideGames?.enabled && leagueSettings.sideGames?.allowNassau !== false)) && (
+            <NassauOptInSection
+              teams={teams}
+              nassauMatch={nassauMatch}
+              setNassauMatch={setNassauMatch}
+              liveRound={liveRound}
+              isAdmin={isAdmin}
+              isCasualGame={isCasualGame}
+            />
+          )}
 
           {/* Team list */}
           {teams.map((team, idx) => (

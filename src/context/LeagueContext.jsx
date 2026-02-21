@@ -97,7 +97,8 @@ export function LeagueProvider({ children }) {
     contactInfoVisibility: 'admin',
     nextRoundDate: '',
     nextRoundTime: '',
-    nextRoundMessage: ''
+    nextRoundMessage: '',
+    sideGames: { enabled: false, allowSkins: true, allowNassau: true }
   })
   const [payoutFormats, setPayoutFormats] = useState({
     matchPlay: { name: "Match Play (2 Teams)", greeniePerHole: 1, front9: 5, back9: 5, overall: 5, holeInOne: 1 },
@@ -203,7 +204,8 @@ export function LeagueProvider({ children }) {
       contactInfoVisibility: 'admin',
       nextRoundDate: '',
       nextRoundTime: '',
-      nextRoundMessage: ''
+      nextRoundMessage: '',
+      sideGames: { enabled: false, allowSkins: true, allowNassau: true }
     })
     setPendingPlayerRequests(data.pendingPlayerRequests || [])
     setSkinsMatch(data.skinsMatch || null)
@@ -481,7 +483,8 @@ export function LeagueProvider({ children }) {
       contactInfoVisibility: 'admin',
       nextRoundDate: '',
       nextRoundTime: '',
-      nextRoundMessage: ''
+      nextRoundMessage: '',
+      sideGames: { enabled: false, allowSkins: true, allowNassau: true }
     })
     setPendingPlayerRequests([])
     setPayoutFormats({})
