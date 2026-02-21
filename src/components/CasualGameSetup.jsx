@@ -8,7 +8,7 @@ import { generateTeams, getTeamName } from '../utils/teamGeneration'
 
 function CasualGameSetup({ onBack }) {
   const { profile } = useAuth()
-  const { switchLeague, setSkinsMatch, setQuickSkinsMode, setNassauMatch } = useLeague()
+  const { switchLeague, setSkinsMatch, setQuickSkinsMode, setNassauMatch, setWolfMatch } = useLeague()
 
   // Game info
   const defaultName = `Casual - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
@@ -60,6 +60,17 @@ function CasualGameSetup({ onBack }) {
   // Nassau settings
   const [nassauEnabled, setNassauEnabled] = useState(false)
   const [nassauSettings, setNassauSettings] = useState({ betAmount: 2, useHandicaps: false })
+
+  // Wolf settings
+  const [wolfEnabled, setWolfEnabled] = useState(false)
+  const [wolfSettings, setWolfSettings] = useState({
+    betAmount: 1,
+    useHandicaps: false,
+    selectionMode: 'blind',
+    lastPlaceWolf17_18: false,
+    blindWolfMultiplier: 3,
+    loneWolfMultiplier: 2
+  })
 
   // Creating
   const [creating, setCreating] = useState(false)
@@ -260,6 +271,27 @@ function CasualGameSetup({ onBack }) {
         }
       }
 
+      // Build wolfMatch data if enabled (exactly 4 players, non-skins)
+      let wolfMatchData = null
+      if (!isSkins && wolfEnabled && playersData.length === 4) {
+        wolfMatchData = {
+          settings: {
+            betAmount: parseFloat(wolfSettings.betAmount) || 1,
+            useHandicaps: wolfSettings.useHandicaps,
+            selectionMode: wolfSettings.selectionMode,
+            lastPlaceWolf17_18: wolfSettings.lastPlaceWolf17_18,
+            blindWolfMultiplier: wolfSettings.blindWolfMultiplier,
+            loneWolfMultiplier: wolfSettings.loneWolfMultiplier
+          },
+          participants: playersData.map(p => String(p.id)),
+          participantDetails: Object.fromEntries(
+            playersData.map(p => [String(p.id), { joinedOnHole: 1, leftOnHole: null, isSettled: false, settledOnHole: null }])
+          ),
+          holeDecisions: {},
+          settlements: []
+        }
+      }
+
       // JSONB data blob
       const gameData = {
         players: playersData,
@@ -269,6 +301,7 @@ function CasualGameSetup({ onBack }) {
         leagueSettings: { contactInfoVisibility: 'admin' },
         ...(isSkins ? { quickSkinsMode: true, skinsMatch: skinsMatchData } : {}),
         ...(nassauMatchData ? { nassauMatch: nassauMatchData } : {}),
+        ...(wolfMatchData ? { wolfMatch: wolfMatchData } : {}),
         casualGameInfo: {
           gameName,
           courseName,
@@ -828,6 +861,135 @@ function CasualGameSetup({ onBack }) {
                             }}
                           >{val ? 'Yes' : 'No'}</button>
                         ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* Wolf toggle (non-skins, exactly 4 players) */}
+            {format !== 'skins' && gamePlayers.length === 4 && (
+              <div style={{ padding: '10px 0' }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '14px', fontWeight: '500' }}>Wolf (4-player rotation game)</span>
+                  <button
+                    onClick={() => setWolfEnabled(!wolfEnabled)}
+                    style={{
+                      width: '50px',
+                      height: '28px',
+                      borderRadius: '14px',
+                      border: 'none',
+                      background: wolfEnabled ? '#6a1b9a' : '#ccc',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <div style={{
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      background: 'white',
+                      position: 'absolute',
+                      top: '3px',
+                      left: wolfEnabled ? '25px' : '3px',
+                      transition: 'left 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                    }} />
+                  </button>
+                </div>
+                {wolfEnabled && (
+                  <div style={{ marginTop: '12px', padding: '12px', background: '#f3e5f5', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '13px' }}>
+                        Bet Amount Per Hole ($)
+                      </label>
+                      <input
+                        type="number"
+                        value={wolfSettings.betAmount}
+                        onChange={e => setWolfSettings({ ...wolfSettings, betAmount: parseFloat(e.target.value) || 1 })}
+                        min="0.5"
+                        step="0.5"
+                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px' }}
+                      />
+                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        Each losing player pays each winning player this amount (x multiplier)
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '13px' }}>Partner Selection Mode</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {[{ val: 'blind', label: 'Blind' }, { val: 'informed', label: 'Informed' }].map(opt => (
+                          <button
+                            key={opt.val}
+                            onClick={() => setWolfSettings({ ...wolfSettings, selectionMode: opt.val })}
+                            style={{
+                              flex: 1, padding: '8px', borderRadius: '6px',
+                              border: `2px solid ${wolfSettings.selectionMode === opt.val ? '#6a1b9a' : '#e0e0e0'}`,
+                              background: wolfSettings.selectionMode === opt.val ? '#f3e5f5' : 'white',
+                              fontWeight: wolfSettings.selectionMode === opt.val ? '600' : 'normal',
+                              color: wolfSettings.selectionMode === opt.val ? '#6a1b9a' : '#666',
+                              cursor: 'pointer', fontSize: '13px'
+                            }}
+                          >{opt.label}</button>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        Blind: decide before scores. Informed: decide after seeing scores.
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <label style={{ fontWeight: '600', fontSize: '13px' }}>Use Handicaps</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {[true, false].map(val => (
+                          <button
+                            key={String(val)}
+                            onClick={() => setWolfSettings({ ...wolfSettings, useHandicaps: val })}
+                            style={{
+                              padding: '6px 14px', borderRadius: '6px',
+                              border: `2px solid ${wolfSettings.useHandicaps === val ? '#6a1b9a' : '#e0e0e0'}`,
+                              background: wolfSettings.useHandicaps === val ? '#f3e5f5' : 'white',
+                              fontWeight: wolfSettings.useHandicaps === val ? '600' : 'normal',
+                              color: wolfSettings.useHandicaps === val ? '#6a1b9a' : '#666',
+                              cursor: 'pointer', fontSize: '13px'
+                            }}
+                          >{val ? 'Yes' : 'No'}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={wolfSettings.lastPlaceWolf17_18}
+                        onChange={(e) => setWolfSettings({ ...wolfSettings, lastPlaceWolf17_18: e.target.checked })}
+                        style={{ width: '18px', height: '18px', accentColor: '#6a1b9a' }}
+                      />
+                      <span style={{ fontSize: '14px' }}>Last place is Wolf on holes 17 & 18</span>
+                    </label>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '12px' }}>Lone Wolf Mult.</label>
+                        <input
+                          type="number"
+                          value={wolfSettings.loneWolfMultiplier}
+                          onChange={e => setWolfSettings({ ...wolfSettings, loneWolfMultiplier: parseInt(e.target.value) || 2 })}
+                          min="1" max="5"
+                          style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px', textAlign: 'center' }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '12px' }}>Blind Wolf Mult.</label>
+                        <input
+                          type="number"
+                          value={wolfSettings.blindWolfMultiplier}
+                          onChange={e => setWolfSettings({ ...wolfSettings, blindWolfMultiplier: parseInt(e.target.value) || 3 })}
+                          min="1" max="5"
+                          style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px', textAlign: 'center' }}
+                        />
                       </div>
                     </div>
                   </div>
