@@ -5,62 +5,48 @@ import { generateTeams } from '../utils/teamGeneration'
 import { formatHandicap, formatCourseHandicap, getEffectiveHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
 import { FORMAT_CONFIGS } from '../utils/formatScoring'
 
-function PlayerCheckInCard({ player, isSelected, isInManualTeam, onToggle, showSkill, courseTees }) {
+function PlayerCheckInPill({ player, isSelected, isInManualTeam, onToggle, showSkill, courseTees }) {
   const playerTee = player.defaultTee || 'blue'
   const handicapIndex = player.handicap
   const courseHandicap = getCourseHandicapForTee(handicapIndex, playerTee, courseTees)
 
-  const displayRating = handicapIndex !== undefined && handicapIndex !== null
+  const hasHandicap = handicapIndex !== undefined && handicapIndex !== null
+  const hcpLine = hasHandicap
+    ? `${formatHandicap(handicapIndex)} / ${formatCourseHandicap(courseHandicap)}`
+    : `Skill ${player.skillRating?.toFixed(1) || '5.0'}`
+  const hoverText = hasHandicap
     ? `Index: ${formatHandicap(handicapIndex)} | Course: ${formatCourseHandicap(courseHandicap)}`
     : `Skill: ${player.skillRating?.toFixed(1) || '5.0'}`
 
+  const borderColor = isInManualTeam ? '#9b59b6' : isSelected ? '#27ae60' : '#ddd'
+  const bgColor = isInManualTeam ? '#f3e5f5' : isSelected ? '#e8f8f5' : 'white'
+  const textColor = isInManualTeam ? '#9b59b6' : isSelected ? '#27ae60' : '#666'
+
   return (
-    <div
-      style={{
-        background: isSelected ? '#d4edda' : '#f8f9fa',
-        padding: '12px',
-        borderRadius: '8px',
-        marginBottom: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        cursor: isInManualTeam ? 'not-allowed' : 'pointer',
-        opacity: isInManualTeam ? 0.6 : 1
-      }}
+    <button
       onClick={() => !isInManualTeam && onToggle()}
+      title={hoverText}
+      style={{
+        padding: showSkill ? '6px 14px 4px' : '10px 14px',
+        borderRadius: '20px',
+        border: `2px solid ${borderColor}`,
+        background: bgColor,
+        color: textColor,
+        fontSize: '13px',
+        fontWeight: isSelected || isInManualTeam ? '600' : 'normal',
+        cursor: isInManualTeam ? 'not-allowed' : 'pointer',
+        opacity: isInManualTeam ? 0.7 : 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        lineHeight: 1.3
+      }}
     >
-      <input
-        type="checkbox"
-        checked={isSelected}
-        onChange={() => {}}
-        disabled={isInManualTeam}
-        style={{ marginRight: '12px' }}
-      />
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: '600' }}>
-          {player.name}
-          {isSelected && (
-            <span style={{
-              marginLeft: '10px',
-              background: '#27ae60',
-              color: 'white',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              fontSize: '11px'
-            }}>
-              Checked In
-            </span>
-          )}
-        </div>
-        {showSkill && (
-          <div style={{ fontSize: '13px', color: '#333', fontWeight: '500' }}>
-            {displayRating}
-          </div>
-        )}
-      </div>
-      {isInManualTeam && (
-        <span style={{ fontSize: '12px', color: '#666' }}>In Manual Team</span>
+      <span>{isSelected ? '✓ ' : ''}{player.name}</span>
+      {showSkill && (
+        <span style={{ fontSize: '10px', opacity: 0.8, fontWeight: '400' }}>{hcpLine}</span>
       )}
-    </div>
+    </button>
   )
 }
 
@@ -621,6 +607,28 @@ function GeneratePage() {
     p => selectedPlayers.includes(p.id) && !playersInManualTeams.has(p.id)
   )
 
+  // Sorted player groups for compact check-in UI
+  const checkedInPlayersList = activePlayers
+    .filter(p => selectedPlayers.includes(p.id))
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const notCheckedInPlayersList = activePlayers
+    .filter(p => !selectedPlayers.includes(p.id))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  const handleSelectAll = () => {
+    const allIds = activePlayers
+      .filter(p => !playersInManualTeams.has(p.id))
+      .map(p => p.id)
+    // Keep manual-team players that are already selected, add all others
+    const manualTeamSelected = selectedPlayers.filter(id => playersInManualTeams.has(id))
+    setSelectedPlayers([...new Set([...manualTeamSelected, ...allIds])])
+  }
+
+  const handleSelectNone = () => {
+    // Keep only manual-team players selected
+    setSelectedPlayers(selectedPlayers.filter(id => playersInManualTeams.has(id)))
+  }
+
   const togglePlayerSelection = (playerId) => {
     if (selectedPlayers.includes(playerId)) {
       setSelectedPlayers(selectedPlayers.filter(id => id !== playerId))
@@ -707,12 +715,12 @@ function GeneratePage() {
           </div>
         ) : (
           <div>
-            {/* Player count at top */}
+            {/* Count bar with All/None buttons */}
             <div style={{
               padding: '10px 15px',
               background: '#e3f2fd',
               borderRadius: '8px',
-              marginBottom: '10px',
+              marginBottom: '12px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
@@ -720,40 +728,76 @@ function GeneratePage() {
               <span style={{ color: '#1976d2', fontWeight: '600' }}>
                 {selectedPlayers.length} of {activePlayers.length} Checked In
               </span>
-              {selectedPlayers.length >= 6 && (
-                <span style={{ color: '#27ae60', fontSize: '13px' }}>Ready to generate teams</span>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {selectedPlayers.length >= 6 && (
+                  <span style={{ color: '#27ae60', fontSize: '13px' }}>Ready</span>
+                )}
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={handleSelectAll}
+                      style={{
+                        padding: '4px 10px', borderRadius: '4px', border: '1px solid #1976d2',
+                        background: 'white', color: '#1976d2', fontSize: '12px', fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >All</button>
+                    <button
+                      onClick={handleSelectNone}
+                      style={{
+                        padding: '4px 10px', borderRadius: '4px', border: '1px solid #999',
+                        background: 'white', color: '#666', fontSize: '12px', fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                    >None</button>
+                  </>
+                )}
+              </div>
             </div>
 
-            {activePlayers.map(player => (
-              <PlayerCheckInCard
-                key={player.id}
-                player={player}
-                isSelected={selectedPlayers.includes(player.id)}
-                isInManualTeam={playersInManualTeams.has(player.id)}
-                onToggle={() => togglePlayerSelection(player.id)}
-                showSkill={isAdmin}
-                courseTees={courseTees}
-              />
-            ))}
+            {/* Checked In group */}
+            {checkedInPlayersList.length > 0 && (
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#27ae60', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Checked In ({checkedInPlayersList.length})
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {checkedInPlayersList.map(player => (
+                    <PlayerCheckInPill
+                      key={player.id}
+                      player={player}
+                      isSelected={true}
+                      isInManualTeam={playersInManualTeams.has(player.id)}
+                      onToggle={() => togglePlayerSelection(player.id)}
+                      showSkill={isAdmin}
+                      courseTees={courseTees}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {/* Player count at bottom */}
-            <div style={{
-              padding: '10px 15px',
-              background: '#e3f2fd',
-              borderRadius: '8px',
-              marginTop: '10px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span style={{ color: '#1976d2', fontWeight: '600' }}>
-                {selectedPlayers.length} of {activePlayers.length} Checked In
-              </span>
-              {selectedPlayers.length >= 6 && (
-                <span style={{ color: '#27ae60', fontSize: '13px' }}>Ready to generate teams</span>
-              )}
-            </div>
+            {/* Not Checked In group */}
+            {notCheckedInPlayersList.length > 0 && (
+              <div style={{ marginBottom: '4px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#999', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Not Checked In ({notCheckedInPlayersList.length})
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {notCheckedInPlayersList.map(player => (
+                    <PlayerCheckInPill
+                      key={player.id}
+                      player={player}
+                      isSelected={false}
+                      isInManualTeam={playersInManualTeams.has(player.id)}
+                      onToggle={() => togglePlayerSelection(player.id)}
+                      showSkill={isAdmin}
+                      courseTees={courseTees}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
