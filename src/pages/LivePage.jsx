@@ -3578,7 +3578,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   </div>
                 </div>
 
-                {/* Greenies Settings */}
+                {/* Greenies Settings — only for casual/quick skins; league rounds already have greenies */}
+                {isCasualGame && (
                 <div style={{ marginBottom: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Greenies (Par 3s)</label>
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -3610,6 +3611,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     </>
                   )}
                 </div>
+                )}
 
                 <button className="btn btn-primary" onClick={setupSkinsMatch} style={{ width: '100%', marginTop: '10px' }}>
                   Start Skins Match
@@ -4831,7 +4833,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   </div>
                 </div>
 
-                {/* Greenies Settings */}
+                {/* Greenies Settings — only for casual/quick skins; league rounds already have greenies */}
+                {isCasualGame && (
                 <div style={{ borderTop: '1px solid #eee', paddingTop: '15px', marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px', color: '#27ae60' }}>Greenies (Par 3s)</label>
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -4861,6 +4864,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     </>
                   )}
                 </div>
+                )}
 
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
