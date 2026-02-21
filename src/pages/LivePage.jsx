@@ -6830,9 +6830,9 @@ function LivePage() {
         { id: 'leaderboard', label: 'Board' },
         { id: 'scoring', label: 'Scores' },
         { id: 'greenies', label: 'Greenies' },
-        { id: 'skins', label: 'Skins' },
-        { id: 'nassau', label: 'Nassau' },
-        { id: 'wolf', label: 'Wolf' },
+        ...(skinsMatch ? [{ id: 'skins', label: 'Skins' }] : []),
+        ...(nassauMatch ? [{ id: 'nassau', label: 'Nassau' }] : []),
+        ...(wolfMatch ? [{ id: 'wolf', label: 'Wolf' }] : []),
         { id: 'money', label: 'Money' },
         { id: 'manage', label: 'Manage' }
       ]
