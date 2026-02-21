@@ -6822,17 +6822,17 @@ function LivePage() {
         { id: 'scoring', label: 'Scores' },
         { id: 'skins', label: 'Skins' },
         ...(liveRound?.quickSkinsGreenieSettings ? [{ id: 'greenies', label: 'Greenies' }] : []),
-        ...(nassauMatch ? [{ id: 'nassau', label: 'Nassau' }] : []),
-        ...(wolfMatch ? [{ id: 'wolf', label: 'Wolf' }] : []),
+        ...(nassauMatch?.participants?.length ? [{ id: 'nassau', label: 'Nassau' }] : []),
+        ...(wolfMatch?.participants?.length ? [{ id: 'wolf', label: 'Wolf' }] : []),
         ...(isCasualGame ? [{ id: 'manage', label: 'Manage' }] : [])
       ]
     : [
         { id: 'leaderboard', label: 'Board' },
         { id: 'scoring', label: 'Scores' },
         { id: 'greenies', label: 'Greenies' },
-        ...(skinsMatch ? [{ id: 'skins', label: 'Skins' }] : []),
-        ...(nassauMatch ? [{ id: 'nassau', label: 'Nassau' }] : []),
-        ...(wolfMatch ? [{ id: 'wolf', label: 'Wolf' }] : []),
+        ...(skinsMatch?.participants?.length ? [{ id: 'skins', label: 'Skins' }] : []),
+        ...(nassauMatch?.participants?.length ? [{ id: 'nassau', label: 'Nassau' }] : []),
+        ...(wolfMatch?.participants?.length ? [{ id: 'wolf', label: 'Wolf' }] : []),
         { id: 'money', label: 'Money' },
         { id: 'manage', label: 'Manage' }
       ]
