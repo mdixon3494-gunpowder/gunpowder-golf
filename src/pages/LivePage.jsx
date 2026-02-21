@@ -3410,12 +3410,12 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           borderRadius: '10px',
           textAlign: 'center'
         }}>
-          <h3 style={{ marginBottom: '15px' }}>No Skins Match Active</h3>
+          <h3 style={{ marginBottom: '15px' }}>No {isCasualGame ? 'Skins' : 'Side Skins'} Match Active</h3>
           <p style={{ color: '#666', marginBottom: '20px' }}>
-            Set up a skins match to track individual hole winners.
+            Set up a {isCasualGame ? 'skins' : 'side skins'} match to track individual hole winners.
           </p>
           <button className="btn btn-primary" onClick={() => setShowSetup(true)}>
-            Setup Skins Match
+            Setup {isCasualGame ? 'Skins' : 'Side Skins'} Match
           </button>
         </div>
 
@@ -3423,7 +3423,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           <div className="modal-overlay" onClick={() => setShowSetup(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
               <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)' }}>
-                <h3 style={{ color: 'white', margin: 0 }}>Skins Match Settings</h3>
+                <h3 style={{ color: 'white', margin: 0 }}>{isCasualGame ? 'Skins' : 'Side Skins'} Match Settings</h3>
                 <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'white' }}>&times;</button>
               </div>
               <div className="modal-body">
@@ -3614,7 +3614,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 )}
 
                 <button className="btn btn-primary" onClick={setupSkinsMatch} style={{ width: '100%', marginTop: '10px' }}>
-                  Start Skins Match
+                  Start {isCasualGame ? 'Skins' : 'Side Skins'} Match
                 </button>
               </div>
             </div>
@@ -3638,7 +3638,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span>Skins Match</span>
+          <span>{isCasualGame ? 'Skins' : 'Side Skins'} Match</span>
           <span style={{ fontSize: '13px', opacity: 0.9 }}>
             ${skinsMatch.settings.costPerSkin}/skin - {skinsPlayers.length} players
           </span>
@@ -4912,7 +4912,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             maxWidth: '300px',
             textAlign: 'center'
           }}>
-            <h3 style={{ marginBottom: '15px', color: '#e74c3c' }}>Cancel Skins Match?</h3>
+            <h3 style={{ marginBottom: '15px', color: '#e74c3c' }}>Cancel {isCasualGame ? 'Skins' : 'Side Skins'} Match?</h3>
             <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
               Enter admin PIN to cancel the skins match. This cannot be undone.
             </p>
@@ -6834,7 +6834,7 @@ function LivePage() {
         { id: 'leaderboard', label: 'Board' },
         { id: 'scoring', label: 'Scores' },
         { id: 'greenies', label: 'Greenies' },
-        ...(skinsMatch?.participants?.length ? [{ id: 'skins', label: 'Skins' }] : []),
+        ...(skinsMatch?.participants?.length ? [{ id: 'skins', label: 'Side Skins' }] : []),
         ...(nassauMatch?.participants?.length ? [{ id: 'nassau', label: 'Nassau' }] : []),
         ...(wolfMatch?.participants?.length ? [{ id: 'wolf', label: 'Wolf' }] : []),
         { id: 'money', label: 'Money' },

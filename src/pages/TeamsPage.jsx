@@ -157,7 +157,7 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px', maxHeight: '90vh', overflow: 'auto' }}>
         <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)' }}>
-          <h2 style={{ margin: 0, color: 'white' }}>{skinsMatch ? 'Edit' : 'Start'} Skins Match</h2>
+          <h2 style={{ margin: 0, color: 'white' }}>{skinsMatch ? 'Edit' : 'Start'} Side Skins Match</h2>
           <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
         </div>
         <div style={{ padding: '20px' }}>
@@ -259,7 +259,7 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} style={{ flex: 1 }}>
-              {skinsMatch ? 'Save Changes' : 'Create Skins Match'}
+              {skinsMatch ? 'Save Changes' : 'Create Side Skins Match'}
             </button>
           </div>
         </div>
@@ -312,16 +312,16 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
         borderRadius: '10px',
         marginBottom: '20px'
       }}>
-        <h3 style={{ marginBottom: '10px', color: 'white' }}>Skins Match</h3>
+        <h3 style={{ marginBottom: '10px', color: 'white' }}>Side Skins</h3>
         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>
-          Set up a skins competition that runs alongside the league round.
+          Set up a side skins competition that runs alongside the league round.
         </p>
         <button
           className="btn"
           onClick={() => setShowSetup(true)}
           style={{ background: 'white', color: '#e67e22', fontWeight: '600' }}
         >
-          Set Up Skins Match
+          Set Up Side Skins Match
         </button>
         {showSetup && (
           <SkinsSetupModal
@@ -345,7 +345,7 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
       marginBottom: '20px'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0, color: '#e67e22' }}>Skins Match Active</h3>
+        <h3 style={{ margin: 0, color: '#e67e22' }}>Side Skins Match Active</h3>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setShowSetup(true)}
