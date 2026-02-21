@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { Routes, Route, useSearchParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LeagueProvider, useLeague } from './context/LeagueContext'
 
 // Components
 import Layout from './components/layout/Layout'
 import LeagueSetup from './components/LeagueSetup'
+import LeagueCreationWizard from './components/LeagueCreationWizard'
 import MyLeaguesScreen from './components/MyLeaguesScreen'
 import CasualGameSetup from './components/CasualGameSetup'
 import IndividualRoundSetup from './components/IndividualRoundSetup'
@@ -30,6 +31,7 @@ import RoundHistoryPage from './pages/RoundHistoryPage'
 function AppContent() {
   const { loading: authLoading, isAuthenticated, needsProfileClaim, profile } = useAuth()
   const { loading: leagueLoading, isSetup, switchLeague, leagueId, syncSiteOwnerFromProfile } = useLeague()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [authScreen, setAuthScreen] = useState('login') // 'login' | 'signup'
   const [skippedAuth, setSkippedAuth] = useState(() => {
     // Allow skipping auth if user already has a league code saved
@@ -41,6 +43,18 @@ function AppContent() {
   const [showIndividualSetup, setShowIndividualSetup] = useState(false)
   const [showRoundHistory, setShowRoundHistory] = useState(false)
   const [leagueSetupMode, setLeagueSetupMode] = useState('create') // 'create' | 'join'
+
+  // Parse ?join=CODE from URL (invite links)
+  const joinCodeFromUrl = useMemo(() => searchParams.get('join'), [searchParams])
+
+  useEffect(() => {
+    if (joinCodeFromUrl && !leagueLoading && !isSetup) {
+      setLeagueSetupMode('join')
+      setShowLeagueSetup(true)
+      // Clear the param from URL so it doesn't persist
+      setSearchParams({}, { replace: true })
+    }
+  }, [joinCodeFromUrl, leagueLoading, isSetup])
 
   // When a league is loaded/joined/created, clear setup screens and show main app
   useEffect(() => {
@@ -184,11 +198,26 @@ function AppContent() {
     )
   }
 
-  // Show LeagueSetup (from MyLeaguesScreen or for unauthenticated users)
+  // Show LeagueCreationWizard for authenticated create, LeagueSetup for join
   if (showLeagueSetup && isAuthenticated) {
+    if (leagueSetupMode === 'create') {
+      return (
+        <LeagueCreationWizard
+          onBack={() => {
+            setShowLeagueSetup(false)
+            setShowLeagueSelector(true)
+          }}
+          onCreated={() => {
+            setShowLeagueSetup(false)
+            setShowLeagueSelector(false)
+          }}
+        />
+      )
+    }
     return (
       <LeagueSetup
         initialMode={leagueSetupMode}
+        initialJoinCode={joinCodeFromUrl || ''}
         onBack={() => {
           setShowLeagueSetup(false)
           setShowLeagueSelector(true)
@@ -228,7 +257,7 @@ function AppContent() {
       )
     }
     // Unauthenticated users go straight to LeagueSetup
-    return <LeagueSetup />
+    return <LeagueSetup initialJoinCode={joinCodeFromUrl || ''} />
   }
 
   // Main app

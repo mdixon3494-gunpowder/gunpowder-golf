@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { useAuth } from '../context/AuthContext'
 import { removeLeagueMember } from '../lib/leagueService'
+import InviteSection from '../components/InviteSection'
+import PendingApprovalList from '../components/PendingApprovalList'
+import MemberManagement from '../components/MemberManagement'
+import JoinSettingsSection from '../components/JoinSettingsSection'
+import { softDeleteLeague } from '../lib/leagueService'
 import CourseMappingTool from '../components/gps/CourseMappingTool'
 import { runAllPendingMigrations, getPendingMigrations } from '../lib/migrations/index'
 import {
@@ -331,8 +336,10 @@ function SiteOwnerAccessSection({
   )
 }
 
-function LeagueInfoSection({ leagueId, onLeave, onCloneToTest, isAdmin, onSwitchLeague, isAuthenticated }) {
+function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin, isLeagueOwner, onSwitchLeague, isAuthenticated }) {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const [showCloneForm, setShowCloneForm] = useState(false)
   const [testCode, setTestCode] = useState('')
   const [cloneStatus, setCloneStatus] = useState({ loading: false, error: '', success: '' })
@@ -509,6 +516,62 @@ function LeagueInfoSection({ leagueId, onLeave, onCloneToTest, isAdmin, onSwitch
         >
           Switch League
         </button>
+      )}
+
+      {/* Delete League - Owner only */}
+      {isLeagueOwner && onDelete && (
+        showDeleteConfirm ? (
+          <div style={{
+            background: '#ffebee',
+            padding: '15px',
+            borderRadius: '8px',
+            border: '1px solid #ef9a9a',
+            marginBottom: '10px'
+          }}>
+            <p style={{ marginBottom: '10px', fontWeight: '600', color: '#c62828' }}>
+              Delete this league?
+            </p>
+            <p style={{ color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+              The league will be hidden from all members. A site owner can restore it later.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={async () => {
+                  setDeleteLoading(true)
+                  await onDelete()
+                  setDeleteLoading(false)
+                }}
+                disabled={deleteLoading}
+                style={{ background: '#c62828', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+              >
+                {deleteLoading ? 'Deleting...' : 'Delete League'}
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            style={{
+              width: '100%',
+              background: 'none',
+              border: '1px solid #ef9a9a',
+              color: '#c62828',
+              fontSize: '13px',
+              cursor: 'pointer',
+              padding: '10px',
+              borderRadius: '6px',
+              marginBottom: '10px'
+            }}
+          >
+            Delete League
+          </button>
+        )
       )}
 
       {/* Leave League - secondary danger action */}
@@ -3173,7 +3236,11 @@ function SettingsPage({ onShowLeagueSelector }) {
     viewAsRole,
     setViewAsRole,
     courseMapping,
-    setCourseMapping
+    setCourseMapping,
+    pendingPlayerRequests,
+    setPendingPlayerRequests,
+    isLeagueOwner,
+    userRole
   } = useLeague()
 
   const handleStartQuickSkins = ({ players: qsPlayers, teams, skinsSettings, greenieSettings }) => {
@@ -3248,6 +3315,30 @@ function SettingsPage({ onShowLeagueSelector }) {
         onStartQuickSkins={handleStartQuickSkins}
       />
 
+      {/* Invite Players - Admin Only */}
+      {isAdmin && <InviteSection leagueId={leagueId} />}
+
+      {/* Pending Join Requests - Admin Only */}
+      {isAdmin && (
+        <PendingApprovalList
+          leagueId={leagueId}
+          pendingRequests={pendingPlayerRequests}
+          onUpdate={setPendingPlayerRequests}
+        />
+      )}
+
+      {/* Member Management - Admin Only */}
+      {isAdmin && profile?.id && (
+        <MemberManagement
+          leagueId={leagueId}
+          currentProfileId={profile.id}
+          isLeagueOwner={isLeagueOwner}
+        />
+      )}
+
+      {/* Join Settings - Admin Only */}
+      {isAdmin && <JoinSettingsSection leagueId={leagueId} />}
+
       <LeagueInfoSection
         leagueId={leagueId}
         onLeave={() => {
@@ -3259,8 +3350,17 @@ function SettingsPage({ onShowLeagueSelector }) {
           }
           leaveLeague()
         }}
+        onDelete={async () => {
+          try {
+            await softDeleteLeague(leagueId)
+            leaveLeague()
+          } catch (err) {
+            console.error('Failed to delete league:', err)
+          }
+        }}
         onCloneToTest={cloneLeagueToTest}
         isAdmin={isAdmin}
+        isLeagueOwner={isLeagueOwner}
         onSwitchLeague={onShowLeagueSelector}
         isAuthenticated={!!user}
       />

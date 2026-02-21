@@ -77,10 +77,106 @@ export async function removeLeagueMember(leagueId, profileId) {
   }
 }
 
+export async function getMemberRole(leagueId, profileId) {
+  if (!leagueId || !profileId) return null
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    const { data, error } = await supabase
+      .from('league_members')
+      .select('role')
+      .eq('league_id', leagueId)
+      .eq('profile_id', profileId)
+      .limit(1)
+      .abortSignal(controller.signal)
+    clearTimeout(timeout)
+    if (error || !data?.length) return null
+    return data[0].role
+  } catch (err) {
+    console.warn('getMemberRole failed:', err.message)
+    return null
+  }
+}
+
+export async function updateMemberRole(leagueId, profileId, newRole) {
+  const { data, error } = await supabase
+    .from('league_members')
+    .update({ role: newRole })
+    .eq('league_id', leagueId)
+    .eq('profile_id', profileId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating member role:', error)
+    throw error
+  }
+  return data
+}
+
+export async function transferOwnership(leagueId, currentOwnerId, newOwnerId) {
+  // Demote current owner to co_owner, promote new owner
+  const { error: demoteError } = await supabase
+    .from('league_members')
+    .update({ role: 'co_owner' })
+    .eq('league_id', leagueId)
+    .eq('profile_id', currentOwnerId)
+
+  if (demoteError) {
+    console.error('Error demoting current owner:', demoteError)
+    throw demoteError
+  }
+
+  const { error: promoteError } = await supabase
+    .from('league_members')
+    .update({ role: 'owner' })
+    .eq('league_id', leagueId)
+    .eq('profile_id', newOwnerId)
+
+  if (promoteError) {
+    console.error('Error promoting new owner:', promoteError)
+    throw promoteError
+  }
+
+  // Update leagues.owner_id
+  const { error: metaError } = await supabase
+    .from('leagues')
+    .update({ owner_id: newOwnerId })
+    .eq('id', leagueId)
+
+  if (metaError) {
+    console.warn('Could not update leagues.owner_id:', metaError)
+  }
+}
+
+export async function softDeleteLeague(leagueId) {
+  const { error } = await supabase
+    .from('leagues')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', leagueId)
+
+  if (error) {
+    console.error('Error soft-deleting league:', error)
+    throw error
+  }
+}
+
+export async function restoreLeague(leagueId) {
+  const { error } = await supabase
+    .from('leagues')
+    .update({ deleted_at: null })
+    .eq('id', leagueId)
+
+  if (error) {
+    console.error('Error restoring league:', error)
+    throw error
+  }
+}
+
 export async function getLeaguesForProfile(profileId) {
   const { data, error } = await supabase
     .from('league_members')
-    .select('*, leagues(id, name, owner_id, is_test, type, visibility, created_at, updated_at)')
+    .select('*, leagues(id, name, owner_id, is_test, type, visibility, deleted_at, created_at, updated_at)')
     .eq('profile_id', profileId)
     .order('joined_at', { ascending: false })
 
@@ -88,7 +184,8 @@ export async function getLeaguesForProfile(profileId) {
     console.error('Error fetching leagues for profile:', error)
     return []
   }
-  return data || []
+  // Filter out soft-deleted leagues (client-side)
+  return (data || []).filter(m => !m.leagues?.deleted_at)
 }
 
 export async function getLeaguesForProfileWithCounts(profileId) {

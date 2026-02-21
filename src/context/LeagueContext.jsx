@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { DEFAULT_HANDICAP_SETTINGS, DEFAULT_COURSE_TEES } from '../utils/handicapCalculation'
-import { addLeagueMember } from '../lib/leagueService'
+import { addLeagueMember, getMemberRole } from '../lib/leagueService'
+import { useAuth } from './AuthContext'
 import { getTemplateById, getDefaultTemplate } from '../lib/formatTemplateService'
 import { saveRoundHistory, recalculateAndStoreHandicap } from '../lib/roundHistoryService'
 
@@ -39,13 +40,16 @@ const CloudStorage = {
     try {
       const { data, error } = await supabase
         .from('leagues')
-        .select('data')
+        .select('data, deleted_at')
         .eq('id', leagueId)
         .single()
       if (error) {
         console.error('Supabase load error:', error)
         return null
       }
+
+      // Don't load soft-deleted leagues
+      if (data?.deleted_at) return null
 
       const parsedData = typeof data?.data === 'string'
         ? JSON.parse(data.data)
@@ -79,6 +83,8 @@ const normalizeRound = (round) => {
 }
 
 export function LeagueProvider({ children }) {
+  const { profile } = useAuth()
+
   // League state
   const [leagueId, setLeagueId] = useState(null)
   const [isSetup, setIsSetup] = useState(false)
@@ -157,6 +163,9 @@ export function LeagueProvider({ children }) {
 
   // Profile-based site owner (auto-detected from profiles.is_site_owner)
   const [isSiteOwnerProfile, setIsSiteOwnerProfile] = useState(false)
+
+  // Role from league_members table (queried on league load)
+  const [userRole, setUserRole] = useState(null)
 
   // "View As" role override for testing (null = no override, use real role)
   const [viewAsRole, setViewAsRole] = useState(null) // null | 'admin' | 'user'
@@ -423,6 +432,19 @@ export function LeagueProvider({ children }) {
     }
   }, [leagueId, liveRound?.id])
 
+  // Fetch user role from league_members when league or profile changes
+  useEffect(() => {
+    if (!leagueId || !profile?.id) {
+      setUserRole(null)
+      return
+    }
+    let cancelled = false
+    getMemberRole(leagueId, profile.id).then(role => {
+      if (!cancelled) setUserRole(role)
+    })
+    return () => { cancelled = true }
+  }, [leagueId, profile?.id])
+
   // Load format template for a league (checks league metadata for template_id, falls back to default)
   const loadFormatTemplate = async (lid) => {
     try {
@@ -460,7 +482,7 @@ export function LeagueProvider({ children }) {
     return { available: true, normalizedCode }
   }
 
-  const createNewLeague = async (customCode = null, { leagueName, profileId } = {}) => {
+  const createNewLeague = async (customCode = null, { leagueName, profileId, initialSettings } = {}) => {
     let newLeagueId
 
     if (customCode) {
@@ -550,6 +572,19 @@ export function LeagueProvider({ children }) {
       }
     }
 
+    // Apply initial settings from wizard if provided
+    if (initialSettings) {
+      if (initialSettings.handicapSettings) {
+        setHandicapSettings(prev => ({ ...prev, ...initialSettings.handicapSettings }))
+      }
+      if (initialSettings.sideGames) {
+        setLeagueSettings(prev => ({ ...prev, sideGames: { ...prev.sideGames, ...initialSettings.sideGames } }))
+      }
+      if (initialSettings.courseName) {
+        setCourseTees(prev => ({ ...prev, courseName: initialSettings.courseName }))
+      }
+    }
+
     return { success: true, leagueId: newLeagueId }
   }
 
@@ -617,26 +652,59 @@ export function LeagueProvider({ children }) {
     return { success: true, testLeagueId }
   }
 
-  const joinExistingLeague = async (code, { profileId } = {}) => {
+  const joinExistingLeague = async (code, { profileId, displayName, email } = {}) => {
     const normalizedCode = code.toUpperCase().trim()
     const data = await CloudStorage.loadData(normalizedCode)
 
-    if (data) {
-      CloudStorage.setLeagueId(normalizedCode)
-      loadLeagueData(normalizedCode, data)
+    if (!data) return false
 
-      // Create league_members row if authenticated with a profile
-      if (profileId) {
-        try {
-          await addLeagueMember(normalizedCode, profileId, 'player')
-        } catch (err) {
-          console.warn('Could not create league member row:', err)
-        }
-      }
-
-      return true
+    // Check if join approval is required
+    let approvalRequired = false
+    try {
+      const { data: meta } = await supabase
+        .from('leagues')
+        .select('join_approval_required')
+        .eq('id', normalizedCode)
+        .limit(1)
+      if (meta?.[0]?.join_approval_required) approvalRequired = true
+    } catch (err) {
+      console.warn('Could not check approval setting:', err)
     }
-    return false
+
+    if (approvalRequired && profileId) {
+      // Add to pending requests in the league JSONB blob
+      const pending = data.pendingPlayerRequests || []
+      // Don't add if already pending
+      if (!pending.some(r => r.profileId === profileId)) {
+        pending.push({
+          id: Date.now().toString(),
+          profileId,
+          name: displayName || email || 'Unknown',
+          email: email || null,
+          requestedAt: new Date().toISOString()
+        })
+        // Save updated pending list directly
+        await CloudStorage.saveData(normalizedCode, {
+          ...data,
+          pendingPlayerRequests: pending
+        })
+      }
+      return 'pending'
+    }
+
+    CloudStorage.setLeagueId(normalizedCode)
+    loadLeagueData(normalizedCode, data)
+
+    // Create league_members row if authenticated with a profile
+    if (profileId) {
+      try {
+        await addLeagueMember(normalizedCode, profileId, 'player')
+      } catch (err) {
+        console.warn('Could not create league member row:', err)
+      }
+    }
+
+    return true
   }
 
   const leaveLeague = () => {
@@ -647,6 +715,7 @@ export function LeagueProvider({ children }) {
     setTeams([])
     setHistory([])
     setLiveRound(null)
+    setUserRole(null)
     hasLoadedData.current = false
   }
 
@@ -659,7 +728,9 @@ export function LeagueProvider({ children }) {
 
   // Computed roles (respecting "View As" override)
   const actualSiteOwner = isSiteOwnerPIN || isSiteOwnerProfile
-  const actualAdmin = isAdminPIN || actualSiteOwner
+  const roleBasedAdmin = userRole && ['owner', 'co_owner', 'admin'].includes(userRole)
+  const actualAdmin = isAdminPIN || actualSiteOwner || roleBasedAdmin
+  const isLeagueOwner = userRole === 'owner' || actualSiteOwner
 
   // When viewing as a lower role, downgrade privileges
   const isSiteOwner = viewAsRole ? false : actualSiteOwner
@@ -823,8 +894,10 @@ export function LeagueProvider({ children }) {
     saveIndividualRoundHistory,
     saveLeagueRoundHistory,
 
-    // Admin
+    // Admin & Roles
     isAdmin,
+    userRole,
+    isLeagueOwner,
     adminLogin,
     adminLogout,
 

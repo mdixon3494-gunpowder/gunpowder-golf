@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from 'react'
 import { useLeague } from '../context/LeagueContext'
 import { useAuth } from '../context/AuthContext'
 
-function LeagueSetup({ initialMode, onBack }) {
+function LeagueSetup({ initialMode, initialJoinCode, onBack }) {
   const { createNewLeague, joinExistingLeague, checkLeagueCodeAvailable } = useLeague()
   const { profile } = useAuth()
-  const [joinCode, setJoinCode] = useState('')
+  const [joinCode, setJoinCode] = useState(initialJoinCode || '')
   const [error, setError] = useState('')
+  const [pendingMessage, setPendingMessage] = useState('')
   const [showCustomCode, setShowCustomCode] = useState(false)
   const [customCode, setCustomCode] = useState('')
   const [customCodeError, setCustomCodeError] = useState('')
@@ -28,10 +29,15 @@ function LeagueSetup({ initialMode, onBack }) {
     }
 
     try {
-      const success = await joinExistingLeague(joinCode, {
-        profileId: profile?.id || null
+      const result = await joinExistingLeague(joinCode, {
+        profileId: profile?.id || null,
+        displayName: profile?.display_name || null,
+        email: profile?.email || null
       })
-      if (!success) {
+      if (result === 'pending') {
+        setPendingMessage('Your request to join has been submitted. An admin will review it.')
+        setError('')
+      } else if (!result) {
         setError('League code not found. Please check the code and try again.')
       }
     } catch (err) {
@@ -279,10 +285,24 @@ function LeagueSetup({ initialMode, onBack }) {
               </div>
             )}
 
+            {pendingMessage && (
+              <div style={{
+                background: '#fff3e0',
+                color: '#e65100',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '15px',
+                fontSize: '14px',
+                border: '1px solid #ffcc80'
+              }}>
+                {pendingMessage}
+              </div>
+            )}
+
             <button
               className="btn btn-primary"
               onClick={handleJoin}
-              disabled={!joinCode.trim()}
+              disabled={!joinCode.trim() || !!pendingMessage}
             >
               Join League
             </button>
