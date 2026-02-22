@@ -532,7 +532,9 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                         onChange={() => handleHandicapSourceChange(`league:${source.sourceId}`)}
                       />
                       {source.sourceName} ({source.handicap.toFixed(1)})
-                      <span style={{ fontSize: '11px', color: '#999' }}>{source.roundCount} rds</span>
+                      <span style={{ fontSize: '11px', color: '#999' }}>
+                        {source.type === 'calculated' ? `${source.roundCount} rds` : 'stored'}
+                      </span>
                     </label>
                   ))}
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
