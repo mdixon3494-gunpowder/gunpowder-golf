@@ -508,52 +508,61 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
             <label>Starting Handicap</label>
             {linkedProfile ? (
               <div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
                   {linkedProfile.handicap_index != null && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'profile' ? '#f0fff4' : '#fff', border: '1px solid', borderColor: handicapSourceMode === 'profile' ? '#c6f6d5' : '#e0e0e0', borderRadius: '8px' }}>
                       <input
                         type="radio"
                         name="handicapSource"
                         checked={handicapSourceMode === 'profile'}
                         onChange={() => handleHandicapSourceChange('profile')}
+                        style={{ marginTop: '2px', flexShrink: 0 }}
                       />
-                      Profile ({Number(linkedProfile.handicap_index).toFixed(1)})
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: '600' }}>{Number(linkedProfile.handicap_index).toFixed(1)}</div>
+                        <div style={{ fontSize: '11px', color: '#888' }}>Profile handicap</div>
+                      </div>
                     </label>
                   )}
                   {loadingHandicaps && (
                     <div style={{ fontSize: '12px', color: '#888', padding: '4px 0' }}>Loading league handicaps...</div>
                   )}
                   {!loadingHandicaps && leagueHandicaps.map(source => (
-                    <label key={source.sourceId} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                    <label key={source.sourceId} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === `league:${source.sourceId}` ? '#f0fff4' : '#fff', border: '1px solid', borderColor: handicapSourceMode === `league:${source.sourceId}` ? '#c6f6d5' : '#e0e0e0', borderRadius: '8px' }}>
                       <input
                         type="radio"
                         name="handicapSource"
                         checked={handicapSourceMode === `league:${source.sourceId}`}
                         onChange={() => handleHandicapSourceChange(`league:${source.sourceId}`)}
+                        style={{ marginTop: '2px', flexShrink: 0 }}
                       />
-                      {source.sourceName} ({source.handicap.toFixed(1)})
-                      <span style={{ fontSize: '11px', color: '#999' }}>
-                        {source.type === 'calculated' ? `${source.roundCount} rds` : 'stored'}
-                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: '600' }}>{source.handicap.toFixed(1)}</div>
+                        <div style={{ fontSize: '11px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {source.sourceName} {source.type === 'calculated' ? `(${source.roundCount} rds)` : '(stored)'}
+                        </div>
+                      </div>
                     </label>
                   ))}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'manual' ? '#f0fff4' : '#fff', border: '1px solid', borderColor: handicapSourceMode === 'manual' ? '#c6f6d5' : '#e0e0e0', borderRadius: '8px' }}>
                     <input
                       type="radio"
                       name="handicapSource"
                       checked={handicapSourceMode === 'manual'}
                       onChange={() => handleHandicapSourceChange('manual')}
+                      style={{ marginTop: '2px', flexShrink: 0 }}
                     />
-                    Enter Manually
+                    <span>Enter Manually</span>
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'none' ? '#f0fff4' : '#fff', border: '1px solid', borderColor: handicapSourceMode === 'none' ? '#c6f6d5' : '#e0e0e0', borderRadius: '8px' }}>
                     <input
                       type="radio"
                       name="handicapSource"
                       checked={handicapSourceMode === 'none'}
                       onChange={() => handleHandicapSourceChange('none')}
+                      style={{ marginTop: '2px', flexShrink: 0 }}
                     />
-                    None
+                    <span>None</span>
                   </label>
                 </div>
                 {handicapSourceMode === 'manual' && (
