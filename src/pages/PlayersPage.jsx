@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLeague } from '../context/LeagueContext'
-import { useAuth } from '../context/AuthContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
 import { createProfile, searchProfiles } from '../lib/profileService'
 import { addLeagueMember } from '../lib/leagueService'
@@ -178,7 +177,6 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
 }
 
 function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers }) {
-  const { profile } = useAuth()
   const [name, setName] = useState('')
   const [skillRating, setSkillRating] = useState('5')
   const [handicap, setHandicap] = useState('')
@@ -204,7 +202,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers }) {
     }
     setSearching(true)
     searchTimeout.current = setTimeout(async () => {
-      const results = await searchProfiles(searchQuery.trim(), profile?.id)
+      const results = await searchProfiles(searchQuery.trim())
       // Filter out players already in the roster by profileId
       const existingProfileIds = new Set(
         (existingPlayers || []).filter(p => p.profileId || p.profile_id).map(p => p.profileId || p.profile_id)
