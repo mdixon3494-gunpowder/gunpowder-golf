@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLeague } from '../context/LeagueContext'
+import { useAuth } from '../context/AuthContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
-import { createProfile } from '../lib/profileService'
+import { createProfile, searchProfiles } from '../lib/profileService'
+import { addLeagueMember } from '../lib/leagueService'
 import {
   getAllHandicaps,
   formatHandicap,
@@ -175,7 +177,8 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
   )
 }
 
-function AddPlayerForm({ onAdd, onCancel, courseTees }) {
+function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers }) {
+  const { profile } = useAuth()
   const [name, setName] = useState('')
   const [skillRating, setSkillRating] = useState('5')
   const [handicap, setHandicap] = useState('')
@@ -185,6 +188,46 @@ function AddPlayerForm({ onAdd, onCancel, courseTees }) {
   const [emergencyName, setEmergencyName] = useState('')
   const [emergencyPhone, setEmergencyPhone] = useState('')
 
+  // Profile search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const searchTimeout = useRef(null)
+  const [linkedProfile, setLinkedProfile] = useState(null)
+
+  // Debounced profile search
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchResults([])
+      return
+    }
+    setSearching(true)
+    searchTimeout.current = setTimeout(async () => {
+      const results = await searchProfiles(searchQuery.trim(), profile?.id)
+      // Filter out players already in the roster by profileId
+      const existingProfileIds = new Set(
+        (existingPlayers || []).filter(p => p.profileId || p.profile_id).map(p => p.profileId || p.profile_id)
+      )
+      setSearchResults(results.filter(r => !existingProfileIds.has(r.id)))
+      setSearching(false)
+    }, 400)
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current)
+    }
+  }, [searchQuery, existingPlayers])
+
+  const selectProfile = (user) => {
+    setLinkedProfile(user)
+    setName(user.display_name)
+    setSearchQuery('')
+    setSearchResults([])
+  }
+
+  const unlinkProfile = () => {
+    setLinkedProfile(null)
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!name.trim()) {
@@ -193,7 +236,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees }) {
     }
 
     onAdd({
-      id: Date.now(),
+      id: linkedProfile ? linkedProfile.id : Date.now(),
       name: name.trim(),
       skillRating: parseFloat(skillRating) || 5,
       handicap: handicap ? parseFloat(handicap) : null,
@@ -213,7 +256,8 @@ function AddPlayerForm({ onAdd, onCancel, courseTees }) {
       lastRoundTeammates: [],
       scoreHistory: [],
       holeStats: {},
-      isActive: true
+      isActive: true,
+      ...(linkedProfile ? { profileId: linkedProfile.id } : {})
     })
   }
 
@@ -226,6 +270,95 @@ function AddPlayerForm({ onAdd, onCancel, courseTees }) {
     }}>
       <h3 style={{ marginBottom: '15px' }}>Add New Player</h3>
       <form onSubmit={handleSubmit}>
+        {/* Profile search section */}
+        <div style={{ marginBottom: '15px' }}>
+          {linkedProfile ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 12px',
+              background: '#f0fff4',
+              border: '1px solid #c6f6d5',
+              borderRadius: '8px'
+            }}>
+              <span style={{ fontSize: '14px', fontWeight: '600' }}>Linked to {linkedProfile.display_name}</span>
+              <span style={{
+                fontSize: '11px',
+                color: '#27ae60',
+                background: 'white',
+                padding: '2px 6px',
+                borderRadius: '4px'
+              }}>App User</span>
+              <button
+                type="button"
+                onClick={unlinkProfile}
+                style={{
+                  marginLeft: 'auto',
+                  padding: '4px 10px',
+                  fontSize: '12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  background: 'white',
+                  cursor: 'pointer'
+                }}
+              >Unlink</button>
+            </div>
+          ) : (
+            <div className="input-group" style={{ marginBottom: '0' }}>
+              <label>Search for existing player</label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name..."
+              />
+              {searching && (
+                <div style={{ padding: '8px', color: '#888', fontSize: '13px' }}>Searching...</div>
+              )}
+              {searchResults.length > 0 && (
+                <div style={{
+                  border: '1px solid #e0e0e0',
+                  borderRadius: '8px',
+                  marginTop: '4px',
+                  overflow: 'hidden'
+                }}>
+                  {searchResults.map(user => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => selectProfile(user)}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: 'none',
+                        borderBottom: '1px solid #f0f0f0',
+                        background: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '14px'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                    >
+                      <span style={{ fontWeight: '600' }}>{user.display_name}</span>
+                      <span style={{
+                        marginLeft: '8px',
+                        fontSize: '11px',
+                        color: '#27ae60',
+                        background: '#f0fff4',
+                        padding: '2px 6px',
+                        borderRadius: '4px'
+                      }}>App User</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
           <div className="input-group" style={{ marginBottom: '0' }}>
             <label>Name *</label>
@@ -2245,19 +2378,32 @@ function PlayersPage() {
   }).sort((a, b) => a.name.localeCompare(b.name))
 
   const handleAddPlayer = async (newPlayer) => {
-    // Create a ghost profile for the new player (non-blocking on failure)
-    try {
-      const ghostProfile = await createProfile({
-        displayName: newPlayer.name,
-        email: newPlayer.email || null,
-        phone: newPlayer.phone || null,
-        defaultTee: newPlayer.defaultTee || 'blue'
-      })
-      if (ghostProfile) {
-        newPlayer.profile_id = ghostProfile.id
+    if (newPlayer.profileId) {
+      // Player linked to existing profile — skip ghost profile creation
+      newPlayer.profile_id = newPlayer.profileId
+      // Add league_members row (non-blocking on failure)
+      if (leagueId) {
+        try {
+          await addLeagueMember(leagueId, newPlayer.profileId, 'player')
+        } catch (err) {
+          console.warn('Could not add league member row:', err)
+        }
       }
-    } catch (err) {
-      console.warn('Could not create ghost profile for new player:', err)
+    } else {
+      // Manual entry — create a ghost profile (non-blocking on failure)
+      try {
+        const ghostProfile = await createProfile({
+          displayName: newPlayer.name,
+          email: newPlayer.email || null,
+          phone: newPlayer.phone || null,
+          defaultTee: newPlayer.defaultTee || 'blue'
+        })
+        if (ghostProfile) {
+          newPlayer.profile_id = ghostProfile.id
+        }
+      } catch (err) {
+        console.warn('Could not create ghost profile for new player:', err)
+      }
     }
 
     setPlayers([...players, newPlayer])
@@ -2327,6 +2473,7 @@ function PlayersPage() {
           onAdd={handleAddPlayer}
           onCancel={() => setShowAddForm(false)}
           courseTees={courseTees}
+          existingPlayers={players}
         />
       )}
 
