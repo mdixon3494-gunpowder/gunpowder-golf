@@ -195,3 +195,104 @@ export async function recalculateAndStoreHandicap(profileId, courseTees = DEFAUL
     return null
   }
 }
+
+/**
+ * Get all available handicap sources for a profile.
+ * Fetches round_history, groups by source_id (league), calculates per-league handicaps,
+ * and resolves league names.
+ * @param {string} profileId
+ * @param {Object} courseTees
+ * @returns {Promise<Array<{sourceId: string, sourceName: string, handicap: number, roundCount: number}>>}
+ */
+export async function getHandicapSourcesForProfile(profileId, courseTees = DEFAULT_COURSE_TEES) {
+  // Query 1: Fetch all applicable rounds
+  const controller1 = new AbortController()
+  const timeout1 = setTimeout(() => controller1.abort(), 5000)
+
+  let rounds = []
+  try {
+    const { data, error } = await supabase
+      .from('round_history')
+      .select('*')
+      .eq('profile_id', profileId)
+      .eq('applied_to_handicap', true)
+      .order('date', { ascending: false })
+      .limit(100)
+      .abortSignal(controller1.signal)
+
+    clearTimeout(timeout1)
+    if (!error && data) rounds = data
+  } catch (err) {
+    clearTimeout(timeout1)
+    console.warn('getHandicapSourcesForProfile: round fetch failed', err.message)
+    return []
+  }
+
+  if (rounds.length === 0) return []
+
+  // Group rounds by source_id
+  const groupedBySource = {}
+  for (const round of rounds) {
+    const sid = round.source_id
+    if (!sid) continue
+    if (!groupedBySource[sid]) groupedBySource[sid] = []
+    groupedBySource[sid].push(round)
+  }
+
+  // Calculate handicap per source group (need >= 3 rounds)
+  const sourceIds = Object.keys(groupedBySource)
+  const sourcesWithHandicap = []
+
+  for (const sid of sourceIds) {
+    const sourceRounds = groupedBySource[sid]
+    if (sourceRounds.length < 3) continue
+
+    const mapped = sourceRounds.map(row => ({
+      score: row.total_score,
+      tee: row.metadata?.tee || 'blue',
+      date: row.date
+    }))
+
+    const handicap = calculateHandicap(mapped, courseTees)
+    if (handicap !== null) {
+      sourcesWithHandicap.push({
+        sourceId: sid,
+        sourceName: sid,
+        handicap,
+        roundCount: sourceRounds.length
+      })
+    }
+  }
+
+  if (sourcesWithHandicap.length === 0) return sourcesWithHandicap
+
+  // Query 2: Resolve league names
+  const idsToResolve = sourcesWithHandicap.map(s => s.sourceId)
+  const controller2 = new AbortController()
+  const timeout2 = setTimeout(() => controller2.abort(), 5000)
+
+  try {
+    const { data, error } = await supabase
+      .from('leagues')
+      .select('id, name')
+      .in('id', idsToResolve)
+      .abortSignal(controller2.signal)
+
+    clearTimeout(timeout2)
+
+    if (!error && data) {
+      const nameMap = {}
+      for (const league of data) {
+        nameMap[league.id] = league.name
+      }
+      for (const source of sourcesWithHandicap) {
+        source.sourceName = nameMap[source.sourceId] || source.sourceId
+      }
+    }
+  } catch (err) {
+    clearTimeout(timeout2)
+    console.warn('getHandicapSourcesForProfile: league name fetch failed', err.message)
+  }
+
+  return sourcesWithHandicap
+}

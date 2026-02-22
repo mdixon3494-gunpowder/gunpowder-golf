@@ -3,6 +3,7 @@ import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
 import { createProfile, searchProfiles } from '../lib/profileService'
 import { addLeagueMember, getLeagueMembers } from '../lib/leagueService'
+import { getHandicapSourcesForProfile } from '../lib/roundHistoryService'
 import {
   getAllHandicaps,
   formatHandicap,
@@ -216,6 +217,43 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
     }).catch(() => {})
   }, [leagueId, existingPlayers])
 
+  // Handicap source picker state
+  const [handicapSourceMode, setHandicapSourceMode] = useState('manual') // 'profile' | 'league:ID' | 'manual' | 'none'
+  const [leagueHandicaps, setLeagueHandicaps] = useState([])
+  const [loadingHandicaps, setLoadingHandicaps] = useState(false)
+  const [handicapFetchFailed, setHandicapFetchFailed] = useState(false)
+
+  // Fetch handicap sources when a profile is linked
+  useEffect(() => {
+    if (!linkedProfile?.id) {
+      setLeagueHandicaps([])
+      setHandicapSourceMode('manual')
+      setLoadingHandicaps(false)
+      setHandicapFetchFailed(false)
+      return
+    }
+
+    let cancelled = false
+    setLoadingHandicaps(true)
+    setHandicapFetchFailed(false)
+
+    getHandicapSourcesForProfile(linkedProfile.id, courseTees)
+      .then(sources => {
+        if (cancelled) return
+        const otherLeagueSources = sources.filter(s => s.sourceId !== leagueId)
+        setLeagueHandicaps(otherLeagueSources)
+        setLoadingHandicaps(false)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setLeagueHandicaps([])
+        setLoadingHandicaps(false)
+        setHandicapFetchFailed(true)
+      })
+
+    return () => { cancelled = true }
+  }, [linkedProfile?.id, courseTees, leagueId])
+
   // Debounced profile search
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current)
@@ -244,13 +282,36 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
     if (user.email) setEmail(user.email)
     if (user.phone) setPhone(user.phone)
     if (user.default_tee) setDefaultTee(user.default_tee)
-    if (user.handicap_index != null) setHandicap(String(user.handicap_index))
+    if (user.handicap_index != null) {
+      setHandicap(String(user.handicap_index))
+      setHandicapSourceMode('profile')
+    } else {
+      setHandicap('')
+      setHandicapSourceMode('manual')
+    }
     setSearchQuery('')
     setSearchResults([])
   }
 
   const unlinkProfile = () => {
     setLinkedProfile(null)
+    setHandicapSourceMode('manual')
+    setLeagueHandicaps([])
+    setHandicap('')
+  }
+
+  const handleHandicapSourceChange = (mode) => {
+    setHandicapSourceMode(mode)
+    if (mode === 'profile') {
+      setHandicap(linkedProfile?.handicap_index != null ? String(linkedProfile.handicap_index) : '')
+    } else if (mode === 'none') {
+      setHandicap('')
+    } else if (mode.startsWith('league:')) {
+      const leagueSourceId = mode.replace('league:', '')
+      const found = leagueHandicaps.find(s => s.sourceId === leagueSourceId)
+      if (found) setHandicap(String(found.handicap))
+    }
+    // 'manual' — keep current value, let user type
   }
 
   const handleSubmit = (e) => {
@@ -260,12 +321,22 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
       return
     }
 
+    const resolvedHandicap = handicap ? parseFloat(handicap) : null
+    let resolvedSource = null
+    if (resolvedHandicap !== null && linkedProfile) {
+      if (handicapSourceMode === 'profile') resolvedSource = 'profile'
+      else if (handicapSourceMode.startsWith('league:')) resolvedSource = handicapSourceMode
+      else resolvedSource = 'manual'
+    } else if (resolvedHandicap !== null) {
+      resolvedSource = 'manual'
+    }
+
     onAdd({
       id: linkedProfile ? linkedProfile.id : Date.now(),
       name: name.trim(),
       skillRating: parseFloat(skillRating) || 5,
-      handicap: handicap ? parseFloat(handicap) : null,
-      handicapSource: handicap ? 'manual' : null,
+      handicap: resolvedHandicap,
+      handicapSource: resolvedSource,
       defaultTee: defaultTee,
       externalRounds: [],
       phone: phone.trim(),
@@ -434,16 +505,88 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
             />
           </div>
           <div className="input-group" style={{ marginBottom: '0' }}>
-            <label>Starting Handicap (estimated)</label>
-            <input
-              type="number"
-              value={handicap}
-              onChange={(e) => setHandicap(e.target.value)}
-              placeholder="e.g. 18"
-              min="0"
-              max="54"
-              step="0.1"
-            />
+            <label>Starting Handicap</label>
+            {linkedProfile ? (
+              <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                  {linkedProfile.handicap_index != null && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="handicapSource"
+                        checked={handicapSourceMode === 'profile'}
+                        onChange={() => handleHandicapSourceChange('profile')}
+                      />
+                      Profile ({Number(linkedProfile.handicap_index).toFixed(1)})
+                    </label>
+                  )}
+                  {loadingHandicaps && (
+                    <div style={{ fontSize: '12px', color: '#888', padding: '4px 0' }}>Loading league handicaps...</div>
+                  )}
+                  {!loadingHandicaps && leagueHandicaps.map(source => (
+                    <label key={source.sourceId} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="handicapSource"
+                        checked={handicapSourceMode === `league:${source.sourceId}`}
+                        onChange={() => handleHandicapSourceChange(`league:${source.sourceId}`)}
+                      />
+                      {source.sourceName} ({source.handicap.toFixed(1)})
+                      <span style={{ fontSize: '11px', color: '#999' }}>{source.roundCount} rds</span>
+                    </label>
+                  ))}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="handicapSource"
+                      checked={handicapSourceMode === 'manual'}
+                      onChange={() => handleHandicapSourceChange('manual')}
+                    />
+                    Enter Manually
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="handicapSource"
+                      checked={handicapSourceMode === 'none'}
+                      onChange={() => handleHandicapSourceChange('none')}
+                    />
+                    None
+                  </label>
+                </div>
+                {handicapSourceMode === 'manual' && (
+                  <input
+                    type="number"
+                    value={handicap}
+                    onChange={(e) => setHandicap(e.target.value)}
+                    placeholder="e.g. 18"
+                    min="0"
+                    max="54"
+                    step="0.1"
+                  />
+                )}
+                {handicapSourceMode !== 'manual' && handicapSourceMode !== 'none' && handicap && (
+                  <div style={{ fontSize: '13px', color: '#555', padding: '4px 0' }}>
+                    Starting at: <strong>{parseFloat(handicap).toFixed(1)}</strong>
+                  </div>
+                )}
+                {handicapFetchFailed && (
+                  <div style={{ fontSize: '12px', color: '#e67e22', padding: '4px 0' }}>
+                    Could not load league handicaps.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <input
+                type="number"
+                value={handicap}
+                onChange={(e) => setHandicap(e.target.value)}
+                placeholder="e.g. 18"
+                min="0"
+                max="54"
+                step="0.1"
+              />
+            )}
           </div>
           <div className="input-group" style={{ marginBottom: '0' }}>
             <label>Default Tee</label>
