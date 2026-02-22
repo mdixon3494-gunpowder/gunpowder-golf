@@ -541,13 +541,48 @@ export function LeagueProvider({ children }) {
       console.warn('Could not load default template for new league:', err)
     }
 
+    // Build initial players array — auto-add creator if authenticated
+    const initialPlayers = []
+    if (profileId && profile) {
+      initialPlayers.push({
+        id: profileId,
+        name: profile.display_name,
+        skillRating: 5,
+        handicap: profile.handicap_index != null ? parseFloat(profile.handicap_index) : null,
+        handicapSource: profile.handicap_index != null ? 'profile' : null,
+        defaultTee: profile.default_tee || 'blue',
+        externalRounds: [],
+        phone: profile.phone || '',
+        email: profile.email || '',
+        emergencyName: '',
+        emergencyPhone: '',
+        gamesPlayed: 0,
+        avgFrontNine: 0,
+        avgBackNine: 0,
+        avgTotal: 0,
+        teammates: {},
+        recentTeammates: [],
+        lastRoundTeammates: [],
+        scoreHistory: [],
+        holeStats: {},
+        isActive: true,
+        profileId: profileId,
+        profile_id: profileId
+      })
+    }
+
     await CloudStorage.saveData(newLeagueId, {
-      players: [],
+      players: initialPlayers,
       history: [],
       pairingRequests: [],
       liveRound: null,
       teams: []
     })
+
+    // Set state so UI reflects the creator as a player immediately
+    if (initialPlayers.length > 0) {
+      setPlayers(initialPlayers)
+    }
 
     // Set league metadata columns (non-blocking)
     try {

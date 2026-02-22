@@ -292,7 +292,7 @@ export async function searchProfiles(query, excludeProfileId = null) {
   try {
     let q = supabase
       .from('profiles')
-      .select('id, display_name, avatar_url')
+      .select('id, display_name, avatar_url, email, phone, default_tee, handicap_index')
       .ilike('display_name', `%${query}%`)
       .limit(10)
       .abortSignal(controller.signal)

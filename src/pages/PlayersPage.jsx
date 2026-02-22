@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
 import { createProfile, searchProfiles } from '../lib/profileService'
-import { addLeagueMember } from '../lib/leagueService'
+import { addLeagueMember, getLeagueMembers } from '../lib/leagueService'
 import {
   getAllHandicaps,
   formatHandicap,
@@ -176,7 +176,7 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
   )
 }
 
-function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers }) {
+function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId }) {
   const [name, setName] = useState('')
   const [skillRating, setSkillRating] = useState('5')
   const [handicap, setHandicap] = useState('')
@@ -192,6 +192,29 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers }) {
   const [searching, setSearching] = useState(false)
   const searchTimeout = useRef(null)
   const [linkedProfile, setLinkedProfile] = useState(null)
+
+  // League member suggestions
+  const [memberSuggestions, setMemberSuggestions] = useState([])
+  useEffect(() => {
+    if (!leagueId) return
+    const existingProfileIds = new Set(
+      (existingPlayers || []).filter(p => p.profileId || p.profile_id).map(p => p.profileId || p.profile_id)
+    )
+    getLeagueMembers(leagueId).then(members => {
+      const unlinked = members
+        .filter(m => m.profiles && m.profile_id && !existingProfileIds.has(m.profile_id))
+        .map(m => ({
+          id: m.profile_id,
+          display_name: m.profiles.display_name,
+          avatar_url: m.profiles.avatar_url,
+          email: m.profiles.email || '',
+          phone: m.profiles.phone || '',
+          default_tee: m.profiles.default_tee || '',
+          handicap_index: m.profiles.handicap_index
+        }))
+      setMemberSuggestions(unlinked)
+    }).catch(() => {})
+  }, [leagueId, existingPlayers])
 
   // Debounced profile search
   useEffect(() => {
@@ -218,6 +241,10 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers }) {
   const selectProfile = (user) => {
     setLinkedProfile(user)
     setName(user.display_name)
+    if (user.email) setEmail(user.email)
+    if (user.phone) setPhone(user.phone)
+    if (user.default_tee) setDefaultTee(user.default_tee)
+    if (user.handicap_index != null) setHandicap(String(user.handicap_index))
     setSearchQuery('')
     setSearchResults([])
   }
@@ -268,6 +295,45 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers }) {
     }}>
       <h3 style={{ marginBottom: '15px' }}>Add New Player</h3>
       <form onSubmit={handleSubmit}>
+        {/* League member suggestions */}
+        {!linkedProfile && memberSuggestions.length > 0 && (
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555', marginBottom: '6px', display: 'block' }}>League Members</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {memberSuggestions.map(member => (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => selectProfile(member)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    border: '1px solid #d0d0d0',
+                    borderRadius: '20px',
+                    background: 'white',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '500'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#f0fff4'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                >
+                  {member.avatar_url ? (
+                    <img src={member.avatar_url} alt="" style={{ width: '20px', height: '20px', borderRadius: '50%' }} />
+                  ) : (
+                    <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#e0e0e0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
+                      {member.display_name?.[0]?.toUpperCase() || '?'}
+                    </span>
+                  )}
+                  {member.display_name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Profile search section */}
         <div style={{ marginBottom: '15px' }}>
           {linkedProfile ? (
@@ -2472,6 +2538,7 @@ function PlayersPage() {
           onCancel={() => setShowAddForm(false)}
           courseTees={courseTees}
           existingPlayers={players}
+          leagueId={leagueId}
         />
       )}
 
