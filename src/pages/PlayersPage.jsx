@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useLeague } from '../context/LeagueContext'
+import { useAuth } from '../context/AuthContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
 import { createProfile, searchProfiles } from '../lib/profileService'
 import { addLeagueMember, getLeagueMembers } from '../lib/leagueService'
@@ -2580,14 +2581,175 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
   )
 }
 
-function PlayersPage() {
-  const { players, setPlayers, isAdmin, leagueSettings, handicapSettings, setHandicapSettings, courseTees, leagueId } = useLeague()
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [editingPlayer, setEditingPlayer] = useState(null)
-  const [viewingPlayer, setViewingPlayer] = useState(null)
-  const [filter, setFilter] = useState('active') // 'all', 'active', 'inactive'
+function PlayerProfileCard({ player, handicapScope, leagueId, courseTees, handicapSettings, onViewStats, onEdit }) {
+  const handicaps = getAllHandicaps(player, leagueId, courseTees, handicapSettings?.maxHandicap || 54, handicapSettings)
+  const effectiveHandicap = getEffectiveHandicap(player, handicapSettings, leagueId, courseTees)
 
-  const handicapScope = handicapSettings?.handicapScope || 'true'
+  const getCalculatedHandicap = () => {
+    switch (handicapScope) {
+      case 'league': return handicaps.leagueHandicap
+      case 'gunpowder': return handicaps.gunpowderHandicap
+      case 'true':
+      default: return handicaps.trueHandicap
+    }
+  }
+
+  const activeHandicap = effectiveHandicap
+  const calculatedForScope = getCalculatedHandicap()
+  const settings = { ...DEFAULT_HANDICAP_SETTINGS, ...handicapSettings }
+  const isUsingGhin = settings.allowGhinOverride && player.ghinIndex != null && settings.handicapScope === 'true' && effectiveHandicap === player.ghinIndex
+  const isUsingManual = !isUsingGhin && effectiveHandicap !== calculatedForScope && effectiveHandicap === player.handicap
+  const playerTee = player.defaultTee || 'blue'
+  const courseHandicap = getCourseHandicapForTee(activeHandicap, playerTee, courseTees)
+
+  const sourceLabel = isUsingGhin ? 'GHIN' : isUsingManual ? 'Manual' : 'Calculated'
+  const sourceBg = isUsingGhin ? 'var(--color-info-dark)' : isUsingManual ? 'var(--color-skins-dark)' : 'var(--color-success)'
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      borderRadius: '12px',
+      padding: '20px',
+      border: '2px solid var(--color-border)',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+    }}>
+      {/* Name + status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+        <h3 style={{ margin: 0, fontSize: '20px' }}>{player.name}</h3>
+        {player.isActive === false && (
+          <span style={{
+            background: 'var(--color-danger)',
+            color: 'white',
+            padding: '3px 10px',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: '600'
+          }}>
+            INACTIVE
+          </span>
+        )}
+        {player.capApplied && (
+          <span
+            title={`Raw: ${formatHandicap(player.rawHandicap)} | Low Index: ${formatHandicap(player.lowIndex)}`}
+            style={{
+              padding: '3px 8px',
+              borderRadius: '4px',
+              fontSize: '10px',
+              background: 'var(--color-danger)',
+              color: 'white',
+              fontWeight: '700',
+              cursor: 'help'
+            }}
+          >
+            CAP
+          </span>
+        )}
+      </div>
+
+      {/* Main stats row */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+        gap: '12px',
+        marginBottom: '16px'
+      }}>
+        <div style={{
+          background: sourceBg,
+          color: 'white',
+          padding: '12px',
+          borderRadius: '8px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>Handicap Index</div>
+          <div style={{ fontSize: '22px', fontWeight: '700' }}>{formatHandicap(activeHandicap)}</div>
+          <div style={{ fontSize: '10px', opacity: 0.8 }}>{sourceLabel}</div>
+        </div>
+        <div style={{
+          background: 'var(--color-info)',
+          color: 'white',
+          padding: '12px',
+          borderRadius: '8px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '11px', opacity: 0.9, marginBottom: '4px' }}>Course HCP</div>
+          <div style={{ fontSize: '22px', fontWeight: '700' }}>{formatCourseHandicap(courseHandicap)}</div>
+          <div style={{ fontSize: '10px', opacity: 0.8 }}>{courseTees?.[playerTee]?.name || playerTee} tees</div>
+        </div>
+        <div style={{
+          background: 'var(--color-surface-sunken)',
+          padding: '12px',
+          borderRadius: '8px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Games Played</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--color-text-primary)' }}>{player.gamesPlayed || 0}</div>
+        </div>
+        {player.avgTotal > 0 && (
+          <div style={{
+            background: 'var(--color-surface-sunken)',
+            padding: '12px',
+            borderRadius: '8px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>Avg Score</div>
+            <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--color-text-primary)' }}>{player.avgTotal.toFixed(1)}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Three scope handicaps */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '16px',
+        flexWrap: 'wrap'
+      }}>
+        {[
+          { key: 'true', label: 'True', value: handicaps.trueHandicap },
+          { key: 'league', label: 'League', value: handicaps.leagueHandicap },
+          { key: 'gunpowder', label: 'Gunpowder', value: handicaps.gunpowderHandicap }
+        ].map(scope => (
+          <span key={scope.key} style={{
+            padding: '4px 10px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '500',
+            background: handicapScope === scope.key ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+            color: handicapScope === scope.key ? 'var(--color-success-dark)' : 'var(--color-text-tertiary)',
+            border: `1px solid ${handicapScope === scope.key ? 'var(--color-success-border)' : 'var(--color-border)'}`
+          }}>
+            {scope.label}: {formatHandicap(scope.value)}
+          </span>
+        ))}
+      </div>
+
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button
+          className="btn btn-primary"
+          onClick={() => onViewStats(player)}
+          style={{ flex: 1, minHeight: '44px' }}
+        >
+          View Full Stats
+        </button>
+        <button
+          className="btn btn-secondary"
+          onClick={() => onEdit(player)}
+          style={{ flex: 1, minHeight: '44px' }}
+        >
+          Edit
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ManagePlayersModal({ players, onClose, onEdit, onView, onToggleActive, onAddPlayer, isAdmin, handicapScope, leagueId, courseTees, handicapSettings }) {
+  const [filter, setFilter] = useState('active')
+  const [showAddForm, setShowAddForm] = useState(false)
+
+  const activeCount = players.filter(p => p.isActive !== false).length
+  const inactiveCount = players.filter(p => p.isActive === false).length
 
   const filteredPlayers = players.filter(player => {
     if (filter === 'active') return player.isActive !== false
@@ -2595,11 +2757,203 @@ function PlayersPage() {
     return true
   }).sort((a, b) => a.name.localeCompare(b.name))
 
+  const handleAdd = (newPlayer) => {
+    onAddPlayer(newPlayer)
+    setShowAddForm(false)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflow: 'auto' }}>
+        <div className="modal-header">
+          <h3>Manage Players</h3>
+          <button className="modal-close" onClick={onClose}>&times;</button>
+        </div>
+        <div className="modal-body">
+          {/* Add player button + filters */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '15px', alignItems: 'center' }}>
+            <button
+              className={`btn btn-small ${filter === 'active' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setFilter('active')}
+              style={{ minHeight: '36px' }}
+            >
+              Active ({activeCount})
+            </button>
+            <button
+              className={`btn btn-small ${filter === 'inactive' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setFilter('inactive')}
+              style={{ minHeight: '36px' }}
+            >
+              Inactive ({inactiveCount})
+            </button>
+            <button
+              className={`btn btn-small ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setFilter('all')}
+              style={{ minHeight: '36px' }}
+            >
+              All ({players.length})
+            </button>
+            <div style={{ flex: 1 }} />
+            {!showAddForm && (
+              <button
+                className="btn btn-small btn-primary"
+                onClick={() => setShowAddForm(true)}
+                style={{ minHeight: '36px' }}
+              >
+                + Add Player
+              </button>
+            )}
+          </div>
+
+          {/* Add player form */}
+          {showAddForm && (
+            <AddPlayerForm
+              onAdd={handleAdd}
+              onCancel={() => setShowAddForm(false)}
+              courseTees={courseTees}
+              existingPlayers={players}
+              leagueId={leagueId}
+            />
+          )}
+
+          {/* Player list */}
+          {filteredPlayers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-tertiary)' }}>
+              {filter === 'active' && 'No active players.'}
+              {filter === 'inactive' && 'No inactive players.'}
+              {filter === 'all' && 'No players yet.'}
+            </div>
+          ) : (
+            <div>
+              {filteredPlayers.map(player => {
+                const effectiveHcp = getEffectiveHandicap(player, handicapSettings, leagueId, courseTees)
+                return (
+                  <div
+                    key={player.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      marginBottom: '4px',
+                      background: 'var(--color-surface-sunken)',
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: '120px' }}>
+                      <div style={{ fontWeight: '600', fontSize: '14px' }}>
+                        {player.name}
+                        {player.isActive === false && (
+                          <span style={{
+                            marginLeft: '8px',
+                            background: 'var(--color-danger)',
+                            color: 'white',
+                            padding: '1px 6px',
+                            borderRadius: '3px',
+                            fontSize: '10px'
+                          }}>
+                            INACTIVE
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                        HCP: {formatHandicap(effectiveHcp)} | Games: {player.gamesPlayed || 0}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      <button
+                        className="btn btn-small btn-primary"
+                        onClick={() => { onView(player); onClose() }}
+                        style={{ minHeight: '36px', minWidth: '50px' }}
+                      >
+                        Stats
+                      </button>
+                      <button
+                        className="btn btn-small btn-secondary"
+                        onClick={() => { onEdit(player); onClose() }}
+                        style={{ minHeight: '36px', minWidth: '44px' }}
+                      >
+                        Edit
+                      </button>
+                      {isAdmin && (
+                        <button
+                          className="btn btn-small"
+                          onClick={() => onToggleActive(player)}
+                          style={{
+                            minHeight: '36px',
+                            background: player.isActive === false ? 'var(--color-success)' : 'var(--color-danger)',
+                            color: 'white',
+                            minWidth: '44px'
+                          }}
+                        >
+                          {player.isActive === false ? 'Activate' : 'Deactivate'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PlayersPage() {
+  const { players, setPlayers, isAdmin, leagueSettings, handicapSettings, setHandicapSettings, courseTees, leagueId } = useLeague()
+  const { profile } = useAuth()
+  const [selectedPlayerId, setSelectedPlayerId] = useState(null)
+  const [editingPlayer, setEditingPlayer] = useState(null)
+  const [viewingPlayer, setViewingPlayer] = useState(null)
+  const [showManageModal, setShowManageModal] = useState(false)
+
+  const handicapScope = handicapSettings?.handicapScope || 'true'
+
+  // Find logged-in user's player
+  const myPlayer = useMemo(() => {
+    if (!profile?.id) return null
+    return players.find(p =>
+      (p.profileId === profile.id || p.profile_id === profile.id)
+    ) || null
+  }, [players, profile?.id])
+
+  // All active players sorted alphabetically
+  const sortedPlayers = useMemo(() =>
+    [...players].filter(p => p.isActive !== false).sort((a, b) => a.name.localeCompare(b.name)),
+    [players]
+  )
+
+  // Auto-select logged-in user's player, or first active player
+  useEffect(() => {
+    if (selectedPlayerId) {
+      // Verify selected player still exists
+      if (players.find(p => p.id === selectedPlayerId)) return
+    }
+    if (myPlayer) {
+      setSelectedPlayerId(myPlayer.id)
+    } else if (sortedPlayers.length > 0) {
+      setSelectedPlayerId(sortedPlayers[0].id)
+    }
+  }, [myPlayer, sortedPlayers, players]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const selectedPlayer = players.find(p => p.id === selectedPlayerId) || null
+
+  // Build dropdown options: active players + any selected inactive player
+  const dropdownPlayers = useMemo(() => {
+    const list = [...sortedPlayers]
+    // If selected player is inactive, include them so they remain selectable
+    if (selectedPlayer && selectedPlayer.isActive === false && !list.find(p => p.id === selectedPlayer.id)) {
+      list.push(selectedPlayer)
+    }
+    return list
+  }, [sortedPlayers, selectedPlayer])
+
   const handleAddPlayer = async (newPlayer) => {
     if (newPlayer.profileId) {
-      // Player linked to existing profile — skip ghost profile creation
       newPlayer.profile_id = newPlayer.profileId
-      // Add league_members row (non-blocking on failure)
       if (leagueId) {
         try {
           await addLeagueMember(leagueId, newPlayer.profileId, 'player')
@@ -2608,7 +2962,6 @@ function PlayersPage() {
         }
       }
     } else {
-      // Manual entry — create a ghost profile (non-blocking on failure)
       try {
         const ghostProfile = await createProfile({
           displayName: newPlayer.name,
@@ -2625,7 +2978,6 @@ function PlayersPage() {
     }
 
     setPlayers([...players, newPlayer])
-    setShowAddForm(false)
   }
 
   const handleEditPlayer = (updatedPlayer) => {
@@ -2636,6 +2988,10 @@ function PlayersPage() {
   const handleDeletePlayer = (playerId) => {
     setPlayers(players.filter(p => p.id !== playerId))
     setEditingPlayer(null)
+    // If deleted player was selected, reset selection
+    if (playerId === selectedPlayerId) {
+      setSelectedPlayerId(myPlayer?.id || sortedPlayers[0]?.id || null)
+    }
   }
 
   const handleToggleActive = (player) => {
@@ -2647,82 +3003,104 @@ function PlayersPage() {
     }))
   }
 
-  const activeCount = players.filter(p => p.isActive !== false).length
-  const inactiveCount = players.filter(p => p.isActive === false).length
-
   return (
     <div>
       <h2 style={{ marginBottom: '20px' }}>Players</h2>
 
-      {/* Filter buttons */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-        <button
-          className={`btn ${filter === 'active' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setFilter('active')}
-        >
-          Active ({activeCount})
-        </button>
-        <button
-          className={`btn ${filter === 'inactive' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setFilter('inactive')}
-        >
-          Inactive ({inactiveCount})
-        </button>
-        <button
-          className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setFilter('all')}
-        >
-          All ({players.length})
-        </button>
-        <div style={{ flex: 1 }} />
-        {!showAddForm && (
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowAddForm(true)}
-          >
-            + Add Player
-          </button>
-        )}
-      </div>
-
-      {/* Add player form */}
-      {showAddForm && (
-        <AddPlayerForm
-          onAdd={handleAddPlayer}
-          onCancel={() => setShowAddForm(false)}
-          courseTees={courseTees}
-          existingPlayers={players}
-          leagueId={leagueId}
-        />
-      )}
-
-      {/* Player list */}
-      {filteredPlayers.length === 0 ? (
+      {players.length === 0 ? (
         <div className="empty-state">
-          <h3>No Players Found</h3>
-          <p>
-            {filter === 'active' && 'Add some players to get started!'}
-            {filter === 'inactive' && 'No inactive players.'}
-            {filter === 'all' && 'Add some players to get started!'}
-          </p>
+          <h3>No Players Yet</h3>
+          <p>Add some players to get started!</p>
+          {isAdmin && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowManageModal(true)}
+              style={{ marginTop: '10px', minHeight: '44px' }}
+            >
+              + Add Player
+            </button>
+          )}
         </div>
       ) : (
-        <div>
-          {filteredPlayers.map(player => (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              onEdit={setEditingPlayer}
-              onView={setViewingPlayer}
-              onToggleActive={handleToggleActive}
-              isAdmin={isAdmin}
+        <>
+          {/* Player selector dropdown */}
+          <div style={{ marginBottom: '16px' }}>
+            <select
+              value={selectedPlayerId || ''}
+              onChange={(e) => setSelectedPlayerId(e.target.value === '' ? null : isNaN(e.target.value) ? e.target.value : Number(e.target.value))}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                fontSize: '16px',
+                fontWeight: '600',
+                borderRadius: '8px',
+                border: '2px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-primary)',
+                cursor: 'pointer',
+                minHeight: '48px'
+              }}
+            >
+              {!selectedPlayerId && <option value="">Select a player...</option>}
+              {dropdownPlayers.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name}{p.isActive === false ? ' (Inactive)' : ''}{p.id === myPlayer?.id ? ' (You)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Profile card for selected player */}
+          {selectedPlayer ? (
+            <PlayerProfileCard
+              player={selectedPlayer}
               handicapScope={handicapScope}
               leagueId={leagueId}
               courseTees={courseTees}
               handicapSettings={handicapSettings}
+              onViewStats={setViewingPlayer}
+              onEdit={setEditingPlayer}
             />
-          ))}
-        </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-tertiary)' }}>
+              Select a player to view their profile.
+            </div>
+          )}
+
+          {/* Manage Players button (admin only) */}
+          {isAdmin && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowManageModal(true)}
+              style={{
+                width: '100%',
+                marginTop: '16px',
+                minHeight: '44px',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}
+            >
+              Manage Players ({players.length})
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Manage Players modal (admin) */}
+      {showManageModal && (
+        <ManagePlayersModal
+          players={players}
+          onClose={() => setShowManageModal(false)}
+          onEdit={setEditingPlayer}
+          onView={setViewingPlayer}
+          onToggleActive={handleToggleActive}
+          onAddPlayer={handleAddPlayer}
+          isAdmin={isAdmin}
+          handicapScope={handicapScope}
+          leagueId={leagueId}
+          courseTees={courseTees}
+          handicapSettings={handicapSettings}
+        />
       )}
 
       {/* Edit modal */}
