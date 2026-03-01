@@ -64,10 +64,10 @@ function SignupScreen({ onSwitchToLogin }) {
         <div className="content">
           <div style={{ maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
             <div style={{
-              background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+              background: 'var(--color-success)',
               color: 'white',
               padding: '30px',
-              borderRadius: '15px',
+              borderRadius: 'var(--radius-lg)',
               marginTop: '30px'
             }}>
               <h2 style={{ marginBottom: '15px' }}>Check Your Email</h2>
@@ -108,8 +108,8 @@ function SignupScreen({ onSwitchToLogin }) {
               width: '100%',
               padding: '14px',
               borderRadius: '8px',
-              border: '2px solid #e0e0e0',
-              background: 'white',
+              border: '2px solid var(--color-border)',
+              background: 'var(--color-surface)',
               cursor: 'pointer',
               fontSize: '16px',
               fontWeight: '600',
@@ -118,7 +118,7 @@ function SignupScreen({ onSwitchToLogin }) {
               justifyContent: 'center',
               gap: '10px',
               marginBottom: '20px',
-              color: '#333'
+              color: 'var(--color-text-primary)'
             }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
@@ -136,9 +136,9 @@ function SignupScreen({ onSwitchToLogin }) {
             margin: '20px 0',
             gap: '15px'
           }}>
-            <div style={{ flex: 1, height: '1px', background: '#e0e0e0' }} />
-            <span style={{ color: '#999', fontSize: '14px' }}>or</span>
-            <div style={{ flex: 1, height: '1px', background: '#e0e0e0' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
+            <span style={{ color: 'var(--color-text-tertiary)', fontSize: '14px' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
           </div>
 
           {/* Email/Password Sign Up */}
@@ -203,14 +203,14 @@ function SignupScreen({ onSwitchToLogin }) {
             </button>
           </form>
 
-          <div style={{ marginTop: '20px', color: '#666', fontSize: '14px' }}>
+          <div style={{ marginTop: '20px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             Already have an account?{' '}
             <button
               onClick={onSwitchToLogin}
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#27ae60',
+                color: 'var(--color-success)',
                 fontWeight: '600',
                 cursor: 'pointer',
                 textDecoration: 'underline',

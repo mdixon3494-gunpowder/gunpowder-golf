@@ -20,7 +20,7 @@ function StepIndicator({ current, total }) {
             width: i === current ? '24px' : '10px',
             height: '10px',
             borderRadius: '5px',
-            background: i <= current ? '#27ae60' : '#ddd',
+            background: i <= current ? 'var(--color-success)' : 'var(--color-border)',
             transition: 'all 0.2s'
           }}
         />
@@ -158,10 +158,10 @@ function LeagueCreationWizard({ onBack, onCreated }) {
             style={{
               width: '100%',
               padding: '14px',
-              background: 'linear-gradient(135deg, #27ae60, #229954)',
-              color: 'white',
+              background: 'var(--color-success)',
+              color: 'var(--color-text-on-primary)',
               border: 'none',
-              borderRadius: '10px',
+              borderRadius: 'var(--radius-md)',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
@@ -171,7 +171,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
             {creating ? 'Creating...' : 'Quick Create (Big Boys defaults)'}
           </button>
 
-          <div style={{ textAlign: 'center', color: '#999', fontSize: '13px', marginBottom: '20px' }}>
+          <div style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '13px', marginBottom: '20px' }}>
             or customize your league settings below
           </div>
 
@@ -189,7 +189,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 width: '100%',
                 padding: '12px',
                 borderRadius: '8px',
-                border: '1px solid #ddd',
+                border: '1px solid var(--color-border)',
                 fontSize: '15px'
               }}
             />
@@ -209,7 +209,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 width: '100%',
                 padding: '12px',
                 borderRadius: '8px',
-                border: '1px solid #ddd',
+                border: '1px solid var(--color-border)',
                 fontSize: '15px'
               }}
             />
@@ -246,17 +246,17 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                     width: '100%',
                     padding: '12px',
                     borderRadius: '8px',
-                    border: codeError ? '2px solid #e74c3c' : '1px solid #ddd',
+                    border: codeError ? '2px solid var(--color-danger)' : '1px solid var(--color-border)',
                     fontSize: '16px',
                     textTransform: 'uppercase',
                     letterSpacing: '2px',
                     textAlign: 'center'
                   }}
                 />
-                {codeChecking && <div style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>Checking...</div>}
-                {codeError && <div style={{ fontSize: '13px', color: '#e74c3c', marginTop: '4px' }}>{codeError}</div>}
+                {codeChecking && <div style={{ fontSize: '13px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>Checking...</div>}
+                {codeError && <div style={{ fontSize: '13px', color: 'var(--color-danger)', marginTop: '4px' }}>{codeError}</div>}
                 {customCode.length >= 3 && !codeError && !codeChecking && (
-                  <div style={{ fontSize: '13px', color: '#27ae60', marginTop: '4px' }}>"{customCode}" is available</div>
+                  <div style={{ fontSize: '13px', color: 'var(--color-success)', marginTop: '4px' }}>"{customCode}" is available</div>
                 )}
               </div>
             )}
@@ -267,7 +267,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
       case 1: return (
         <div>
           <h3 style={{ marginBottom: '8px' }}>Default Format</h3>
-          <p style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
             You can override this per round. Choose your league's most common format.
           </p>
 
@@ -279,8 +279,8 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 style={{
                   padding: '14px 10px',
                   borderRadius: '10px',
-                  border: defaultFormat === f.key ? '2px solid #27ae60' : '2px solid #e0e0e0',
-                  background: defaultFormat === f.key ? '#e8f5e9' : 'white',
+                  border: defaultFormat === f.key ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                  background: defaultFormat === f.key ? 'var(--color-success-light)' : 'var(--color-surface)',
                   cursor: 'pointer',
                   textAlign: 'center',
                   fontSize: '13px',
@@ -288,7 +288,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 }}
               >
                 {f.label}
-                {f.team && <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>Team</div>}
+                {f.team && <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>Team</div>}
               </button>
             ))}
           </div>
@@ -307,8 +307,8 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                       flex: 1,
                       padding: '10px',
                       borderRadius: '8px',
-                      border: teamSize === n ? '2px solid #27ae60' : '2px solid #e0e0e0',
-                      background: teamSize === n ? '#e8f5e9' : 'white',
+                      border: teamSize === n ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                      background: teamSize === n ? 'var(--color-success-light)' : 'var(--color-surface)',
                       cursor: 'pointer',
                       fontWeight: teamSize === n ? '600' : '400'
                     }}
@@ -325,7 +325,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
       case 2: return (
         <div>
           <h3 style={{ marginBottom: '8px' }}>Handicap Settings</h3>
-          <p style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
             You can fine-tune these later in Settings.
           </p>
 
@@ -344,8 +344,8 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 gap: '10px',
                 padding: '12px',
                 borderRadius: '8px',
-                border: handicapMode === opt.value ? '2px solid #27ae60' : '1px solid #e0e0e0',
-                background: handicapMode === opt.value ? '#e8f5e9' : 'white',
+                border: handicapMode === opt.value ? '2px solid var(--color-success)' : '1px solid var(--color-border)',
+                background: handicapMode === opt.value ? 'var(--color-success-light)' : 'var(--color-surface)',
                 marginBottom: '8px',
                 cursor: 'pointer'
               }}>
@@ -357,7 +357,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 />
                 <div>
                   <div style={{ fontWeight: '600', fontSize: '14px' }}>{opt.label}</div>
-                  <div style={{ color: '#666', fontSize: '12px' }}>{opt.desc}</div>
+                  <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{opt.desc}</div>
                 </div>
               </label>
             ))}
@@ -380,8 +380,8 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                     gap: '10px',
                     padding: '10px 12px',
                     borderRadius: '8px',
-                    border: handicapScope === opt.value ? '2px solid #27ae60' : '1px solid #e0e0e0',
-                    background: handicapScope === opt.value ? '#e8f5e9' : 'white',
+                    border: handicapScope === opt.value ? '2px solid var(--color-success)' : '1px solid var(--color-border)',
+                    background: handicapScope === opt.value ? 'var(--color-success-light)' : 'var(--color-surface)',
                     marginBottom: '6px',
                     cursor: 'pointer'
                   }}>
@@ -393,7 +393,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                     />
                     <div>
                       <div style={{ fontWeight: '500', fontSize: '14px' }}>{opt.label}</div>
-                      <div style={{ color: '#666', fontSize: '12px' }}>{opt.desc}</div>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{opt.desc}</div>
                     </div>
                   </label>
                 ))}
@@ -411,7 +411,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                   onChange={(e) => setMaxHandicap(Number(e.target.value))}
                   style={{ width: '100%' }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#999' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--color-text-tertiary)' }}>
                   <span>18</span><span>36</span><span>54</span>
                 </div>
               </div>
@@ -438,14 +438,14 @@ function LeagueCreationWizard({ onBack, onCreated }) {
       case 3: return (
         <div>
           <h3 style={{ marginBottom: '8px' }}>Side Games</h3>
-          <p style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
             Enable optional side games your members can play.
           </p>
 
           {[
-            { key: 'allowSkins', label: 'Skins', desc: 'Win money on individual holes', color: '#e65100' },
-            { key: 'allowNassau', label: 'Nassau', desc: 'Front 9 / Back 9 / Overall bets', color: '#2e7d32' },
-            { key: 'allowWolf', label: 'Wolf', desc: '4-player rotation game (partner or lone wolf)', color: '#6a1b9a' }
+            { key: 'allowSkins', label: 'Skins', desc: 'Win money on individual holes', color: 'var(--color-skins-dark)', lightBg: 'var(--color-skins-light)' },
+            { key: 'allowNassau', label: 'Nassau', desc: 'Front 9 / Back 9 / Overall bets', color: 'var(--color-nassau)', lightBg: 'var(--color-success-light)' },
+            { key: 'allowWolf', label: 'Wolf', desc: '4-player rotation game (partner or lone wolf)', color: 'var(--color-wolf)', lightBg: 'var(--color-multiplier-light)' }
           ].map(game => (
             <label key={game.key} style={{
               display: 'flex',
@@ -453,16 +453,16 @@ function LeagueCreationWizard({ onBack, onCreated }) {
               justifyContent: 'space-between',
               padding: '16px',
               borderRadius: '10px',
-              border: sideGames[game.key] ? `2px solid ${game.color}` : '2px solid #e0e0e0',
-              background: sideGames[game.key] ? `${game.color}10` : 'white',
+              border: sideGames[game.key] ? `2px solid ${game.color}` : '2px solid var(--color-border)',
+              background: sideGames[game.key] ? game.lightBg : 'var(--color-surface)',
               marginBottom: '10px',
               cursor: 'pointer'
             }}>
               <div>
-                <div style={{ fontWeight: '600', fontSize: '15px', color: sideGames[game.key] ? game.color : '#333' }}>
+                <div style={{ fontWeight: '600', fontSize: '15px', color: sideGames[game.key] ? game.color : 'var(--color-text-primary)' }}>
                   {game.label}
                 </div>
-                <div style={{ color: '#666', fontSize: '12px', marginTop: '2px' }}>{game.desc}</div>
+                <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginTop: '2px' }}>{game.desc}</div>
               </div>
               <input
                 type="checkbox"
@@ -478,7 +478,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
       case 4: return (
         <div>
           <h3 style={{ marginBottom: '8px' }}>Membership Settings</h3>
-          <p style={{ color: '#666', fontSize: '13px', marginBottom: '16px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
             Control who can find and join your league.
           </p>
 
@@ -496,8 +496,8 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 gap: '10px',
                 padding: '12px',
                 borderRadius: '8px',
-                border: visibility === opt.value ? '2px solid #27ae60' : '1px solid #e0e0e0',
-                background: visibility === opt.value ? '#e8f5e9' : 'white',
+                border: visibility === opt.value ? '2px solid var(--color-success)' : '1px solid var(--color-border)',
+                background: visibility === opt.value ? 'var(--color-success-light)' : 'var(--color-surface)',
                 marginBottom: '8px',
                 cursor: 'pointer'
               }}>
@@ -509,7 +509,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 />
                 <div>
                   <div style={{ fontWeight: '600', fontSize: '14px' }}>{opt.label}</div>
-                  <div style={{ color: '#666', fontSize: '12px' }}>{opt.desc}</div>
+                  <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{opt.desc}</div>
                 </div>
               </label>
             ))}
@@ -521,7 +521,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
             gap: '10px',
             padding: '14px',
             borderRadius: '8px',
-            border: '1px solid #e0e0e0',
+            border: '1px solid var(--color-border)',
             cursor: 'pointer'
           }}>
             <input
@@ -532,7 +532,7 @@ function LeagueCreationWizard({ onBack, onCreated }) {
             />
             <div>
               <div style={{ fontWeight: '600', fontSize: '14px' }}>Require Admin Approval</div>
-              <div style={{ color: '#666', fontSize: '12px' }}>
+              <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
                 New members must be approved by an admin before joining
               </div>
             </div>
@@ -559,18 +559,18 @@ function LeagueCreationWizard({ onBack, onCreated }) {
               display: 'flex',
               justifyContent: 'space-between',
               padding: '10px 0',
-              borderBottom: '1px solid #f0f0f0',
+              borderBottom: '1px solid var(--color-border-light)',
               fontSize: '14px'
             }}>
-              <span style={{ color: '#666' }}>{item.label}</span>
+              <span style={{ color: 'var(--color-text-secondary)' }}>{item.label}</span>
               <span style={{ fontWeight: '600' }}>{item.value}</span>
             </div>
           ))}
 
           {error && (
             <div style={{
-              background: '#ffebee',
-              color: '#c62828',
+              background: 'var(--color-danger-light)',
+              color: 'var(--color-danger-dark)',
               padding: '10px',
               borderRadius: '8px',
               marginTop: '16px',
@@ -614,10 +614,10 @@ function LeagueCreationWizard({ onBack, onCreated }) {
           <StepIndicator current={step} total={STEPS.length} />
 
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '24px',
             borderRadius: '12px',
-            border: '1px solid #e0e0e0',
+            border: '1px solid var(--color-border)',
             marginBottom: '20px'
           }}>
             {renderStep()}
@@ -630,9 +630,9 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 style={{
                   flex: 1,
                   padding: '14px',
-                  borderRadius: '10px',
-                  border: '2px solid #ddd',
-                  background: 'white',
+                  borderRadius: 'var(--radius-md)',
+                  border: '2px solid var(--color-border)',
+                  background: 'var(--color-surface)',
                   fontSize: '15px',
                   cursor: 'pointer',
                   fontWeight: '500'
@@ -649,10 +649,10 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 style={{
                   flex: 1,
                   padding: '14px',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--radius-md)',
                   border: 'none',
-                  background: canAdvance() ? '#27ae60' : '#ccc',
-                  color: 'white',
+                  background: canAdvance() ? 'var(--color-success)' : 'var(--color-disabled)',
+                  color: 'var(--color-text-on-primary)',
                   fontSize: '15px',
                   cursor: canAdvance() ? 'pointer' : 'default',
                   fontWeight: '600'
@@ -667,10 +667,10 @@ function LeagueCreationWizard({ onBack, onCreated }) {
                 style={{
                   flex: 1,
                   padding: '14px',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--radius-md)',
                   border: 'none',
-                  background: creating ? '#ccc' : 'linear-gradient(135deg, #27ae60, #229954)',
-                  color: 'white',
+                  background: creating ? 'var(--color-disabled)' : 'var(--color-success)',
+                  color: 'var(--color-text-on-primary)',
                   fontSize: '15px',
                   cursor: creating ? 'default' : 'pointer',
                   fontWeight: '600'

@@ -9,11 +9,11 @@ import {
 
 // Point type categories for filtering
 const CATEGORIES = [
-  { key: 'all', label: 'All Types', color: '#9b59b6' },
-  { key: 'green', label: 'Green', color: '#27ae60' },
-  { key: 'tee', label: 'Tee Boxes', color: '#3498db' },
-  { key: 'hazard', label: 'Hazards', color: '#e74c3c' },
-  { key: 'marker', label: 'Markers', color: '#f39c12' }
+  { key: 'all', label: 'All Types', color: 'var(--color-accent-purple)' },
+  { key: 'green', label: 'Green', color: 'var(--color-success)' },
+  { key: 'tee', label: 'Tee Boxes', color: 'var(--color-info)' },
+  { key: 'hazard', label: 'Hazards', color: 'var(--color-danger)' },
+  { key: 'marker', label: 'Markers', color: 'var(--color-skins-dark)' }
 ]
 
 // All point types organized by category
@@ -64,7 +64,7 @@ const getCategoryForPointType = (pointKey) => {
 }
 
 const getCategoryColor = (category) => {
-  return CATEGORIES.find(c => c.key === category)?.color || '#666'
+  return CATEGORIES.find(c => c.key === category)?.color || 'var(--color-text-secondary)'
 }
 
 export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
@@ -299,16 +299,16 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
           <div style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span style={{ fontWeight: '600' }}>Green Centers Mapped</span>
-              <span style={{ color: '#666' }}>{mappedHolesCount}/18 holes</span>
+              <span style={{ color: 'var(--color-text-secondary)' }}>{mappedHolesCount}/18 holes</span>
             </div>
             <div style={{
-              background: '#e0e0e0',
-              borderRadius: '10px',
+              background: 'var(--color-border)',
+              borderRadius: 'var(--radius-md)',
               height: '10px',
               overflow: 'hidden'
             }}>
               <div style={{
-                background: 'linear-gradient(90deg, #27ae60, #2ecc71)',
+                background: 'var(--color-success)',
                 height: '100%',
                 width: `${(mappedHolesCount / 18) * 100}%`,
                 transition: 'width 0.3s ease'
@@ -334,11 +334,11 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                       width: '44px',
                       height: '44px',
                       borderRadius: '8px',
-                      border: selectedHole === hole ? '2px solid #9b59b6' : '1px solid #ddd',
+                      border: selectedHole === hole ? '2px solid var(--color-accent-purple)' : '1px solid var(--color-border)',
                       background: hasGreen
-                        ? (selectedHole === hole ? '#27ae60' : '#e8f5e9')
-                        : (selectedHole === hole ? '#9b59b6' : 'white'),
-                      color: (selectedHole === hole) ? 'white' : (hasGreen ? '#27ae60' : '#333'),
+                        ? (selectedHole === hole ? 'var(--color-success)' : 'var(--color-success-light)')
+                        : (selectedHole === hole ? 'var(--color-accent-purple)' : 'var(--color-surface)'),
+                      color: (selectedHole === hole) ? 'white' : (hasGreen ? 'var(--color-success)' : 'var(--color-text-primary)'),
                       fontWeight: selectedHole === hole ? '700' : '500',
                       cursor: 'pointer',
                       position: 'relative',
@@ -351,7 +351,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                         position: 'absolute',
                         top: '-5px',
                         right: '-5px',
-                        background: '#f39c12',
+                        background: 'var(--color-skins-dark)',
                         color: 'white',
                         borderRadius: '50%',
                         width: '18px',
@@ -384,9 +384,9 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                   style={{
                     padding: '8px 16px',
                     borderRadius: '20px',
-                    border: selectedCategory === cat.key ? `2px solid ${cat.color}` : '1px solid #ddd',
-                    background: selectedCategory === cat.key ? cat.color : 'white',
-                    color: selectedCategory === cat.key ? 'white' : '#333',
+                    border: selectedCategory === cat.key ? `2px solid ${cat.color}` : '1px solid var(--color-border)',
+                    background: selectedCategory === cat.key ? cat.color : 'var(--color-surface)',
+                    color: selectedCategory === cat.key ? 'white' : 'var(--color-text-primary)',
                     fontWeight: selectedCategory === cat.key ? '600' : '400',
                     cursor: 'pointer',
                     fontSize: '14px'
@@ -412,7 +412,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                 borderRadius: '8px',
                 border: `2px solid ${getCategoryColor(getCategoryForPointType(selectedPointType))}`,
                 fontSize: '16px',
-                background: 'white'
+                background: 'var(--color-surface)'
               }}
             >
               {filteredPointTypes.map(pt => (
@@ -438,7 +438,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                   width: '100%',
                   padding: '12px',
                   borderRadius: '8px',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--color-border)',
                   fontSize: '16px'
                 }}
               />
@@ -471,13 +471,13 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
           {/* Last Capture Info */}
           {lastCapture && (
             <div style={{
-              background: '#f8f9fa',
+              background: 'var(--color-surface-sunken)',
               padding: '15px',
               borderRadius: '8px',
               marginBottom: '15px'
             }}>
               <div style={{ fontWeight: '600', marginBottom: '10px' }}>Last Captured:</div>
-              <div style={{ fontSize: '13px', color: '#666' }}>
+              <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
                 <div>Lat: {lastCapture.lat.toFixed(6)}</div>
                 <div>Lng: {lastCapture.lng.toFixed(6)}</div>
                 <div style={{ color: getAccuracyColor(lastCapture.accuracy) }}>
@@ -487,7 +487,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
               {lastCapture.warnings?.length > 0 && (
                 <div style={{ marginTop: '10px' }}>
                   {lastCapture.warnings.map((warning, i) => (
-                    <div key={i} style={{ color: '#f39c12', fontSize: '13px' }}>
+                    <div key={i} style={{ color: 'var(--color-skins-dark)', fontSize: '13px' }}>
                       {warning}
                     </div>
                   ))}
@@ -515,14 +515,14 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                       key={pt.key}
                       style={{
                         padding: '10px',
-                        background: '#f5f5f5',
-                        borderRadius: '6px',
+                        background: 'var(--color-surface-sunken)',
+                        borderRadius: 'var(--radius-sm)',
                         marginBottom: '8px',
                         borderLeft: `3px solid ${categoryColor}`
                       }}
                     >
                       <span style={{ fontWeight: '500' }}>{pt.label}</span>
-                      <span style={{ color: '#999', marginLeft: '10px', fontSize: '13px' }}>
+                      <span style={{ color: 'var(--color-text-tertiary)', marginLeft: '10px', fontSize: '13px' }}>
                         None mapped
                       </span>
                     </div>
@@ -536,25 +536,25 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '10px',
-                      background: point.accuracy > 30 ? '#fff3e0' : '#e8f5e9',
-                      borderRadius: '6px',
+                      background: point.accuracy > 30 ? 'var(--color-skins-light)' : 'var(--color-success-light)',
+                      borderRadius: 'var(--radius-sm)',
                       marginBottom: '8px',
-                      borderLeft: `3px solid ${point.accuracy > 30 ? '#f39c12' : categoryColor}`
+                      borderLeft: `3px solid ${point.accuracy > 30 ? 'var(--color-skins-dark)' : categoryColor}`
                     }}
                   >
                     <div>
                       <span style={{ fontWeight: '500' }}>{pt.label}</span>
                       {point.label && (
-                        <span style={{ color: '#666', marginLeft: '8px', fontSize: '13px' }}>
+                        <span style={{ color: 'var(--color-text-secondary)', marginLeft: '8px', fontSize: '13px' }}>
                           ({point.label})
                         </span>
                       )}
-                      <span style={{ color: '#27ae60', marginLeft: '10px', fontSize: '12px' }}>
+                      <span style={{ color: 'var(--color-success)', marginLeft: '10px', fontSize: '12px' }}>
                         {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
                       </span>
                       {point.accuracy && (
                         <span style={{
-                          color: point.accuracy > 30 ? '#e74c3c' : point.accuracy > 15 ? '#f39c12' : '#27ae60',
+                          color: point.accuracy > 30 ? 'var(--color-danger)' : point.accuracy > 15 ? 'var(--color-skins-dark)' : 'var(--color-success)',
                           marginLeft: '8px',
                           fontSize: '11px'
                         }}>
@@ -565,7 +565,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                     <button
                       onClick={() => deletePoint(pt.key, idx)}
                       style={{
-                        background: '#e74c3c',
+                        background: 'var(--color-danger)',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
@@ -590,22 +590,22 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '10px',
-                      background: point ? (hasLowAccuracy ? '#fff3e0' : '#e8f5e9') : '#f5f5f5',
-                      borderRadius: '6px',
+                      background: point ? (hasLowAccuracy ? 'var(--color-skins-light)' : 'var(--color-success-light)') : 'var(--color-surface-sunken)',
+                      borderRadius: 'var(--radius-sm)',
                       marginBottom: '8px',
-                      borderLeft: `3px solid ${hasLowAccuracy ? '#f39c12' : categoryColor}`
+                      borderLeft: `3px solid ${hasLowAccuracy ? 'var(--color-skins-dark)' : categoryColor}`
                     }}
                   >
                     <div>
                       <span style={{ fontWeight: '500' }}>{pt.label}</span>
                       {point ? (
                         <>
-                          <span style={{ color: '#27ae60', marginLeft: '10px', fontSize: '12px' }}>
+                          <span style={{ color: 'var(--color-success)', marginLeft: '10px', fontSize: '12px' }}>
                             {point.lat.toFixed(4)}, {point.lng.toFixed(4)}
                           </span>
                           {point.accuracy && (
                             <span style={{
-                              color: point.accuracy > 30 ? '#e74c3c' : point.accuracy > 15 ? '#f39c12' : '#27ae60',
+                              color: point.accuracy > 30 ? 'var(--color-danger)' : point.accuracy > 15 ? 'var(--color-skins-dark)' : 'var(--color-success)',
                               marginLeft: '8px',
                               fontSize: '11px'
                             }}>
@@ -614,7 +614,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                           )}
                         </>
                       ) : (
-                        <span style={{ color: '#999', marginLeft: '10px', fontSize: '13px' }}>
+                        <span style={{ color: 'var(--color-text-tertiary)', marginLeft: '10px', fontSize: '13px' }}>
                           Not mapped
                         </span>
                       )}
@@ -623,7 +623,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                       <button
                         onClick={() => deletePoint(pt.key)}
                         style={{
-                          background: '#e74c3c',
+                          background: 'var(--color-danger)',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
@@ -735,17 +735,17 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
               onClick={(e) => e.stopPropagation()}
               style={{ maxWidth: '380px' }}
             >
-              <div className="modal-header" style={{ background: '#fff3e0' }}>
-                <h3 style={{ color: '#e65100' }}>⚠️ Poor GPS Accuracy</h3>
+              <div className="modal-header" style={{ background: 'var(--color-skins-light)' }}>
+                <h3 style={{ color: 'var(--color-skins-dark)' }}>⚠️ Poor GPS Accuracy</h3>
               </div>
               <div style={{ padding: '20px' }}>
-                <p style={{ marginBottom: '15px', color: '#e65100', fontWeight: '600' }}>
+                <p style={{ marginBottom: '15px', color: 'var(--color-skins-dark)', fontWeight: '600' }}>
                   GPS accuracy is {pendingCapture?.accuracy ? Math.round(pendingCapture.accuracy) : '?'}m
                 </p>
                 <p style={{ marginBottom: '15px', fontSize: '14px' }}>
                   This could result in yardage calculations being off by <strong>{pendingCapture?.accuracy ? Math.round(pendingCapture.accuracy * 1.09) : '?'}+ yards</strong>.
                 </p>
-                <p style={{ marginBottom: '20px', fontSize: '14px', color: '#666' }}>
+                <p style={{ marginBottom: '20px', fontSize: '14px', color: 'var(--color-text-secondary)' }}>
                   For best results, wait for better GPS signal (ideally under 10m). Cloudy weather and buildings can affect accuracy.
                 </p>
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -762,7 +762,7 @@ export default function CourseMappingTool({ courseMapping, onSave, onClose }) {
                   <button
                     className="btn"
                     onClick={proceedAfterPoorAccuracyWarning}
-                    style={{ flex: 1, background: '#f39c12', color: 'white' }}
+                    style={{ flex: 1, background: 'var(--color-skins-dark)', color: 'white' }}
                   >
                     Save Anyway
                   </button>

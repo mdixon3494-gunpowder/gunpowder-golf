@@ -52,8 +52,8 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
               width: '100%',
               padding: '14px',
               borderRadius: '8px',
-              border: '2px solid #e0e0e0',
-              background: 'white',
+              border: '2px solid var(--color-border)',
+              background: 'var(--color-surface)',
               cursor: 'pointer',
               fontSize: '16px',
               fontWeight: '600',
@@ -62,7 +62,7 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
               justifyContent: 'center',
               gap: '10px',
               marginBottom: '20px',
-              color: '#333'
+              color: 'var(--color-text-primary)'
             }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
@@ -80,9 +80,9 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
             margin: '20px 0',
             gap: '15px'
           }}>
-            <div style={{ flex: 1, height: '1px', background: '#e0e0e0' }} />
-            <span style={{ color: '#999', fontSize: '14px' }}>or</span>
-            <div style={{ flex: 1, height: '1px', background: '#e0e0e0' }} />
+            <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
+            <span style={{ color: 'var(--color-text-tertiary)', fontSize: '14px' }}>or</span>
+            <div style={{ flex: 1, height: '1px', background: 'var(--color-border)' }} />
           </div>
 
           {/* Email/Password Sign In */}
@@ -125,14 +125,14 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
             </button>
           </form>
 
-          <div style={{ marginTop: '20px', color: '#666', fontSize: '14px' }}>
+          <div style={{ marginTop: '20px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             Don't have an account?{' '}
             <button
               onClick={onSwitchToSignup}
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#27ae60',
+                color: 'var(--color-success)',
                 fontWeight: '600',
                 cursor: 'pointer',
                 textDecoration: 'underline',
@@ -151,7 +151,7 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#999',
+                  color: 'var(--color-text-tertiary)',
                   cursor: 'pointer',
                   textDecoration: 'underline',
                   fontSize: '13px',

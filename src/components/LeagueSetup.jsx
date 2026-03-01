@@ -106,10 +106,10 @@ function LeagueSetup({ initialMode, initialJoinCode, onBack }) {
           <h2 style={{ marginBottom: '30px' }}>Welcome to the League!</h2>
 
           <div style={{
-            background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+            background: 'var(--color-success)',
             color: 'white',
             padding: '30px',
-            borderRadius: '15px',
+            borderRadius: 'var(--radius-lg)',
             marginBottom: '30px'
           }}>
             <h3 style={{ marginBottom: '15px' }}>Create New League</h3>
@@ -148,7 +148,7 @@ function LeagueSetup({ initialMode, initialJoinCode, onBack }) {
                   disabled={isCreating}
                   style={{
                     background: 'white',
-                    color: '#27ae60',
+                    color: 'var(--color-success)',
                     fontWeight: '600'
                   }}
                 >
@@ -236,7 +236,7 @@ function LeagueSetup({ initialMode, initialJoinCode, onBack }) {
                     disabled={customCode.length < 3 || !!customCodeError || isChecking || isCreating}
                     style={{
                       background: 'white',
-                      color: '#27ae60',
+                      color: 'var(--color-success)',
                       fontWeight: '600',
                       flex: 1,
                       opacity: (customCode.length < 3 || !!customCodeError || isChecking) ? 0.5 : 1
@@ -250,13 +250,13 @@ function LeagueSetup({ initialMode, initialJoinCode, onBack }) {
           </div>
 
           <div ref={joinRef} style={{
-            background: '#f8f9fa',
+            background: 'var(--color-surface-sunken)',
             padding: '30px',
-            borderRadius: '15px',
-            border: '2px solid #e0e0e0'
+            borderRadius: 'var(--radius-lg)',
+            border: '2px solid var(--color-border)'
           }}>
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Join Existing League</h3>
-            <p style={{ marginBottom: '20px', color: '#666' }}>
+            <h3 style={{ marginBottom: '15px', color: 'var(--color-text-primary)' }}>Join Existing League</h3>
+            <p style={{ marginBottom: '20px', color: 'var(--color-text-secondary)' }}>
               Enter the league code from your organizer.
             </p>
 
@@ -287,13 +287,13 @@ function LeagueSetup({ initialMode, initialJoinCode, onBack }) {
 
             {pendingMessage && (
               <div style={{
-                background: '#fff3e0',
-                color: '#e65100',
+                background: 'var(--color-warning-light)',
+                color: 'var(--color-warning)',
                 padding: '12px',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-sm)',
                 marginBottom: '15px',
                 fontSize: '14px',
-                border: '1px solid #ffcc80'
+                border: '1px solid var(--color-warning)'
               }}>
                 {pendingMessage}
               </div>

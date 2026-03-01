@@ -46,11 +46,11 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
           <button
             onClick={onStartCasualGame}
             style={{
-              background: 'white',
+              background: 'var(--color-surface)',
               padding: '20px',
               borderRadius: '12px',
               marginBottom: '12px',
-              border: '2px solid #27ae60',
+              border: '2px solid var(--color-success)',
               cursor: 'pointer',
               width: '100%',
               textAlign: 'left',
@@ -61,15 +61,15 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: '600', fontSize: '16px', color: '#333' }}>
+                <div style={{ fontWeight: '600', fontSize: '16px', color: 'var(--color-text-primary)' }}>
                   Casual Game
                 </div>
-                <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                   Play a round with friends &mdash; same formats, no league needed
                 </div>
               </div>
               <span style={{
-                background: '#27ae60',
+                background: 'var(--color-success)',
                 color: 'white',
                 padding: '4px 10px',
                 borderRadius: '12px',
@@ -85,11 +85,11 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
           <button
             onClick={onStartIndividualRound}
             style={{
-              background: 'white',
+              background: 'var(--color-surface)',
               padding: '20px',
               borderRadius: '12px',
               marginBottom: '4px',
-              border: '2px solid #3498db',
+              border: '2px solid var(--color-info)',
               cursor: 'pointer',
               width: '100%',
               textAlign: 'left',
@@ -100,15 +100,15 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: '600', fontSize: '16px', color: '#333' }}>
+                <div style={{ fontWeight: '600', fontSize: '16px', color: 'var(--color-text-primary)' }}>
                   Individual Play
                 </div>
-                <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                   Track personal rounds & stats
                 </div>
               </div>
               <span style={{
-                background: '#3498db',
+                background: 'var(--color-info)',
                 color: 'white',
                 padding: '4px 10px',
                 borderRadius: '12px',
@@ -125,7 +125,7 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#3498db',
+                color: 'var(--color-info)',
                 fontSize: '13px',
                 cursor: 'pointer',
                 padding: '6px 12px',
@@ -141,7 +141,7 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
             <div style={{
               fontSize: '12px',
               fontWeight: '700',
-              color: '#888',
+              color: 'var(--color-text-tertiary)',
               textTransform: 'uppercase',
               letterSpacing: '1px',
               marginBottom: '12px'
@@ -153,7 +153,7 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
               <div style={{
                 textAlign: 'center',
                 padding: '40px',
-                color: '#888'
+                color: 'var(--color-text-tertiary)'
               }}>
                 <div className="spinner-tiny" style={{ margin: '0 auto 10px' }} />
                 Loading leagues...
@@ -162,10 +162,10 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
               <div style={{
                 textAlign: 'center',
                 padding: '30px 20px',
-                color: '#888',
-                background: '#f8f9fa',
+                color: 'var(--color-text-tertiary)',
+                background: 'var(--color-surface-sunken)',
                 borderRadius: '12px',
-                border: '2px dashed #ddd'
+                border: '2px dashed var(--color-border)'
               }}>
                 <div style={{ fontSize: '16px', marginBottom: '8px' }}>
                   No leagues yet
@@ -187,18 +187,18 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
                       : 'Player'
 
                   const roleColor = membership.role === 'owner'
-                    ? '#27ae60'
+                    ? 'var(--color-success)'
                     : membership.role === 'admin'
-                      ? '#f39c12'
-                      : '#3498db'
+                      ? 'var(--color-skins-dark)'
+                      : 'var(--color-info)'
 
                   return (
                     <button
                       key={league.id}
                       onClick={() => onSelectLeague(league.id)}
                       style={{
-                        background: 'white',
-                        border: '2px solid #e0e0e0',
+                        background: 'var(--color-surface)',
+                        border: '2px solid var(--color-border)',
                         borderRadius: '12px',
                         padding: '16px 20px',
                         cursor: 'pointer',
@@ -207,20 +207,20 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
                         transition: 'border-color 0.2s, box-shadow 0.2s'
                       }}
                       onMouseOver={(e) => {
-                        e.currentTarget.style.borderColor = '#27ae60'
+                        e.currentTarget.style.borderColor = 'var(--color-success)'
                         e.currentTarget.style.boxShadow = '0 2px 8px rgba(39,174,96,0.15)'
                       }}
                       onMouseOut={(e) => {
-                        e.currentTarget.style.borderColor = '#e0e0e0'
+                        e.currentTarget.style.borderColor = 'var(--color-border)'
                         e.currentTarget.style.boxShadow = 'none'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <div style={{ fontWeight: '600', fontSize: '16px', color: '#333' }}>
+                          <div style={{ fontWeight: '600', fontSize: '16px', color: 'var(--color-text-primary)' }}>
                             {league.name || league.id}
                           </div>
-                          <div style={{ fontSize: '13px', color: '#888', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ fontSize: '13px', color: 'var(--color-text-tertiary)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{
                               background: roleColor,
                               color: 'white',
@@ -235,7 +235,7 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
                           </div>
                         </div>
                         <div style={{
-                          color: '#ccc',
+                          color: 'var(--color-disabled)',
                           fontSize: '20px'
                         }}>
                           ›
@@ -254,8 +254,8 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
               className="btn"
               onClick={onCreateNew}
               style={{
-                background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
-                color: 'white',
+                background: 'var(--color-success)',
+                color: 'var(--color-text-on-primary)',
                 fontWeight: '600',
                 width: '100%',
                 padding: '14px'
@@ -267,9 +267,9 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
               className="btn"
               onClick={onJoinExisting}
               style={{
-                background: 'white',
-                color: '#27ae60',
-                border: '2px solid #27ae60',
+                background: 'var(--color-surface)',
+                color: 'var(--color-success)',
+                border: '2px solid var(--color-success)',
                 fontWeight: '600',
                 width: '100%',
                 padding: '14px'

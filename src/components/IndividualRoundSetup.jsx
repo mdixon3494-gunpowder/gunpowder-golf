@@ -147,9 +147,9 @@ function IndividualRoundSetup({ onBack }) {
   }
 
   const tees = [
-    { key: 'gold', label: 'Gold', color: '#f9a825' },
-    { key: 'blue', label: 'Blue', color: '#3498db' },
-    { key: 'red', label: 'Red', color: '#e74c3c' }
+    { key: 'gold', label: 'Gold', color: 'var(--color-accent-gold)' },
+    { key: 'blue', label: 'Blue', color: 'var(--color-info)' },
+    { key: 'red', label: 'Red', color: 'var(--color-danger)' }
   ]
 
   return (
@@ -170,7 +170,7 @@ function IndividualRoundSetup({ onBack }) {
             style={{
               background: 'none',
               border: 'none',
-              color: '#3498db',
+              color: 'var(--color-info)',
               fontSize: '15px',
               cursor: 'pointer',
               padding: '8px 0',
@@ -183,27 +183,27 @@ function IndividualRoundSetup({ onBack }) {
 
           {/* Course */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
             borderRadius: '12px',
             marginBottom: '16px',
-            border: '1px solid #e0e0e0'
+            border: '1px solid var(--color-border)'
           }}>
-            <h3 style={{ margin: '0 0 8px', fontSize: '16px', color: '#333' }}>Course</h3>
-            <div style={{ fontSize: '15px', fontWeight: '600', color: '#1a472a' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '16px', color: 'var(--color-text-primary)' }}>Course</h3>
+            <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--color-primary-dark)' }}>
               Gunpowder Golf Course
             </div>
           </div>
 
           {/* Starting Hole */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
             borderRadius: '12px',
             marginBottom: '16px',
-            border: '1px solid #e0e0e0'
+            border: '1px solid var(--color-border)'
           }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: '#333' }}>Starting Hole</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: 'var(--color-text-primary)' }}>Starting Hole</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
               {[{ val: 1, label: 'Hole 1 (Front)' }, { val: 10, label: 'Hole 10 (Back)' }].map(opt => (
                 <button
@@ -213,9 +213,9 @@ function IndividualRoundSetup({ onBack }) {
                     flex: 1,
                     padding: '10px',
                     borderRadius: '8px',
-                    border: `2px solid ${startingHole === opt.val ? '#3498db' : '#e0e0e0'}`,
-                    background: startingHole === opt.val ? '#ebf5fb' : 'white',
-                    color: startingHole === opt.val ? '#3498db' : '#666',
+                    border: `2px solid ${startingHole === opt.val ? 'var(--color-info)' : 'var(--color-border)'}`,
+                    background: startingHole === opt.val ? 'var(--color-info-light)' : 'var(--color-surface)',
+                    color: startingHole === opt.val ? 'var(--color-info)' : 'var(--color-text-secondary)',
                     fontWeight: '600',
                     cursor: 'pointer',
                     fontSize: '14px'
@@ -229,13 +229,13 @@ function IndividualRoundSetup({ onBack }) {
 
           {/* Holes */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
             borderRadius: '12px',
             marginBottom: '16px',
-            border: '1px solid #e0e0e0'
+            border: '1px solid var(--color-border)'
           }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: '#333' }}>Holes</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: 'var(--color-text-primary)' }}>Holes</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
               {[{ val: 18, label: '18 Holes' }, { val: 9, label: '9 Holes' }].map(opt => (
                 <button
@@ -245,9 +245,9 @@ function IndividualRoundSetup({ onBack }) {
                     flex: 1,
                     padding: '10px',
                     borderRadius: '8px',
-                    border: `2px solid ${holesPlayed === opt.val ? '#3498db' : '#e0e0e0'}`,
-                    background: holesPlayed === opt.val ? '#ebf5fb' : 'white',
-                    color: holesPlayed === opt.val ? '#3498db' : '#666',
+                    border: `2px solid ${holesPlayed === opt.val ? 'var(--color-info)' : 'var(--color-border)'}`,
+                    background: holesPlayed === opt.val ? 'var(--color-info-light)' : 'var(--color-surface)',
+                    color: holesPlayed === opt.val ? 'var(--color-info)' : 'var(--color-text-secondary)',
                     fontWeight: '600',
                     cursor: 'pointer',
                     fontSize: '14px'
@@ -261,13 +261,13 @@ function IndividualRoundSetup({ onBack }) {
 
           {/* Tee */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
             borderRadius: '12px',
             marginBottom: '16px',
-            border: '1px solid #e0e0e0'
+            border: '1px solid var(--color-border)'
           }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: '#333' }}>Tee</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: 'var(--color-text-primary)' }}>Tee</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
               {tees.map(t => (
                 <button
@@ -277,9 +277,9 @@ function IndividualRoundSetup({ onBack }) {
                     flex: 1,
                     padding: '10px',
                     borderRadius: '8px',
-                    border: `2px solid ${tee === t.key ? t.color : '#e0e0e0'}`,
-                    background: tee === t.key ? `${t.color}15` : 'white',
-                    color: tee === t.key ? t.color : '#666',
+                    border: `2px solid ${tee === t.key ? t.color : 'var(--color-border)'}`,
+                    background: tee === t.key ? 'var(--color-surface-sunken)' : 'var(--color-surface)',
+                    color: tee === t.key ? t.color : 'var(--color-text-secondary)',
                     fontWeight: '600',
                     cursor: 'pointer',
                     fontSize: '14px'
@@ -293,13 +293,13 @@ function IndividualRoundSetup({ onBack }) {
 
           {/* Handicap */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
             borderRadius: '12px',
             marginBottom: '16px',
-            border: '1px solid #e0e0e0'
+            border: '1px solid var(--color-border)'
           }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: '#333' }}>Handicap</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '16px', color: 'var(--color-text-primary)' }}>Handicap</h3>
             <input
               type="number"
               value={handicap}
@@ -310,7 +310,7 @@ function IndividualRoundSetup({ onBack }) {
                 width: '100%',
                 padding: '10px',
                 borderRadius: '8px',
-                border: '1px solid #ddd',
+                border: '1px solid var(--color-border)',
                 fontSize: '16px',
                 textAlign: 'center'
               }}
@@ -320,8 +320,8 @@ function IndividualRoundSetup({ onBack }) {
           {/* Error */}
           {error && (
             <div style={{
-              background: '#fdeaea',
-              color: '#c0392b',
+              background: 'var(--color-danger-light)',
+              color: 'var(--color-danger-dark)',
               padding: '12px 16px',
               borderRadius: '8px',
               marginBottom: '16px',
@@ -341,9 +341,9 @@ function IndividualRoundSetup({ onBack }) {
               borderRadius: '12px',
               border: 'none',
               background: creating
-                ? '#ccc'
-                : 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
-              color: 'white',
+                ? 'var(--color-disabled)'
+                : 'var(--color-info)',
+              color: 'var(--color-text-on-primary)',
               fontSize: '18px',
               fontWeight: '700',
               cursor: creating ? 'default' : 'pointer'

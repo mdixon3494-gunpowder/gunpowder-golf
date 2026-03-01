@@ -380,7 +380,7 @@ function CasualGameSetup({ onBack }) {
             style={{
               background: 'none',
               border: 'none',
-              color: '#27ae60',
+              color: 'var(--color-success)',
               fontSize: '15px',
               cursor: 'pointer',
               padding: '8px 0',
@@ -393,13 +393,13 @@ function CasualGameSetup({ onBack }) {
 
           {/* Section 1: Game Info */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
-            borderRadius: '12px',
+            borderRadius: 'var(--radius-lg)',
             marginBottom: '16px',
-            border: '1px solid #e0e0e0'
+            border: '1px solid var(--color-border)'
           }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: '#333' }}>Game Info</h3>
+            <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: 'var(--color-text-primary)' }}>Game Info</h3>
 
             <div className="input-group" style={{ marginBottom: '12px' }}>
               <label>Game Name</label>
@@ -421,10 +421,10 @@ function CasualGameSetup({ onBack }) {
                     style={{
                       flex: 1,
                       padding: '10px',
-                      borderRadius: '8px',
-                      border: `2px solid ${holes === h ? '#27ae60' : '#e0e0e0'}`,
-                      background: holes === h ? '#f0fff4' : 'white',
-                      color: holes === h ? '#27ae60' : '#666',
+                      borderRadius: 'var(--radius-sm)',
+                      border: `2px solid ${holes === h ? 'var(--color-success)' : 'var(--color-border)'}`,
+                      background: holes === h ? 'var(--color-success-light)' : 'var(--color-surface)',
+                      color: holes === h ? 'var(--color-success)' : 'var(--color-text-secondary)',
                       fontWeight: '600',
                       cursor: 'pointer',
                       fontSize: '15px'
@@ -449,13 +449,13 @@ function CasualGameSetup({ onBack }) {
 
           {/* Section 2: Players */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
-            borderRadius: '12px',
+            borderRadius: 'var(--radius-lg)',
             marginBottom: '16px',
-            border: '1px solid #e0e0e0'
+            border: '1px solid var(--color-border)'
           }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: '#333' }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: 'var(--color-text-primary)' }}>
               Players ({gamePlayers.length})
             </h3>
 
@@ -469,12 +469,12 @@ function CasualGameSetup({ onBack }) {
                 placeholder="Search by name..."
               />
               {searching && (
-                <div style={{ padding: '8px', color: '#888', fontSize: '13px' }}>Searching...</div>
+                <div style={{ padding: '8px', color: 'var(--color-text-tertiary)', fontSize: '13px' }}>Searching...</div>
               )}
               {searchResults.length > 0 && (
                 <div style={{
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '8px',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-sm)',
                   marginTop: '4px',
                   overflow: 'hidden'
                 }}>
@@ -487,21 +487,21 @@ function CasualGameSetup({ onBack }) {
                         width: '100%',
                         padding: '10px 12px',
                         border: 'none',
-                        borderBottom: '1px solid #f0f0f0',
-                        background: 'white',
+                        borderBottom: '1px solid var(--color-border-light)',
+                        background: 'var(--color-surface)',
                         cursor: 'pointer',
                         textAlign: 'left',
                         fontSize: '14px'
                       }}
-                      onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
-                      onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-surface-sunken)'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'var(--color-surface)'}
                     >
                       <span style={{ fontWeight: '600' }}>{user.display_name}</span>
                       <span style={{
                         marginLeft: '8px',
                         fontSize: '11px',
-                        color: '#27ae60',
-                        background: '#f0fff4',
+                        color: 'var(--color-success)',
+                        background: 'var(--color-success-light)',
                         padding: '2px 6px',
                         borderRadius: '4px'
                       }}>App User</span>
@@ -526,10 +526,10 @@ function CasualGameSetup({ onBack }) {
                 disabled={!guestName.trim()}
                 style={{
                   padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '2px solid #27ae60',
-                  background: guestName.trim() ? '#27ae60' : '#e0e0e0',
-                  color: guestName.trim() ? 'white' : '#999',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '2px solid var(--color-success)',
+                  background: guestName.trim() ? 'var(--color-success)' : 'var(--color-border)',
+                  color: guestName.trim() ? 'white' : 'var(--color-text-tertiary)',
                   fontWeight: '600',
                   cursor: guestName.trim() ? 'pointer' : 'default',
                   whiteSpace: 'nowrap'
@@ -549,28 +549,28 @@ function CasualGameSetup({ onBack }) {
                     alignItems: 'center',
                     gap: '10px',
                     padding: '10px 12px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px',
-                    border: '1px solid #eee'
+                    background: 'var(--color-surface-sunken)',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-border-light)'
                   }}
                 >
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
+                    <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)' }}>
                       {player.name}
                       {player.id === profile?.id && (
-                        <span style={{ fontSize: '11px', color: '#888', marginLeft: '6px' }}>(you)</span>
+                        <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginLeft: '6px' }}>(you)</span>
                       )}
                     </div>
                     <span style={{
                       fontSize: '10px',
-                      color: player.isGuest ? '#e67e22' : '#27ae60',
+                      color: player.isGuest ? 'var(--color-skins-dark)' : 'var(--color-success)',
                       fontWeight: '600'
                     }}>
                       {player.isGuest ? 'GUEST' : 'APP USER'}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <label style={{ fontSize: '11px', color: '#888' }}>HC:</label>
+                    <label style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>HC:</label>
                     <input
                       type="number"
                       value={player.handicap}
@@ -578,8 +578,8 @@ function CasualGameSetup({ onBack }) {
                       style={{
                         width: '50px',
                         padding: '4px 6px',
-                        borderRadius: '6px',
-                        border: '1px solid #ddd',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--color-border)',
                         textAlign: 'center',
                         fontSize: '14px'
                       }}
@@ -593,7 +593,7 @@ function CasualGameSetup({ onBack }) {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#e74c3c',
+                        color: 'var(--color-danger)',
                         cursor: 'pointer',
                         fontSize: '18px',
                         padding: '2px 6px',
@@ -609,8 +609,8 @@ function CasualGameSetup({ onBack }) {
 
             {/* Scramble Team Names */}
             {format === 'scramble' && gamePlayers.length >= teamSize * 2 && (
-              <div style={{ marginTop: '16px', padding: '12px', background: '#fff8e1', borderRadius: '8px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px', color: '#333' }}>
+              <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-warning-light)', borderRadius: 'var(--radius-sm)' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px', color: 'var(--color-text-primary)' }}>
                   Team Names (optional)
                 </label>
                 {Array.from({ length: Math.ceil(gamePlayers.length / teamSize) }, (_, i) => (
@@ -621,8 +621,8 @@ function CasualGameSetup({ onBack }) {
                     onChange={(e) => setScrambleTeamNames({ ...scrambleTeamNames, [i]: e.target.value })}
                     placeholder={`Team ${i + 1}`}
                     style={{
-                      width: '100%', padding: '8px 10px', borderRadius: '6px',
-                      border: '1px solid #ddd', fontSize: '14px', marginBottom: '6px'
+                      width: '100%', padding: '8px 10px', borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--color-border)', fontSize: '14px', marginBottom: '6px'
                     }}
                   />
                 ))}
@@ -632,13 +632,13 @@ function CasualGameSetup({ onBack }) {
 
           {/* Section 3: Format */}
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
-            borderRadius: '12px',
+            borderRadius: 'var(--radius-lg)',
             marginBottom: '16px',
-            border: '1px solid #e0e0e0'
+            border: '1px solid var(--color-border)'
           }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: '#333' }}>Format</h3>
+            <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: 'var(--color-text-primary)' }}>Format</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
               {formats.map(f => (
@@ -647,9 +647,9 @@ function CasualGameSetup({ onBack }) {
                   onClick={() => setFormat(f.key)}
                   style={{
                     padding: '12px 16px',
-                    borderRadius: '10px',
-                    border: `2px solid ${format === f.key ? '#27ae60' : '#e0e0e0'}`,
-                    background: format === f.key ? '#f0fff4' : 'white',
+                    borderRadius: 'var(--radius-md)',
+                    border: `2px solid ${format === f.key ? 'var(--color-success)' : 'var(--color-border)'}`,
+                    background: format === f.key ? 'var(--color-success-light)' : 'var(--color-surface)',
                     cursor: 'pointer',
                     textAlign: 'left'
                   }}
@@ -657,11 +657,11 @@ function CasualGameSetup({ onBack }) {
                   <div style={{
                     fontWeight: '600',
                     fontSize: '14px',
-                    color: format === f.key ? '#27ae60' : '#333'
+                    color: format === f.key ? 'var(--color-success)' : 'var(--color-text-primary)'
                   }}>
                     {f.label}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
                     {f.desc}
                   </div>
                 </button>
@@ -680,10 +680,10 @@ function CasualGameSetup({ onBack }) {
                       style={{
                         flex: 1,
                         padding: '10px',
-                        borderRadius: '8px',
-                        border: `2px solid ${teamSize === s ? '#27ae60' : '#e0e0e0'}`,
-                        background: teamSize === s ? '#f0fff4' : 'white',
-                        color: teamSize === s ? '#27ae60' : '#666',
+                        borderRadius: 'var(--radius-sm)',
+                        border: `2px solid ${teamSize === s ? 'var(--color-success)' : 'var(--color-border)'}`,
+                        background: teamSize === s ? 'var(--color-success-light)' : 'var(--color-surface)',
+                        color: teamSize === s ? 'var(--color-success)' : 'var(--color-text-secondary)',
                         fontWeight: '600',
                         cursor: 'pointer'
                       }}
@@ -697,13 +697,13 @@ function CasualGameSetup({ onBack }) {
 
             {/* Format-specific settings */}
             {format === 'bestball' && (
-              <div style={{ padding: '12px', background: '#f0fff4', borderRadius: '8px', marginBottom: '12px' }}>
+              <div style={{ padding: '12px', background: 'var(--color-success-light)', borderRadius: 'var(--radius-sm)', marginBottom: '12px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={formatSettings.useHandicaps}
                     onChange={(e) => setFormatSettings({ ...formatSettings, useHandicaps: e.target.checked })}
-                    style={{ width: '18px', height: '18px', accentColor: '#27ae60' }}
+                    style={{ width: '18px', height: '18px', accentColor: 'var(--color-success)' }}
                   />
                   <span style={{ fontSize: '14px', fontWeight: '500' }}>Use Handicaps (Net Best Ball)</span>
                 </label>
@@ -711,7 +711,7 @@ function CasualGameSetup({ onBack }) {
             )}
 
             {format === 'retirees' && (
-              <div style={{ padding: '12px', background: '#f0fff4', borderRadius: '8px', marginBottom: '12px' }}>
+              <div style={{ padding: '12px', background: 'var(--color-success-light)', borderRadius: 'var(--radius-sm)', marginBottom: '12px' }}>
                 <div style={{ marginBottom: '10px' }}>
                   <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '13px' }}>
                     Best scores to count per hole
@@ -722,30 +722,30 @@ function CasualGameSetup({ onBack }) {
                         key={n}
                         onClick={() => setFormatSettings({ ...formatSettings, retireesScoresToCount: n })}
                         style={{
-                          flex: 1, padding: '8px', borderRadius: '6px',
-                          border: `2px solid ${formatSettings.retireesScoresToCount === n ? '#27ae60' : '#e0e0e0'}`,
-                          background: formatSettings.retireesScoresToCount === n ? '#f0fff4' : 'white',
+                          flex: 1, padding: '8px', borderRadius: 'var(--radius-sm)',
+                          border: `2px solid ${formatSettings.retireesScoresToCount === n ? 'var(--color-success)' : 'var(--color-border)'}`,
+                          background: formatSettings.retireesScoresToCount === n ? 'var(--color-success-light)' : 'var(--color-surface)',
                           fontWeight: '600', cursor: 'pointer', fontSize: '14px',
-                          color: formatSettings.retireesScoresToCount === n ? '#27ae60' : '#666'
+                          color: formatSettings.retireesScoresToCount === n ? 'var(--color-success)' : 'var(--color-text-secondary)'
                         }}
                       >{n}</button>
                     ))}
                   </div>
                 </div>
-                <div style={{ fontSize: '13px', color: '#666', marginTop: '8px' }}>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '8px' }}>
                   <strong>3-player team rules:</strong> {formatSettings.retireesBonusPer9} per 9, +{formatSettings.retireesExtraStrokes} extra HC strokes
                 </div>
               </div>
             )}
 
             {format === 'stableford' && (
-              <div style={{ padding: '12px', background: '#f0fff4', borderRadius: '8px', marginBottom: '12px' }}>
+              <div style={{ padding: '12px', background: 'var(--color-success-light)', borderRadius: 'var(--radius-sm)', marginBottom: '12px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={formatSettings.useNet}
                     onChange={(e) => setFormatSettings({ ...formatSettings, useNet: e.target.checked })}
-                    style={{ width: '18px', height: '18px', accentColor: '#27ae60' }}
+                    style={{ width: '18px', height: '18px', accentColor: 'var(--color-success)' }}
                   />
                   <span style={{ fontSize: '14px', fontWeight: '500' }}>Use Net Scoring (handicap-adjusted)</span>
                 </label>
@@ -768,9 +768,9 @@ function CasualGameSetup({ onBack }) {
                   style={{
                     width: '50px',
                     height: '28px',
-                    borderRadius: '14px',
+                    borderRadius: 'var(--radius-full)',
                     border: 'none',
-                    background: enableGreenies ? '#27ae60' : '#ccc',
+                    background: enableGreenies ? 'var(--color-success)' : 'var(--color-disabled)',
                     cursor: 'pointer',
                     position: 'relative',
                     transition: 'background 0.2s'
@@ -805,9 +805,9 @@ function CasualGameSetup({ onBack }) {
                     style={{
                       width: '50px',
                       height: '28px',
-                      borderRadius: '14px',
+                      borderRadius: 'var(--radius-full)',
                       border: 'none',
-                      background: nassauEnabled ? '#2e7d32' : '#ccc',
+                      background: nassauEnabled ? 'var(--color-nassau)' : 'var(--color-disabled)',
                       cursor: 'pointer',
                       position: 'relative',
                       transition: 'background 0.2s'
@@ -827,7 +827,7 @@ function CasualGameSetup({ onBack }) {
                   </button>
                 </div>
                 {nassauEnabled && (
-                  <div style={{ marginTop: '12px', padding: '12px', background: '#f5f5f5', borderRadius: '8px' }}>
+                  <div style={{ marginTop: '12px', padding: '12px', background: 'var(--color-surface-sunken)', borderRadius: 'var(--radius-sm)' }}>
                     <div style={{ marginBottom: '12px' }}>
                       <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '13px' }}>
                         Bet Amount Per Segment ($)
@@ -838,9 +838,9 @@ function CasualGameSetup({ onBack }) {
                         onChange={e => setNassauSettings({ ...nassauSettings, betAmount: parseFloat(e.target.value) || 2 })}
                         min="0.5"
                         step="0.5"
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px' }}
+                        style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '14px' }}
                       />
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
                         3 bets per pair: front 9, back 9, overall
                       </div>
                     </div>
@@ -852,11 +852,11 @@ function CasualGameSetup({ onBack }) {
                             key={String(val)}
                             onClick={() => setNassauSettings({ ...nassauSettings, useHandicaps: val })}
                             style={{
-                              padding: '6px 14px', borderRadius: '6px',
-                              border: `2px solid ${nassauSettings.useHandicaps === val ? '#2e7d32' : '#e0e0e0'}`,
-                              background: nassauSettings.useHandicaps === val ? '#e8f5e9' : 'white',
+                              padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+                              border: `2px solid ${nassauSettings.useHandicaps === val ? 'var(--color-nassau)' : 'var(--color-border)'}`,
+                              background: nassauSettings.useHandicaps === val ? 'var(--color-success-light)' : 'var(--color-surface)',
                               fontWeight: nassauSettings.useHandicaps === val ? '600' : 'normal',
-                              color: nassauSettings.useHandicaps === val ? '#2e7d32' : '#666',
+                              color: nassauSettings.useHandicaps === val ? 'var(--color-nassau)' : 'var(--color-text-secondary)',
                               cursor: 'pointer', fontSize: '13px'
                             }}
                           >{val ? 'Yes' : 'No'}</button>
@@ -881,9 +881,9 @@ function CasualGameSetup({ onBack }) {
                     style={{
                       width: '50px',
                       height: '28px',
-                      borderRadius: '14px',
+                      borderRadius: 'var(--radius-full)',
                       border: 'none',
-                      background: wolfEnabled ? '#6a1b9a' : '#ccc',
+                      background: wolfEnabled ? 'var(--color-wolf)' : 'var(--color-disabled)',
                       cursor: 'pointer',
                       position: 'relative',
                       transition: 'background 0.2s'
@@ -903,7 +903,7 @@ function CasualGameSetup({ onBack }) {
                   </button>
                 </div>
                 {wolfEnabled && (
-                  <div style={{ marginTop: '12px', padding: '12px', background: '#f3e5f5', borderRadius: '8px' }}>
+                  <div style={{ marginTop: '12px', padding: '12px', background: 'var(--color-multiplier-light)', borderRadius: 'var(--radius-sm)' }}>
                     <div style={{ marginBottom: '12px' }}>
                       <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '13px' }}>
                         Bet Amount Per Hole ($)
@@ -914,9 +914,9 @@ function CasualGameSetup({ onBack }) {
                         onChange={e => setWolfSettings({ ...wolfSettings, betAmount: parseFloat(e.target.value) || 1 })}
                         min="0.5"
                         step="0.5"
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px' }}
+                        style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '14px' }}
                       />
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
                         Each losing player pays each winning player this amount (x multiplier)
                       </div>
                     </div>
@@ -928,17 +928,17 @@ function CasualGameSetup({ onBack }) {
                             key={opt.val}
                             onClick={() => setWolfSettings({ ...wolfSettings, selectionMode: opt.val })}
                             style={{
-                              flex: 1, padding: '8px', borderRadius: '6px',
-                              border: `2px solid ${wolfSettings.selectionMode === opt.val ? '#6a1b9a' : '#e0e0e0'}`,
-                              background: wolfSettings.selectionMode === opt.val ? '#f3e5f5' : 'white',
+                              flex: 1, padding: '8px', borderRadius: 'var(--radius-sm)',
+                              border: `2px solid ${wolfSettings.selectionMode === opt.val ? 'var(--color-wolf)' : 'var(--color-border)'}`,
+                              background: wolfSettings.selectionMode === opt.val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                               fontWeight: wolfSettings.selectionMode === opt.val ? '600' : 'normal',
-                              color: wolfSettings.selectionMode === opt.val ? '#6a1b9a' : '#666',
+                              color: wolfSettings.selectionMode === opt.val ? 'var(--color-wolf)' : 'var(--color-text-secondary)',
                               cursor: 'pointer', fontSize: '13px'
                             }}
                           >{opt.label}</button>
                         ))}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
                         Blind: decide before scores. Informed: decide after seeing scores.
                       </div>
                     </div>
@@ -950,11 +950,11 @@ function CasualGameSetup({ onBack }) {
                             key={String(val)}
                             onClick={() => setWolfSettings({ ...wolfSettings, useHandicaps: val })}
                             style={{
-                              padding: '6px 14px', borderRadius: '6px',
-                              border: `2px solid ${wolfSettings.useHandicaps === val ? '#6a1b9a' : '#e0e0e0'}`,
-                              background: wolfSettings.useHandicaps === val ? '#f3e5f5' : 'white',
+                              padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+                              border: `2px solid ${wolfSettings.useHandicaps === val ? 'var(--color-wolf)' : 'var(--color-border)'}`,
+                              background: wolfSettings.useHandicaps === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                               fontWeight: wolfSettings.useHandicaps === val ? '600' : 'normal',
-                              color: wolfSettings.useHandicaps === val ? '#6a1b9a' : '#666',
+                              color: wolfSettings.useHandicaps === val ? 'var(--color-wolf)' : 'var(--color-text-secondary)',
                               cursor: 'pointer', fontSize: '13px'
                             }}
                           >{val ? 'Yes' : 'No'}</button>
@@ -966,7 +966,7 @@ function CasualGameSetup({ onBack }) {
                         type="checkbox"
                         checked={wolfSettings.lastPlaceWolf17_18}
                         onChange={(e) => setWolfSettings({ ...wolfSettings, lastPlaceWolf17_18: e.target.checked })}
-                        style={{ width: '18px', height: '18px', accentColor: '#6a1b9a' }}
+                        style={{ width: '18px', height: '18px', accentColor: 'var(--color-wolf)' }}
                       />
                       <span style={{ fontSize: '14px' }}>Last place is Wolf on holes 17 & 18</span>
                     </label>
@@ -978,7 +978,7 @@ function CasualGameSetup({ onBack }) {
                           value={wolfSettings.loneWolfMultiplier}
                           onChange={e => setWolfSettings({ ...wolfSettings, loneWolfMultiplier: parseInt(e.target.value) || 2 })}
                           min="1" max="5"
-                          style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px', textAlign: 'center' }}
+                          style={{ width: '100%', padding: '6px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '14px', textAlign: 'center' }}
                         />
                       </div>
                       <div style={{ flex: 1 }}>
@@ -988,7 +988,7 @@ function CasualGameSetup({ onBack }) {
                           value={wolfSettings.blindWolfMultiplier}
                           onChange={e => setWolfSettings({ ...wolfSettings, blindWolfMultiplier: parseInt(e.target.value) || 3 })}
                           min="1" max="5"
-                          style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px', textAlign: 'center' }}
+                          style={{ width: '100%', padding: '6px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '14px', textAlign: 'center' }}
                         />
                       </div>
                     </div>
@@ -1001,13 +1001,13 @@ function CasualGameSetup({ onBack }) {
           {/* Skins Settings (only when skins format selected) */}
           {format === 'skins' && (
             <div style={{
-              background: 'white',
+              background: 'var(--color-surface)',
               padding: '20px',
-              borderRadius: '12px',
+              borderRadius: 'var(--radius-lg)',
               marginBottom: '16px',
-              border: '1px solid #e0e0e0'
+              border: '1px solid var(--color-border)'
             }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: '#333' }}>Skins Rules</h3>
+              <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: 'var(--color-text-primary)' }}>Skins Rules</h3>
 
               {/* Cost per skin */}
               <div style={{ marginBottom: '16px' }}>
@@ -1019,7 +1019,7 @@ function CasualGameSetup({ onBack }) {
                   value={skinsSettings.costPerSkin}
                   onChange={(e) => setSkinsSettings({ ...skinsSettings, costPerSkin: e.target.value })}
                   placeholder="1.00"
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '15px' }}
                 />
               </div>
 
@@ -1032,9 +1032,9 @@ function CasualGameSetup({ onBack }) {
                       key={String(val)}
                       onClick={() => setSkinsSettings({ ...skinsSettings, carryovers: val })}
                       style={{
-                        flex: 1, padding: '10px', borderRadius: '8px',
-                        border: `2px solid ${skinsSettings.carryovers === val ? '#f39c12' : '#e0e0e0'}`,
-                        background: skinsSettings.carryovers === val ? '#fff8e1' : 'white',
+                        flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)',
+                        border: `2px solid ${skinsSettings.carryovers === val ? 'var(--color-skins)' : 'var(--color-border)'}`,
+                        background: skinsSettings.carryovers === val ? 'var(--color-skins-light)' : 'var(--color-surface)',
                         fontWeight: skinsSettings.carryovers === val ? '600' : 'normal',
                         cursor: 'pointer', fontSize: '14px'
                       }}
@@ -1054,9 +1054,9 @@ function CasualGameSetup({ onBack }) {
                           key={String(val)}
                           onClick={() => setSkinsSettings({ ...skinsSettings, wrapUnwonSkins: val })}
                           style={{
-                            flex: 1, padding: '10px', borderRadius: '8px',
-                            border: `2px solid ${skinsSettings.wrapUnwonSkins === val ? '#f39c12' : '#e0e0e0'}`,
-                            background: skinsSettings.wrapUnwonSkins === val ? '#fff8e1' : 'white',
+                            flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)',
+                            border: `2px solid ${skinsSettings.wrapUnwonSkins === val ? 'var(--color-skins)' : 'var(--color-border)'}`,
+                            background: skinsSettings.wrapUnwonSkins === val ? 'var(--color-skins-light)' : 'var(--color-surface)',
                             fontWeight: skinsSettings.wrapUnwonSkins === val ? '600' : 'normal',
                             cursor: 'pointer', fontSize: '14px'
                           }}
@@ -1073,9 +1073,9 @@ function CasualGameSetup({ onBack }) {
                             key={opt.val}
                             onClick={() => setSkinsSettings({ ...skinsSettings, wrapTo: opt.val })}
                             style={{
-                              flex: 1, padding: '10px', borderRadius: '8px',
-                              border: `2px solid ${skinsSettings.wrapTo === opt.val ? '#f39c12' : '#e0e0e0'}`,
-                              background: skinsSettings.wrapTo === opt.val ? '#fff8e1' : 'white',
+                              flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)',
+                              border: `2px solid ${skinsSettings.wrapTo === opt.val ? 'var(--color-skins)' : 'var(--color-border)'}`,
+                              background: skinsSettings.wrapTo === opt.val ? 'var(--color-skins-light)' : 'var(--color-surface)',
                               fontWeight: skinsSettings.wrapTo === opt.val ? '600' : 'normal',
                               cursor: 'pointer', fontSize: '14px'
                             }}
@@ -1088,19 +1088,19 @@ function CasualGameSetup({ onBack }) {
               )}
 
               {/* Optional rules */}
-              <div style={{ borderTop: '1px solid #eee', paddingTop: '12px', marginBottom: '4px' }}>
+              <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '12px', marginBottom: '4px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={skinsSettings.parOrBetterRequired} onChange={(e) => setSkinsSettings({ ...skinsSettings, parOrBetterRequired: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#f39c12' }} />
+                  <input type="checkbox" checked={skinsSettings.parOrBetterRequired} onChange={(e) => setSkinsSettings({ ...skinsSettings, parOrBetterRequired: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: 'var(--color-skins)' }} />
                   <span style={{ fontSize: '14px' }}>Par or better required to win</span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={skinsSettings.birdieDoubleEagleTriple} onChange={(e) => setSkinsSettings({ ...skinsSettings, birdieDoubleEagleTriple: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#f39c12' }} />
+                  <input type="checkbox" checked={skinsSettings.birdieDoubleEagleTriple} onChange={(e) => setSkinsSettings({ ...skinsSettings, birdieDoubleEagleTriple: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: 'var(--color-skins)' }} />
                   <span style={{ fontSize: '14px' }}>Birdie = 2x, Eagle = 3x value</span>
                 </label>
               </div>
 
               {/* Greenies Section */}
-              <div style={{ borderTop: '1px solid #eee', paddingTop: '16px', marginTop: '16px' }}>
+              <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '16px', marginTop: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                   <label style={{ fontWeight: '600', fontSize: '15px' }}>Greenies (Par 3s)</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -1109,11 +1109,11 @@ function CasualGameSetup({ onBack }) {
                         key={String(val)}
                         onClick={() => setGreenieSettings({ ...greenieSettings, enabled: val })}
                         style={{
-                          padding: '6px 14px', borderRadius: '6px',
-                          border: `2px solid ${greenieSettings.enabled === val ? '#27ae60' : '#e0e0e0'}`,
-                          background: greenieSettings.enabled === val ? '#f0fff4' : 'white',
+                          padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+                          border: `2px solid ${greenieSettings.enabled === val ? 'var(--color-success)' : 'var(--color-border)'}`,
+                          background: greenieSettings.enabled === val ? 'var(--color-success-light)' : 'var(--color-surface)',
                           fontWeight: greenieSettings.enabled === val ? '600' : 'normal',
-                          color: greenieSettings.enabled === val ? '#27ae60' : '#666',
+                          color: greenieSettings.enabled === val ? 'var(--color-success)' : 'var(--color-text-secondary)',
                           cursor: 'pointer', fontSize: '13px'
                         }}
                       >{val ? 'Yes' : 'No'}</button>
@@ -1122,7 +1122,7 @@ function CasualGameSetup({ onBack }) {
                 </div>
 
                 {greenieSettings.enabled && (
-                  <div style={{ background: '#f0fff4', padding: '15px', borderRadius: '8px' }}>
+                  <div style={{ background: 'var(--color-success-light)', padding: '15px', borderRadius: 'var(--radius-sm)' }}>
                     <div style={{ marginBottom: '12px' }}>
                       <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>
                         Cost per Greenie ($)
@@ -1132,7 +1132,7 @@ function CasualGameSetup({ onBack }) {
                         value={greenieSettings.costPerGreenie}
                         onChange={(e) => setGreenieSettings({ ...greenieSettings, costPerGreenie: e.target.value })}
                         placeholder="1.00"
-                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px' }}
+                        style={{ width: '100%', padding: '10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: '14px' }}
                       />
                     </div>
                     <div style={{ marginBottom: '12px' }}>
@@ -1143,9 +1143,9 @@ function CasualGameSetup({ onBack }) {
                             key={String(val)}
                             onClick={() => setGreenieSettings({ ...greenieSettings, carryovers: val })}
                             style={{
-                              flex: 1, padding: '10px', borderRadius: '6px',
-                              border: `2px solid ${greenieSettings.carryovers === val ? '#27ae60' : '#e0e0e0'}`,
-                              background: greenieSettings.carryovers === val ? '#f0fff4' : 'white',
+                              flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)',
+                              border: `2px solid ${greenieSettings.carryovers === val ? 'var(--color-success)' : 'var(--color-border)'}`,
+                              background: greenieSettings.carryovers === val ? 'var(--color-success-light)' : 'var(--color-surface)',
                               fontWeight: greenieSettings.carryovers === val ? '600' : 'normal',
                               cursor: 'pointer', fontSize: '13px'
                             }}
@@ -1165,9 +1165,9 @@ function CasualGameSetup({ onBack }) {
                                 key={String(val)}
                                 onClick={() => setGreenieSettings({ ...greenieSettings, wrapUnwonGreenies: val })}
                                 style={{
-                                  flex: 1, padding: '10px', borderRadius: '6px',
-                                  border: `2px solid ${greenieSettings.wrapUnwonGreenies === val ? '#27ae60' : '#e0e0e0'}`,
-                                  background: greenieSettings.wrapUnwonGreenies === val ? '#f0fff4' : 'white',
+                                  flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)',
+                                  border: `2px solid ${greenieSettings.wrapUnwonGreenies === val ? 'var(--color-success)' : 'var(--color-border)'}`,
+                                  background: greenieSettings.wrapUnwonGreenies === val ? 'var(--color-success-light)' : 'var(--color-surface)',
                                   fontWeight: greenieSettings.wrapUnwonGreenies === val ? '600' : 'normal',
                                   cursor: 'pointer', fontSize: '13px'
                                 }}
@@ -1184,9 +1184,9 @@ function CasualGameSetup({ onBack }) {
                                   key={opt.val}
                                   onClick={() => setGreenieSettings({ ...greenieSettings, wrapTo: opt.val })}
                                   style={{
-                                    flex: 1, padding: '10px', borderRadius: '6px',
-                                    border: `2px solid ${greenieSettings.wrapTo === opt.val ? '#27ae60' : '#e0e0e0'}`,
-                                    background: greenieSettings.wrapTo === opt.val ? '#f0fff4' : 'white',
+                                    flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)',
+                                    border: `2px solid ${greenieSettings.wrapTo === opt.val ? 'var(--color-success)' : 'var(--color-border)'}`,
+                                    background: greenieSettings.wrapTo === opt.val ? 'var(--color-success-light)' : 'var(--color-surface)',
                                     fontWeight: greenieSettings.wrapTo === opt.val ? '600' : 'normal',
                                     cursor: 'pointer', fontSize: '13px'
                                   }}
@@ -1206,10 +1206,10 @@ function CasualGameSetup({ onBack }) {
           {/* Error */}
           {error && (
             <div style={{
-              background: '#fdeaea',
-              color: '#c0392b',
+              background: 'var(--color-danger-light)',
+              color: 'var(--color-danger)',
               padding: '12px 16px',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-sm)',
               marginBottom: '16px',
               fontSize: '14px'
             }}>
@@ -1224,11 +1224,11 @@ function CasualGameSetup({ onBack }) {
             style={{
               width: '100%',
               padding: '16px',
-              borderRadius: '12px',
+              borderRadius: 'var(--radius-lg)',
               border: 'none',
               background: creating || gamePlayers.length < 2
-                ? '#ccc'
-                : 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                ? 'var(--color-disabled)'
+                : 'var(--color-success)',
               color: 'white',
               fontSize: '18px',
               fontWeight: '700',

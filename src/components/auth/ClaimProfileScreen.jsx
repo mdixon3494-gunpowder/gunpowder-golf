@@ -91,21 +91,21 @@ function ClaimProfileScreen() {
       <div className="content">
         <div style={{ maxWidth: '500px', margin: '0 auto' }}>
           <h2 style={{ marginBottom: '10px', textAlign: 'center' }}>Set Up Your Profile</h2>
-          <p style={{ color: '#666', textAlign: 'center', marginBottom: '30px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '30px' }}>
             Welcome, {user?.email}! Let's link your account to a player profile.
           </p>
 
           {searching ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
               Searching for existing player profiles...
             </div>
           ) : ghostProfiles.length > 0 && !showCreateForm ? (
             <>
               <div style={{
-                background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                background: 'var(--color-success)',
                 color: 'white',
                 padding: '20px',
-                borderRadius: '15px',
+                borderRadius: 'var(--radius-lg)',
                 marginBottom: '20px'
               }}>
                 <h3 style={{ marginBottom: '10px' }}>Existing Players Found</h3>
@@ -116,10 +116,10 @@ function ClaimProfileScreen() {
 
               {ghostProfiles.map(ghost => (
                 <div key={ghost.id} style={{
-                  background: 'white',
+                  background: 'var(--color-surface)',
                   padding: '20px',
-                  borderRadius: '10px',
-                  border: '1px solid #e0e0e0',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-border)',
                   marginBottom: '10px',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -130,7 +130,7 @@ function ClaimProfileScreen() {
                       {ghost.display_name}
                     </div>
                     {ghost.league_count > 0 && (
-                      <div style={{ color: '#666', fontSize: '13px', marginTop: '4px' }}>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginTop: '4px' }}>
                         Member of {ghost.league_count} league{ghost.league_count !== 1 ? 's' : ''}
                       </div>
                     )}
@@ -158,7 +158,7 @@ function ClaimProfileScreen() {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#27ae60',
+                    color: 'var(--color-success)',
                     fontWeight: '600',
                     cursor: 'pointer',
                     textDecoration: 'underline',
@@ -172,10 +172,10 @@ function ClaimProfileScreen() {
             </>
           ) : (
             <div style={{
-              background: '#f8f9fa',
+              background: 'var(--color-surface-sunken)',
               padding: '30px',
-              borderRadius: '15px',
-              border: '2px solid #e0e0e0'
+              borderRadius: 'var(--radius-lg)',
+              border: '2px solid var(--color-border)'
             }}>
               <h3 style={{ marginBottom: '15px', textAlign: 'center' }}>Create Your Profile</h3>
               <form onSubmit={handleCreateNew}>
@@ -189,7 +189,7 @@ function ClaimProfileScreen() {
                   />
                 </div>
 
-                <div style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>
+                <div style={{ marginBottom: '15px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
                   <label style={{ fontWeight: '500' }}>Email</label>
                   <div>{user?.email || 'Not set'}</div>
                 </div>
@@ -217,7 +217,7 @@ function ClaimProfileScreen() {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#666',
+                      color: 'var(--color-text-secondary)',
                       cursor: 'pointer',
                       textDecoration: 'underline',
                       fontSize: '13px',
