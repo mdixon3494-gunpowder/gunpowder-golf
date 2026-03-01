@@ -167,19 +167,19 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
     return (
       <div>
         <div style={{
-          background: '#f3e5f5',
+          background: '#F3EEFF',
           padding: '20px',
           borderRadius: '10px',
           textAlign: 'center'
         }}>
           <h3 style={{ marginBottom: '15px' }}>No Wolf Game Active</h3>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '20px' }}>
             Wolf is a 4-player rotation game. Each hole, one player is the Wolf and chooses a partner or goes alone.
           </p>
           <button
             className="btn btn-primary"
             onClick={() => { setShowSetup(true); setSetupOrder([]) }}
-            style={{ background: '#6a1b9a' }}
+            style={{ background: 'var(--color-wolf)' }}
           >
             Setup Wolf Game
           </button>
@@ -188,9 +188,9 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
         {showSetup && (
           <div className="modal-overlay" onClick={() => setShowSetup(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
-              <div className="modal-header" style={{ background: 'linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%)' }}>
-                <h3 style={{ color: 'white', margin: 0 }}>Wolf Game Settings</h3>
-                <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'white' }}>&times;</button>
+              <div className="modal-header" style={{ background: 'var(--color-wolf)' }}>
+                <h3 style={{ color: 'var(--color-text-on-primary)', margin: 0 }}>Wolf Game Settings</h3>
+                <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'var(--color-text-on-primary)' }}>&times;</button>
               </div>
               <div className="modal-body">
                 {/* Player Selection */}
@@ -209,9 +209,9 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                           style={{
                             padding: '8px 14px',
                             borderRadius: '20px',
-                            border: `2px solid ${isSelected ? '#6a1b9a' : '#ddd'}`,
-                            background: isSelected ? '#f3e5f5' : 'white',
-                            color: isSelected ? '#6a1b9a' : '#666',
+                            border: `2px solid ${isSelected ? 'var(--color-wolf)' : 'var(--color-border)'}`,
+                            background: isSelected ? '#F3EEFF' : 'var(--color-surface)',
+                            color: isSelected ? 'var(--color-wolf)' : 'var(--color-text-secondary)',
                             fontWeight: isSelected ? '600' : 'normal',
                             cursor: 'pointer',
                             fontSize: '13px',
@@ -226,22 +226,22 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                   </div>
                   {setupOrder.length > 0 && (
                     <div style={{ background: '#fafafa', padding: '10px', borderRadius: '8px', marginBottom: '10px' }}>
-                      <div style={{ fontSize: '11px', color: '#888', marginBottom: '6px' }}>Rotation Order (drag to reorder):</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginBottom: '6px' }}>Rotation Order (drag to reorder):</div>
                       {setupOrder.map((player, idx) => (
                         <div key={player.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
-                          <span style={{ width: '20px', fontWeight: '700', color: '#6a1b9a' }}>{idx + 1}.</span>
+                          <span style={{ width: '20px', fontWeight: '700', color: 'var(--color-wolf)' }}>{idx + 1}.</span>
                           <span style={{ flex: 1, fontSize: '14px' }}>{player.name}</span>
                           <button
                             onClick={() => moveSetupPlayer(idx, -1)}
                             disabled={idx === 0}
-                            style={{ padding: '2px 8px', border: '1px solid #ddd', borderRadius: '4px', background: 'white', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.3 : 1 }}
+                            style={{ padding: '2px 8px', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.3 : 1 }}
                           >
                             Up
                           </button>
                           <button
                             onClick={() => moveSetupPlayer(idx, 1)}
                             disabled={idx === setupOrder.length - 1}
-                            style={{ padding: '2px 8px', border: '1px solid #ddd', borderRadius: '4px', background: 'white', cursor: idx === setupOrder.length - 1 ? 'default' : 'pointer', opacity: idx === setupOrder.length - 1 ? 0.3 : 1 }}
+                            style={{ padding: '2px 8px', border: '1px solid var(--color-border)', borderRadius: '4px', background: 'var(--color-surface)', cursor: idx === setupOrder.length - 1 ? 'default' : 'pointer', opacity: idx === setupOrder.length - 1 ? 0.3 : 1 }}
                           >
                             Dn
                           </button>
@@ -250,7 +250,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                     </div>
                   )}
                   {setupOrder.length !== 4 && (
-                    <div style={{ fontSize: '12px', color: '#e74c3c' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--color-danger)' }}>
                       Select exactly 4 players ({setupOrder.length}/4 selected)
                     </div>
                   )}
@@ -277,15 +277,15 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                         onClick={() => setSettings({ ...settings, selectionMode: opt.val })}
                         style={{
                           flex: 1, padding: '10px', borderRadius: '6px',
-                          border: `2px solid ${settings.selectionMode === opt.val ? '#6a1b9a' : '#ddd'}`,
-                          background: settings.selectionMode === opt.val ? '#f3e5f5' : 'white',
+                          border: `2px solid ${settings.selectionMode === opt.val ? 'var(--color-wolf)' : 'var(--color-border)'}`,
+                          background: settings.selectionMode === opt.val ? '#F3EEFF' : 'var(--color-surface)',
                           fontWeight: settings.selectionMode === opt.val ? '600' : 'normal',
                           cursor: 'pointer'
                         }}
                       >{opt.label}</button>
                     ))}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                     Blind: choose before scores entered. Informed: choose after seeing scores.
                   </div>
                 </div>
@@ -293,8 +293,8 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                 <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Use Handicaps</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid #6a1b9a' : '2px solid #ddd', background: settings.useHandicaps ? '#f3e5f5' : 'white', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                    <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid #6a1b9a' : '2px solid #ddd', background: !settings.useHandicaps ? '#f3e5f5' : 'white', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                    <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid var(--color-wolf)' : '2px solid var(--color-border)', background: settings.useHandicaps ? '#F3EEFF' : 'var(--color-surface)', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid var(--color-wolf)' : '2px solid var(--color-border)', background: !settings.useHandicaps ? '#F3EEFF' : 'var(--color-surface)', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                   </div>
                 </div>
 
@@ -303,7 +303,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                     type="checkbox"
                     checked={settings.lastPlaceWolf17_18}
                     onChange={(e) => setSettings({ ...settings, lastPlaceWolf17_18: e.target.checked })}
-                    style={{ width: '18px', height: '18px', accentColor: '#6a1b9a' }}
+                    style={{ width: '18px', height: '18px', accentColor: 'var(--color-wolf)' }}
                   />
                   <span style={{ fontSize: '14px' }}>Last place is Wolf on 17 & 18</span>
                 </label>
@@ -311,11 +311,11 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                 <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '12px' }}>Lone Wolf Mult.</label>
-                    <input type="number" value={settings.loneWolfMultiplier} onChange={e => setSettings({ ...settings, loneWolfMultiplier: parseInt(e.target.value) || 2 })} min="1" max="5" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px', textAlign: 'center' }} />
+                    <input type="number" value={settings.loneWolfMultiplier} onChange={e => setSettings({ ...settings, loneWolfMultiplier: parseInt(e.target.value) || 2 })} min="1" max="5" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '14px', textAlign: 'center' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', marginBottom: '4px', fontWeight: '600', fontSize: '12px' }}>Blind Wolf Mult.</label>
-                    <input type="number" value={settings.blindWolfMultiplier} onChange={e => setSettings({ ...settings, blindWolfMultiplier: parseInt(e.target.value) || 3 })} min="1" max="5" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px', textAlign: 'center' }} />
+                    <input type="number" value={settings.blindWolfMultiplier} onChange={e => setSettings({ ...settings, blindWolfMultiplier: parseInt(e.target.value) || 3 })} min="1" max="5" style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '14px', textAlign: 'center' }} />
                   </div>
                 </div>
 
@@ -326,7 +326,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                   style={{
                     width: '100%',
                     marginTop: '10px',
-                    background: setupOrder.length === 4 ? '#6a1b9a' : '#ccc',
+                    background: setupOrder.length === 4 ? 'var(--color-wolf)' : '#ccc',
                     cursor: setupOrder.length === 4 ? 'pointer' : 'default'
                   }}
                 >
@@ -356,10 +356,10 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
   return (
     <div>
       {/* Wolf Header */}
-      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+      <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
         <div style={{
-          background: 'linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%)',
-          color: 'white',
+          background: 'var(--color-wolf)',
+          color: 'var(--color-text-on-primary)',
           padding: '12px 15px',
           fontSize: '16px',
           fontWeight: '600',
@@ -374,14 +374,14 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
           </span>
         </div>
 
-        <div style={{ padding: '10px 15px', background: '#f3e5f5', fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <div style={{ padding: '10px 15px', background: '#F3EEFF', fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
           <span>Lone {wolfMatch.settings.loneWolfMultiplier}x, Blind {wolfMatch.settings.blindWolfMultiplier}x</span>
-          {wolfMatch.settings.lastPlaceWolf17_18 && <span style={{ color: '#6a1b9a', fontWeight: '600' }}>Last place Wolf 17/18</span>}
+          {wolfMatch.settings.lastPlaceWolf17_18 && <span style={{ color: 'var(--color-wolf)', fontWeight: '600' }}>Last place Wolf 17/18</span>}
           {isAdmin && (
             <div style={{ marginLeft: 'auto' }}>
               <button
                 onClick={() => { setShowCancelConfirm(true); setCancelPinInput('') }}
-                style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+                style={{ background: 'var(--color-danger)', color: 'var(--color-text-on-primary)', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
               >
                 Cancel Game
               </button>
@@ -410,10 +410,10 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                   width: '36px',
                   height: '36px',
                   borderRadius: '6px',
-                  border: isActive ? '2px solid #6a1b9a' : '1px solid #ddd',
-                  background: isActive ? '#f3e5f5' : isComplete ? (hr.winner === 'wolf' ? '#e8f5e9' : hr.winner === 'field' ? '#ffebee' : '#f5f5f5') : 'white',
+                  border: isActive ? '2px solid var(--color-wolf)' : '1px solid var(--color-border)',
+                  background: isActive ? '#F3EEFF' : isComplete ? (hr.winner === 'wolf' ? 'var(--color-success-light)' : hr.winner === 'field' ? 'var(--color-danger-light)' : '#f5f5f5') : 'var(--color-surface)',
                   fontWeight: isActive ? '700' : '500',
-                  color: isActive ? '#6a1b9a' : isComplete ? '#333' : '#999',
+                  color: isActive ? 'var(--color-wolf)' : isComplete ? 'var(--color-text-primary)' : 'var(--color-text-tertiary)',
                   cursor: 'pointer',
                   fontSize: '12px',
                   position: 'relative',
@@ -430,7 +430,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
-                  background: wolfColors[wolfIdx] || '#999'
+                  background: wolfColors[wolfIdx] || 'var(--color-text-tertiary)'
                 }} />
               </button>
             )
@@ -439,7 +439,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
       </div>
 
       {/* Active Hole Detail */}
-      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+      <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
         <div style={{
           padding: '12px 15px',
           borderBottom: '1px solid #eee',
@@ -448,20 +448,20 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
           alignItems: 'center'
         }}>
           <span style={{ fontWeight: '700', fontSize: '16px' }}>Hole {activeHole}</span>
-          <span style={{ fontSize: '14px', color: '#6a1b9a', fontWeight: '600' }}>
+          <span style={{ fontSize: '14px', color: 'var(--color-wolf)', fontWeight: '600' }}>
             Wolf: {getPlayerName(liveRound, wolfForActiveHole)}
           </span>
         </div>
 
         {/* Decision Interface */}
         {needsDecision && (
-          <div style={{ padding: '15px', background: '#f3e5f5', borderBottom: '1px solid #e1bee7' }}>
+          <div style={{ padding: '15px', background: '#F3EEFF', borderBottom: '1px solid #e1bee7' }}>
             {isBlindMode && scoresEnteredForHole && (
               <div style={{ background: '#fff3e0', padding: '8px 12px', borderRadius: '6px', marginBottom: '10px', fontSize: '12px', color: '#e65100', fontWeight: '500' }}>
                 Scores already entered - Blind Wolf decision should be made before scores are entered!
               </div>
             )}
-            <div style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>
+            <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
               {getPlayerName(liveRound, wolfForActiveHole)} is the Wolf. Choose:
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -470,9 +470,9 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                 style={{
                   padding: '12px',
                   borderRadius: '8px',
-                  border: '2px solid #6a1b9a',
-                  background: 'white',
-                  color: '#6a1b9a',
+                  border: '2px solid var(--color-wolf)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-wolf)',
                   fontWeight: '600',
                   cursor: 'pointer',
                   fontSize: '14px'
@@ -501,7 +501,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                   padding: '12px',
                   borderRadius: '8px',
                   border: '2px solid #c62828',
-                  background: '#ffebee',
+                  background: 'var(--color-danger-light)',
                   color: '#c62828',
                   fontWeight: '600',
                   cursor: 'pointer',
@@ -516,7 +516,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
 
         {/* Partner Picker Modal */}
         {showPartnerPicker && (
-          <div style={{ padding: '15px', background: '#f3e5f5', borderBottom: '1px solid #e1bee7' }}>
+          <div style={{ padding: '15px', background: '#F3EEFF', borderBottom: '1px solid #e1bee7' }}>
             <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px' }}>
               Choose a partner for {getPlayerName(liveRound, wolfForActiveHole)}:
             </div>
@@ -530,9 +530,9 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                     style={{
                       padding: '12px',
                       borderRadius: '8px',
-                      border: '2px solid #6a1b9a',
-                      background: 'white',
-                      color: '#6a1b9a',
+                      border: '2px solid var(--color-wolf)',
+                      background: 'var(--color-surface)',
+                      color: 'var(--color-wolf)',
                       fontWeight: '600',
                       cursor: 'pointer',
                       fontSize: '14px'
@@ -546,9 +546,9 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                 style={{
                   padding: '8px',
                   borderRadius: '6px',
-                  border: '1px solid #ddd',
-                  background: 'white',
-                  color: '#666',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text-secondary)',
                   cursor: 'pointer',
                   fontSize: '12px'
                 }}
@@ -568,18 +568,18 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                 borderRadius: '4px',
                 fontSize: '11px',
                 fontWeight: '700',
-                background: holeDecision.decision === 'blind' ? '#ffebee' : holeDecision.decision === 'lone' ? '#fff3e0' : '#f3e5f5',
-                color: holeDecision.decision === 'blind' ? '#c62828' : holeDecision.decision === 'lone' ? '#e65100' : '#6a1b9a'
+                background: holeDecision.decision === 'blind' ? 'var(--color-danger-light)' : holeDecision.decision === 'lone' ? '#fff3e0' : '#F3EEFF',
+                color: holeDecision.decision === 'blind' ? '#c62828' : holeDecision.decision === 'lone' ? '#e65100' : 'var(--color-wolf)'
               }}>
                 {holeDecision.decision === 'partner' ? 'PARTNER' : holeDecision.decision === 'lone' ? 'LONE WOLF' : 'BLIND WOLF'}
               </span>
               {holeDecision.decision === 'partner' && holeDecision.partner && (
-                <span style={{ fontSize: '13px', color: '#333' }}>
+                <span style={{ fontSize: '13px', color: 'var(--color-text-primary)' }}>
                   {getPlayerName(liveRound, holeDecision.wolf)} + {getPlayerName(liveRound, holeDecision.partner)}
                 </span>
               )}
               {holeDecision.decision !== 'partner' && (
-                <span style={{ fontSize: '13px', color: '#333' }}>
+                <span style={{ fontSize: '13px', color: 'var(--color-text-primary)' }}>
                   {getPlayerName(liveRound, holeDecision.wolf)} vs Field
                 </span>
               )}
@@ -609,7 +609,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                     <tr key={pid} style={{ borderBottom: '1px solid #f5f5f5' }}>
                       <td style={{ padding: '6px 8px', fontWeight: isWolf ? '700' : '500' }}>
                         {getPlayerName(liveRound, pid)}
-                        {isWolf && <span style={{ fontSize: '10px', color: '#6a1b9a', marginLeft: '4px' }}>W</span>}
+                        {isWolf && <span style={{ fontSize: '10px', color: 'var(--color-wolf)', marginLeft: '4px' }}>W</span>}
                       </td>
                       <td style={{ padding: '6px 8px', textAlign: 'center' }}>
                         <span style={{
@@ -617,8 +617,8 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                           borderRadius: '4px',
                           fontSize: '10px',
                           fontWeight: '600',
-                          background: isWolfTeam ? '#f3e5f5' : '#f5f5f5',
-                          color: isWolfTeam ? '#6a1b9a' : '#666'
+                          background: isWolfTeam ? '#F3EEFF' : '#f5f5f5',
+                          color: isWolfTeam ? 'var(--color-wolf)' : 'var(--color-text-secondary)'
                         }}>
                           {isWolfTeam ? 'Wolf' : 'Field'}
                         </span>
@@ -627,7 +627,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                         {score ? score.score : '-'}
                       </td>
                       {wolfMatch.settings.useHandicaps && (
-                        <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: '600', color: '#6a1b9a' }}>
+                        <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: '600', color: 'var(--color-wolf)' }}>
                           {holeResult?.scores?.[pid]?.net ?? '-'}
                         </td>
                       )}
@@ -644,10 +644,10 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                 padding: '10px',
                 borderRadius: '8px',
                 textAlign: 'center',
-                background: holeResult.winner === 'wolf' ? '#e8f5e9' : holeResult.winner === 'field' ? '#ffebee' : '#f5f5f5',
+                background: holeResult.winner === 'wolf' ? 'var(--color-success-light)' : holeResult.winner === 'field' ? 'var(--color-danger-light)' : '#f5f5f5',
                 fontWeight: '700',
                 fontSize: '14px',
-                color: holeResult.winner === 'wolf' ? '#2e7d32' : holeResult.winner === 'field' ? '#c62828' : '#666'
+                color: holeResult.winner === 'wolf' ? 'var(--color-nassau)' : holeResult.winner === 'field' ? '#c62828' : 'var(--color-text-secondary)'
               }}>
                 {holeResult.winner === 'wolf' && `Wolf wins! (${holeResult.wolfBest} vs ${holeResult.fieldBest})`}
                 {holeResult.winner === 'field' && `Field wins! (${holeResult.fieldBest} vs ${holeResult.wolfBest})`}
@@ -661,7 +661,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
             )}
 
             {holeResult?.status === 'waiting_scores' && (
-              <div style={{ marginTop: '10px', padding: '8px', borderRadius: '6px', background: '#f5f5f5', textAlign: 'center', fontSize: '12px', color: '#999' }}>
+              <div style={{ marginTop: '10px', padding: '8px', borderRadius: '6px', background: '#f5f5f5', textAlign: 'center', fontSize: '12px', color: 'var(--color-text-tertiary)' }}>
                 Waiting for all scores to be entered...
               </div>
             )}
@@ -670,7 +670,7 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
       </div>
 
       {/* Summary */}
-      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+      <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
         <div style={{ padding: '12px 15px', borderBottom: '1px solid #eee', fontWeight: '600', fontSize: '14px' }}>
           Player Totals
         </div>
@@ -685,8 +685,8 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                 <div key={pid} style={{
                   padding: '10px 14px',
                   borderRadius: '8px',
-                  background: net > 0 ? '#e8f5e9' : net < 0 ? '#ffebee' : '#f5f5f5',
-                  border: `1px solid ${net > 0 ? '#c8e6c9' : net < 0 ? '#ffcdd2' : '#e0e0e0'}`,
+                  background: net > 0 ? 'var(--color-success-light)' : net < 0 ? 'var(--color-danger-light)' : '#f5f5f5',
+                  border: `1px solid ${net > 0 ? '#c8e6c9' : net < 0 ? '#ffcdd2' : 'var(--color-border)'}`,
                   textAlign: 'center',
                   minWidth: '80px',
                   flex: '1 1 80px'
@@ -695,11 +695,11 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                   <div style={{
                     fontSize: '18px',
                     fontWeight: '700',
-                    color: net > 0 ? '#2e7d32' : net < 0 ? '#c62828' : '#666'
+                    color: net > 0 ? 'var(--color-nassau)' : net < 0 ? '#c62828' : 'var(--color-text-secondary)'
                   }}>
                     {net > 0 ? '+' : ''}{net === 0 ? 'E' : `$${net}`}
                   </div>
-                  <div style={{ fontSize: '10px', color: '#999', marginTop: '2px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
                     {summary.holesAsWolf}W {summary.holesWonAsWolf}-{summary.holesLostAsWolf}-{summary.tiesAsWolf}
                   </div>
                 </div>
@@ -721,24 +721,24 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
             </thead>
             <tbody>
               <tr>
-                <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: 'white', fontSize: '10px', color: '#888' }}>Wolf</td>
+                <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: 'var(--color-surface)', fontSize: '10px', color: 'var(--color-text-tertiary)' }}>Wolf</td>
                 {Array.from({ length: 18 }, (_, i) => i + 1).map(h => {
                   const hr = wolfResults.holes?.[h]
                   const wolfId = hr?.wolf || getWolfForHole(wolfMatch, h, liveRound)
                   const name = getPlayerName(liveRound, wolfId)
                   return (
-                    <td key={h} style={{ padding: '4px 3px', textAlign: 'center', fontSize: '10px', color: '#6a1b9a' }}>
+                    <td key={h} style={{ padding: '4px 3px', textAlign: 'center', fontSize: '10px', color: 'var(--color-wolf)' }}>
                       {name?.charAt(0) || '?'}
                     </td>
                   )
                 })}
               </tr>
               <tr>
-                <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: 'white', fontSize: '10px', color: '#888' }}>Result</td>
+                <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: 'var(--color-surface)', fontSize: '10px', color: 'var(--color-text-tertiary)' }}>Result</td>
                 {Array.from({ length: 18 }, (_, i) => i + 1).map(h => {
                   const hr = wolfResults.holes?.[h]
                   if (!hr || hr.status !== 'complete') {
-                    return <td key={h} style={{ padding: '4px 3px', textAlign: 'center', color: '#ddd' }}>-</td>
+                    return <td key={h} style={{ padding: '4px 3px', textAlign: 'center', color: 'var(--color-border)' }}>-</td>
                   }
                   const decLabel = hr.decision === 'blind' ? 'B' : hr.decision === 'lone' ? 'L' : 'P'
                   return (
@@ -746,8 +746,8 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                       padding: '4px 3px',
                       textAlign: 'center',
                       fontWeight: '600',
-                      color: hr.winner === 'wolf' ? '#2e7d32' : hr.winner === 'field' ? '#c62828' : '#999',
-                      background: hr.winner === 'wolf' ? '#e8f5e9' : hr.winner === 'field' ? '#ffebee' : 'transparent'
+                      color: hr.winner === 'wolf' ? 'var(--color-nassau)' : hr.winner === 'field' ? '#c62828' : 'var(--color-text-tertiary)',
+                      background: hr.winner === 'wolf' ? 'var(--color-success-light)' : hr.winner === 'field' ? 'var(--color-danger-light)' : 'transparent'
                     }}>
                       {hr.winner === 'wolf' ? 'W' : hr.winner === 'field' ? 'L' : 'T'}{decLabel}
                     </td>
@@ -763,8 +763,8 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
       {showCancelConfirm && (
         <div className="modal-overlay" onClick={() => setShowCancelConfirm(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '350px' }}>
-            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #c62828 0%, #e53935 100%)' }}>
-              <h3 style={{ color: 'white', margin: 0 }}>Cancel Wolf Game?</h3>
+            <div className="modal-header" style={{ background: 'var(--color-danger)' }}>
+              <h3 style={{ color: 'var(--color-text-on-primary)', margin: 0 }}>Cancel Wolf Game?</h3>
             </div>
             <div className="modal-body" style={{ textAlign: 'center' }}>
               <p>This will remove the Wolf game and all results. This cannot be undone.</p>
@@ -775,13 +775,13 @@ export default function WolfTracker({ liveRound, setLiveRound, wolfMatch, setWol
                   onChange={e => setCancelPinInput(e.target.value)}
                   placeholder="Enter Admin PIN"
                   onKeyDown={e => e.key === 'Enter' && cancelMatch()}
-                  style={{ width: '100%', padding: '10px', fontSize: '16px', textAlign: 'center', borderRadius: '6px', border: '2px solid #ddd', marginBottom: '15px' }}
+                  style={{ width: '100%', padding: '10px', fontSize: '16px', textAlign: 'center', borderRadius: '6px', border: '2px solid var(--color-border)', marginBottom: '15px' }}
                   autoFocus
                 />
               )}
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button className="btn" onClick={() => setShowCancelConfirm(false)} style={{ flex: 1 }}>Keep Game</button>
-                <button className="btn" onClick={cancelMatch} style={{ flex: 1, background: '#e74c3c', color: 'white' }}>Cancel Game</button>
+                <button className="btn" onClick={cancelMatch} style={{ flex: 1, background: 'var(--color-danger)', color: 'var(--color-text-on-primary)' }}>Cancel Game</button>
               </div>
             </div>
           </div>

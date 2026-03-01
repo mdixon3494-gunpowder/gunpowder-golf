@@ -5,47 +5,30 @@ import { generateTeams } from '../utils/teamGeneration'
 import { formatHandicap, formatCourseHandicap, getEffectiveHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
 import { FORMAT_CONFIGS } from '../utils/formatScoring'
 
-function PlayerCheckInPill({ player, isSelected, isInManualTeam, onToggle, showSkill, courseTees }) {
-  const playerTee = player.defaultTee || 'blue'
-  const handicapIndex = player.handicap
-  const courseHandicap = getCourseHandicapForTee(handicapIndex, playerTee, courseTees)
-
-  const hasHandicap = handicapIndex !== undefined && handicapIndex !== null
-  const hcpLine = hasHandicap
-    ? `${formatHandicap(handicapIndex)} / ${formatCourseHandicap(courseHandicap)}`
-    : `Skill ${player.skillRating?.toFixed(1) || '5.0'}`
-  const hoverText = hasHandicap
-    ? `Index: ${formatHandicap(handicapIndex)} | Course: ${formatCourseHandicap(courseHandicap)}`
-    : `Skill: ${player.skillRating?.toFixed(1) || '5.0'}`
-
-  const borderColor = isInManualTeam ? '#9b59b6' : isSelected ? '#27ae60' : '#ddd'
-  const bgColor = isInManualTeam ? '#f3e5f5' : isSelected ? '#e8f8f5' : 'white'
-  const textColor = isInManualTeam ? '#9b59b6' : isSelected ? '#27ae60' : '#666'
+function PlayerCheckInPill({ player, isSelected, isInManualTeam, onToggle, courseTees }) {
+  const borderColor = isInManualTeam ? 'var(--color-accent-purple)' : isSelected ? 'var(--color-primary)' : 'var(--color-border)'
+  const bgColor = isInManualTeam ? '#F3EEFF' : isSelected ? 'var(--color-primary-light)' : 'var(--color-surface)'
+  const textColor = isInManualTeam ? 'var(--color-accent-purple)' : isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)'
 
   return (
     <button
       onClick={() => !isInManualTeam && onToggle()}
-      title={hoverText}
       style={{
-        padding: showSkill ? '6px 14px 4px' : '10px 14px',
-        borderRadius: '20px',
+        padding: '10px 14px',
+        borderRadius: 'var(--radius-full)',
         border: `2px solid ${borderColor}`,
         background: bgColor,
         color: textColor,
-        fontSize: '13px',
+        fontSize: 'var(--font-size-sm)',
         fontWeight: isSelected || isInManualTeam ? '600' : 'normal',
         cursor: isInManualTeam ? 'not-allowed' : 'pointer',
         opacity: isInManualTeam ? 0.7 : 1,
+        minHeight: '44px',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        lineHeight: 1.3
+        alignItems: 'center'
       }}
     >
-      <span>{isSelected ? '✓ ' : ''}{player.name}</span>
-      {showSkill && (
-        <span style={{ fontSize: '10px', opacity: 0.8, fontWeight: '400' }}>{hcpLine}</span>
-      )}
+      {isSelected ? '✓ ' : ''}{player.name}
     </button>
   )
 }
@@ -53,7 +36,7 @@ function PlayerCheckInPill({ player, isSelected, isInManualTeam, onToggle, showS
 function ManualTeamCard({ team, onDelete }) {
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%)',
+      background: 'var(--color-accent-purple)',
       color: 'white',
       padding: '15px',
       borderRadius: '10px',
@@ -101,13 +84,13 @@ function CreateManualTeamForm({ availablePlayers, onSave, onCancel, courseTees }
   }
 
   return (
-    <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '10px' }}>
+    <div style={{ background: 'var(--color-surface-sunken)', padding: '15px', borderRadius: '10px' }}>
       <h4 style={{ marginBottom: '10px' }}>Select 3-4 Players</h4>
       {availablePlayers.map(player => (
         <div
           key={player.id}
           style={{
-            background: selectedIds.includes(player.id) ? '#d4edda' : 'white',
+            background: selectedIds.includes(player.id) ? 'var(--color-success-light)' : 'var(--color-surface)',
             padding: '10px',
             borderRadius: '6px',
             marginBottom: '8px',
@@ -174,20 +157,20 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px', maxHeight: '90vh', overflow: 'auto' }}>
-        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)' }}>
+        <div className="modal-header" style={{ background: 'var(--color-skins)' }}>
           <h2 style={{ margin: 0, color: 'white' }}>{skinsMatch ? 'Edit' : 'Start'} Skins Match</h2>
           <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
         </div>
         <div style={{ padding: '20px' }}>
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Cost per Skin ($)</label>
-            <input type="number" value={settings.costPerSkin} onChange={(e) => setSettings({ ...settings, costPerSkin: e.target.value })} placeholder="1.00" style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '16px' }} />
+            <input type="number" value={settings.costPerSkin} onChange={(e) => setSettings({ ...settings, costPerSkin: e.target.value })} placeholder="1.00" style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '16px' }} />
           </div>
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Carryovers</label>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setSettings({ ...settings, carryovers: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.carryovers ? '2px solid #f39c12' : '2px solid #ddd', background: settings.carryovers ? '#fff8e1' : 'white', fontWeight: settings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-              <button onClick={() => setSettings({ ...settings, carryovers: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.carryovers ? '2px solid #f39c12' : '2px solid #ddd', background: !settings.carryovers ? '#fff8e1' : 'white', fontWeight: !settings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+              <button onClick={() => setSettings({ ...settings, carryovers: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.carryovers ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+              <button onClick={() => setSettings({ ...settings, carryovers: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !settings.carryovers ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: !settings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>No</button>
             </div>
           </div>
           {settings.carryovers && (
@@ -195,16 +178,16 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave }) {
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap Unwon Skins</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: settings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                  <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: !settings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: !settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                  <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.wrapUnwonSkins ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                  <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !settings.wrapUnwonSkins ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: !settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                 </div>
               </div>
               {settings.wrapUnwonSkins && (
                 <div style={{ marginBottom: '20px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap To</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => setSettings({ ...settings, wrapTo: 'front' })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapTo === 'front' ? '2px solid #f39c12' : '2px solid #ddd', background: settings.wrapTo === 'front' ? '#fff8e1' : 'white', fontWeight: settings.wrapTo === 'front' ? '600' : 'normal', cursor: 'pointer' }}>Front 9</button>
-                    <button onClick={() => setSettings({ ...settings, wrapTo: 'back' })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapTo === 'back' ? '2px solid #f39c12' : '2px solid #ddd', background: settings.wrapTo === 'back' ? '#fff8e1' : 'white', fontWeight: settings.wrapTo === 'back' ? '600' : 'normal', cursor: 'pointer' }}>Back 9</button>
+                    <button onClick={() => setSettings({ ...settings, wrapTo: 'front' })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapTo === 'front' ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.wrapTo === 'front' ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.wrapTo === 'front' ? '600' : 'normal', cursor: 'pointer' }}>Front 9</button>
+                    <button onClick={() => setSettings({ ...settings, wrapTo: 'back' })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapTo === 'back' ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.wrapTo === 'back' ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.wrapTo === 'back' ? '600' : 'normal', cursor: 'pointer' }}>Back 9</button>
                   </div>
                 </div>
               )}
@@ -262,25 +245,25 @@ function SkinsOptInSection({ selectedPlayers, activePlayers, skinsMatch, setSkin
 
   if (!skinsMatch) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+      <div style={{ background: 'var(--color-skins)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
         <h3 style={{ marginBottom: '10px', color: 'white' }}>Side Skins</h3>
         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>Set up a side skins competition that runs alongside the league round.</p>
-        <button className="btn" onClick={() => setShowSetup(true)} style={{ background: 'white', color: '#e67e22', fontWeight: '600' }}>Set Up Side Skins Match</button>
+        <button className="btn" onClick={() => setShowSetup(true)} style={{ background: 'white', color: 'var(--color-skins)', fontWeight: '600' }}>Set Up Side Skins Match</button>
         {showSetup && <SkinsSetupModal onClose={() => setShowSetup(false)} skinsMatch={null} onSave={setSkinsMatch} />}
       </div>
     )
   }
 
   return (
-    <div style={{ background: '#fff8e1', border: '2px solid #f39c12', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+    <div style={{ background: 'var(--color-warning-light)', border: '2px solid var(--color-skins)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0, color: '#e67e22' }}>Side Skins Match Active</h3>
+        <h3 style={{ margin: 0, color: 'var(--color-skins)' }}>Side Skins Match Active</h3>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => setShowSetup(true)} style={{ background: '#f39c12', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Edit</button>
-          <button onClick={cancelSkins} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Cancel</button>
+          <button onClick={() => setShowSetup(true)} style={{ background: 'var(--color-skins)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Edit</button>
+          <button onClick={cancelSkins} style={{ background: 'var(--color-danger)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Cancel</button>
         </div>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '13px' }}>
         <span>${skinsMatch.settings.costPerSkin}/skin</span>
         {skinsMatch.settings.carryovers ? <span>| Carryovers ON</span> : <span>| No carryovers</span>}
       </div>
@@ -291,16 +274,16 @@ function SkinsOptInSection({ selectedPlayers, activePlayers, skinsMatch, setSkin
             const inSkins = skinsMatch.participants.includes(String(player.id))
             const canToggle = !liveRound || isAdmin
             return (
-              <button key={player.id} onClick={() => togglePlayer(player.id)} disabled={!canToggle} style={{ padding: '10px 14px', borderRadius: '20px', border: inSkins ? '2px solid #27ae60' : '2px solid #ddd', background: inSkins ? '#e8f8f5' : 'white', color: inSkins ? '#27ae60' : '#666', fontSize: '13px', fontWeight: inSkins ? '600' : 'normal', cursor: canToggle ? 'pointer' : 'not-allowed', opacity: canToggle ? 1 : 0.7 }}>
+              <button key={player.id} onClick={() => togglePlayer(player.id)} disabled={!canToggle} style={{ padding: '10px 14px', borderRadius: '20px', border: inSkins ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: inSkins ? 'var(--color-success-light)' : 'var(--color-surface)', color: inSkins ? 'var(--color-primary)' : 'var(--color-text-secondary)', fontSize: '13px', fontWeight: inSkins ? '600' : 'normal', cursor: canToggle ? 'pointer' : 'not-allowed', opacity: canToggle ? 1 : 0.7 }}>
                 {inSkins ? '✓ ' : ''}{player.name}
               </button>
             )
           })}
         </div>
       </div>
-      <div style={{ textAlign: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px', fontSize: '13px' }}>
+      <div style={{ textAlign: 'center', padding: '10px', background: 'var(--color-surface-sunken)', borderRadius: '8px', fontSize: '13px' }}>
         <strong>{skinsMatch.participants.length}</strong> player{skinsMatch.participants.length !== 1 ? 's' : ''} in skins
-        {skinsMatch.participants.length >= 2 && <span style={{ color: '#27ae60' }}> - Ready to play</span>}
+        {skinsMatch.participants.length >= 2 && <span style={{ color: 'var(--color-primary)' }}> - Ready to play</span>}
       </div>
       {showSetup && <SkinsSetupModal onClose={() => setShowSetup(false)} skinsMatch={skinsMatch} onSave={setSkinsMatch} />}
     </div>
@@ -327,7 +310,7 @@ function NassauSetupModal({ onClose, nassauMatch, onSave }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)' }}>
+        <div className="modal-header" style={{ background: 'var(--color-nassau)' }}>
           <h2 style={{ margin: 0, color: 'white' }}>{nassauMatch ? 'Edit' : 'Set Up'} Side Nassau</h2>
           <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
         </div>
@@ -340,25 +323,25 @@ function NassauSetupModal({ onClose, nassauMatch, onSave }) {
               onChange={(e) => setSettings({ ...settings, betAmount: parseFloat(e.target.value) || 2 })}
               min="0.5"
               step="0.5"
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '16px' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '16px' }}
             />
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
               Each pair bets this amount on front 9, back 9, and overall (3 bets total)
             </div>
           </div>
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Use Handicaps</label>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid #2e7d32' : '2px solid #ddd', background: settings.useHandicaps ? '#e8f5e9' : 'white', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-              <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid #2e7d32' : '2px solid #ddd', background: !settings.useHandicaps ? '#e8f5e9' : 'white', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+              <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid var(--color-nassau)' : '2px solid var(--color-border)', background: settings.useHandicaps ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+              <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid var(--color-nassau)' : '2px solid var(--color-border)', background: !settings.useHandicaps ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
             </div>
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
               Net strokes applied per hole based on player handicaps
             </div>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleSave} style={{ flex: 1, background: '#2e7d32' }}>
+            <button className="btn btn-primary" onClick={handleSave} style={{ flex: 1, background: 'var(--color-nassau)' }}>
               {nassauMatch ? 'Save Changes' : 'Create Side Nassau'}
             </button>
           </div>
@@ -401,25 +384,25 @@ function NassauOptInSection({ selectedPlayers, activePlayers, nassauMatch, setNa
 
   if (!nassauMatch) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+      <div style={{ background: 'var(--color-nassau)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
         <h3 style={{ marginBottom: '10px', color: 'white' }}>Side Nassau</h3>
         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>Set up a side Nassau match — 3-bet match play (front 9, back 9, overall) between every pair.</p>
-        <button className="btn" onClick={() => setShowSetup(true)} style={{ background: 'white', color: '#2e7d32', fontWeight: '600' }}>Set Up Side Nassau</button>
+        <button className="btn" onClick={() => setShowSetup(true)} style={{ background: 'white', color: 'var(--color-nassau)', fontWeight: '600' }}>Set Up Side Nassau</button>
         {showSetup && <NassauSetupModal onClose={() => setShowSetup(false)} nassauMatch={null} onSave={setNassauMatch} />}
       </div>
     )
   }
 
   return (
-    <div style={{ background: '#e8f5e9', border: '2px solid #2e7d32', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+    <div style={{ background: 'var(--color-success-light)', border: '2px solid var(--color-nassau)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0, color: '#2e7d32' }}>Side Nassau Active</h3>
+        <h3 style={{ margin: 0, color: 'var(--color-nassau)' }}>Side Nassau Active</h3>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => setShowSetup(true)} style={{ background: '#2e7d32', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Edit</button>
-          <button onClick={cancelNassau} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Cancel</button>
+          <button onClick={() => setShowSetup(true)} style={{ background: 'var(--color-nassau)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Edit</button>
+          <button onClick={cancelNassau} style={{ background: 'var(--color-danger)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Cancel</button>
         </div>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '13px' }}>
         <span>${nassauMatch.settings.betAmount}/bet</span>
         <span>| 3 bets/pair (front, back, overall)</span>
         {nassauMatch.settings.useHandicaps && <span>| Net (handicaps)</span>}
@@ -431,16 +414,16 @@ function NassauOptInSection({ selectedPlayers, activePlayers, nassauMatch, setNa
             const inNassau = nassauMatch.participants.includes(String(player.id))
             const canToggle = !liveRound || isAdmin
             return (
-              <button key={player.id} onClick={() => togglePlayer(player.id)} disabled={!canToggle} style={{ padding: '10px 14px', borderRadius: '20px', border: inNassau ? '2px solid #2e7d32' : '2px solid #ddd', background: inNassau ? '#e8f5e9' : 'white', color: inNassau ? '#2e7d32' : '#666', fontSize: '13px', fontWeight: inNassau ? '600' : 'normal', cursor: canToggle ? 'pointer' : 'not-allowed', opacity: canToggle ? 1 : 0.7 }}>
+              <button key={player.id} onClick={() => togglePlayer(player.id)} disabled={!canToggle} style={{ padding: '10px 14px', borderRadius: '20px', border: inNassau ? '2px solid var(--color-nassau)' : '2px solid var(--color-border)', background: inNassau ? 'var(--color-success-light)' : 'var(--color-surface)', color: inNassau ? 'var(--color-nassau)' : 'var(--color-text-secondary)', fontSize: '13px', fontWeight: inNassau ? '600' : 'normal', cursor: canToggle ? 'pointer' : 'not-allowed', opacity: canToggle ? 1 : 0.7 }}>
                 {inNassau ? '✓ ' : ''}{player.name}
               </button>
             )
           })}
         </div>
       </div>
-      <div style={{ textAlign: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px', fontSize: '13px' }}>
+      <div style={{ textAlign: 'center', padding: '10px', background: 'var(--color-surface-sunken)', borderRadius: '8px', fontSize: '13px' }}>
         <strong>{nassauMatch.participants.length}</strong> player{nassauMatch.participants.length !== 1 ? 's' : ''} in Nassau
-        {nassauMatch.participants.length >= 2 && <span style={{ color: '#2e7d32' }}> - Ready to play</span>}
+        {nassauMatch.participants.length >= 2 && <span style={{ color: 'var(--color-nassau)' }}> - Ready to play</span>}
       </div>
       {showSetup && <NassauSetupModal onClose={() => setShowSetup(false)} nassauMatch={nassauMatch} onSave={setNassauMatch} />}
     </div>
@@ -468,7 +451,7 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
         const p2 = availablePlayers.find(p => p.id === parseInt(request.player2))
         return (
           <div key={request.id} style={{
-            background: '#fff3cd',
+            background: 'var(--color-warning-light)',
             padding: '12px',
             borderRadius: '8px',
             marginBottom: '8px',
@@ -488,7 +471,7 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
         )
       })}
 
-      <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '10px' }}>
+      <div style={{ background: 'var(--color-surface-sunken)', padding: '15px', borderRadius: '10px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
           <select
             value={player1}
@@ -496,7 +479,7 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
             style={{
               padding: '10px',
               borderRadius: '6px',
-              border: '1px solid #ddd',
+              border: '1px solid var(--color-border)',
               fontSize: '14px'
             }}
           >
@@ -511,7 +494,7 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
             style={{
               padding: '10px',
               borderRadius: '6px',
-              border: '1px solid #ddd',
+              border: '1px solid var(--color-border)',
               fontSize: '14px'
             }}
           >
@@ -574,15 +557,15 @@ function GeneratePage() {
       <div>
         <h2 style={{ marginBottom: '20px' }}>Player Check-In</h2>
         <div style={{
-          background: '#fff3cd',
-          border: '2px solid #f39c12',
+          background: 'var(--color-warning-light)',
+          border: '2px solid var(--color-skins)',
           padding: '30px',
           borderRadius: '10px',
           textAlign: 'center'
         }}>
           <div style={{ fontSize: '48px', marginBottom: '15px' }}>⛳</div>
-          <h3 style={{ marginBottom: '15px', color: '#856404' }}>Round In Progress</h3>
-          <p style={{ color: '#856404', marginBottom: '20px' }}>
+          <h3 style={{ marginBottom: '15px', color: 'var(--color-warning)' }}>Round In Progress</h3>
+          <p style={{ color: 'var(--color-warning)', marginBottom: '20px' }}>
             A live round is currently in progress. Check-in is not available until the current round is finished.
           </p>
           <button
@@ -704,7 +687,7 @@ function GeneratePage() {
         </h3>
 
         {!isAdmin && (
-          <p style={{ color: '#666', marginBottom: '15px', fontSize: '14px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '14px' }}>
             Tap your name to check in for today's round
           </p>
         )}
@@ -718,35 +701,35 @@ function GeneratePage() {
             {/* Count bar with All/None buttons */}
             <div style={{
               padding: '10px 15px',
-              background: '#e3f2fd',
+              background: 'var(--color-info-light)',
               borderRadius: '8px',
               marginBottom: '12px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <span style={{ color: '#1976d2', fontWeight: '600' }}>
+              <span style={{ color: 'var(--color-info)', fontWeight: '600' }}>
                 {selectedPlayers.length} of {activePlayers.length} Checked In
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {selectedPlayers.length >= 6 && (
-                  <span style={{ color: '#27ae60', fontSize: '13px' }}>Ready</span>
+                  <span style={{ color: 'var(--color-primary)', fontSize: '13px' }}>Ready</span>
                 )}
                 {isAdmin && (
                   <>
                     <button
                       onClick={handleSelectAll}
                       style={{
-                        padding: '4px 10px', borderRadius: '4px', border: '1px solid #1976d2',
-                        background: 'white', color: '#1976d2', fontSize: '12px', fontWeight: '600',
+                        padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--color-info)',
+                        background: 'var(--color-surface)', color: 'var(--color-info)', fontSize: '12px', fontWeight: '600',
                         cursor: 'pointer'
                       }}
                     >All</button>
                     <button
                       onClick={handleSelectNone}
                       style={{
-                        padding: '4px 10px', borderRadius: '4px', border: '1px solid #999',
-                        background: 'white', color: '#666', fontSize: '12px', fontWeight: '600',
+                        padding: '4px 10px', borderRadius: '4px', border: '1px solid var(--color-text-tertiary)',
+                        background: 'var(--color-surface)', color: 'var(--color-text-secondary)', fontSize: '12px', fontWeight: '600',
                         cursor: 'pointer'
                       }}
                     >None</button>
@@ -758,7 +741,7 @@ function GeneratePage() {
             {/* Checked In group */}
             {checkedInPlayersList.length > 0 && (
               <div style={{ marginBottom: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#27ae60', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-primary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Checked In ({checkedInPlayersList.length})
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -769,7 +752,6 @@ function GeneratePage() {
                       isSelected={true}
                       isInManualTeam={playersInManualTeams.has(player.id)}
                       onToggle={() => togglePlayerSelection(player.id)}
-                      showSkill={isAdmin}
                       courseTees={courseTees}
                     />
                   ))}
@@ -780,7 +762,7 @@ function GeneratePage() {
             {/* Not Checked In group */}
             {notCheckedInPlayersList.length > 0 && (
               <div style={{ marginBottom: '4px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#999', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-tertiary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Not Checked In ({notCheckedInPlayersList.length})
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -791,7 +773,6 @@ function GeneratePage() {
                       isSelected={false}
                       isInManualTeam={playersInManualTeams.has(player.id)}
                       onToggle={() => togglePlayerSelection(player.id)}
-                      showSkill={isAdmin}
                       courseTees={courseTees}
                     />
                   ))}
@@ -869,8 +850,8 @@ function GeneratePage() {
           {/* Round Format Override (admin only) */}
           {isAdmin && (
             <div style={{
-              background: 'white',
-              border: '1px solid #e0e0e0',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
               borderRadius: '10px',
               padding: '15px',
               marginBottom: '20px'
@@ -885,7 +866,7 @@ function GeneratePage() {
                 }}
               >
                 <h3 style={{ margin: 0, fontSize: '16px' }}>Round Format</h3>
-                <span style={{ fontSize: '13px', color: '#888' }}>
+                <span style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>
                   {roundFormatOverride
                     ? FORMAT_CONFIGS[roundFormatOverride.format]?.label || 'Custom'
                     : 'Big Boys (default)'}
@@ -906,9 +887,9 @@ function GeneratePage() {
                           style={{
                             padding: '6px 12px',
                             borderRadius: '6px',
-                            border: `2px solid ${roundFormatOverride.format === key ? '#27ae60' : '#e0e0e0'}`,
-                            background: roundFormatOverride.format === key ? '#f0fff4' : 'white',
-                            color: roundFormatOverride.format === key ? '#27ae60' : '#666',
+                            border: `2px solid ${roundFormatOverride.format === key ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                            background: roundFormatOverride.format === key ? 'var(--color-primary-light)' : 'var(--color-surface)',
+                            color: roundFormatOverride.format === key ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                             fontWeight: roundFormatOverride.format === key ? '600' : 'normal',
                             cursor: 'pointer',
                             fontSize: '12px'
@@ -926,7 +907,7 @@ function GeneratePage() {
                         type="checkbox"
                         checked={roundFormatOverride.useHandicaps || false}
                         onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, useHandicaps: e.target.checked })}
-                        style={{ width: '16px', height: '16px', accentColor: '#27ae60' }}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary)' }}
                       />
                       <span style={{ fontSize: '13px' }}>Use Handicaps</span>
                     </label>
@@ -938,7 +919,7 @@ function GeneratePage() {
                       <select
                         value={roundFormatOverride.retireesScoresToCount || 2}
                         onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, retireesScoresToCount: parseInt(e.target.value) })}
-                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '13px' }}
                       >
                         <option value={1}>1</option>
                         <option value={2}>2</option>
@@ -953,7 +934,7 @@ function GeneratePage() {
                         type="checkbox"
                         checked={roundFormatOverride.useNet !== false}
                         onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, useNet: e.target.checked })}
-                        style={{ width: '16px', height: '16px', accentColor: '#27ae60' }}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary)' }}
                       />
                       <span style={{ fontSize: '13px' }}>Net Scoring</span>
                     </label>
@@ -974,7 +955,7 @@ function GeneratePage() {
           </button>
 
           {selectedPlayers.length < 3 && selectedPlayers.length > 0 && (
-            <p style={{ textAlign: 'center', color: '#e74c3c', marginTop: '10px' }}>
+            <p style={{ textAlign: 'center', color: 'var(--color-danger)', marginTop: '10px' }}>
               Need at least 3 players to generate teams
             </p>
           )}

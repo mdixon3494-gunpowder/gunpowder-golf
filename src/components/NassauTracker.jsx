@@ -242,13 +242,13 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
     return (
       <div>
         <div style={{
-          background: '#e8f5e9',
+          background: 'var(--color-success-light)',
           padding: '20px',
           borderRadius: '10px',
           textAlign: 'center'
         }}>
           <h3 style={{ marginBottom: '15px' }}>No {isCasualGame ? 'Nassau' : 'Side Nassau'} Match Active</h3>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '20px' }}>
             Set up a {isCasualGame ? 'Nassau' : 'Side Nassau'} match — 3-bet match play (front 9, back 9, overall) between every pair of players.
           </p>
           <button className="btn btn-primary" onClick={() => setShowSetup(true)}>
@@ -259,9 +259,9 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
         {showSetup && (
           <div className="modal-overlay" onClick={() => setShowSetup(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-              <div className="modal-header" style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)' }}>
-                <h3 style={{ color: 'white', margin: 0 }}>{isCasualGame ? 'Nassau' : 'Side Nassau'} Match Settings</h3>
-                <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'white' }}>&times;</button>
+              <div className="modal-header" style={{ background: 'var(--color-nassau)' }}>
+                <h3 style={{ color: 'var(--color-text-on-primary)', margin: 0 }}>{isCasualGame ? 'Nassau' : 'Side Nassau'} Match Settings</h3>
+                <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'var(--color-text-on-primary)' }}>&times;</button>
               </div>
               <div className="modal-body">
                 <div className="input-group">
@@ -273,17 +273,17 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                     min="0.5"
                     step="0.5"
                   />
-                  <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                     Each pair bets this amount on front 9, back 9, and overall (3 bets total)
                   </div>
                 </div>
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Use Handicaps</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid #2e7d32' : '2px solid #ddd', background: settings.useHandicaps ? '#e8f5e9' : 'white', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                    <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid #2e7d32' : '2px solid #ddd', background: !settings.useHandicaps ? '#e8f5e9' : 'white', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                    <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid var(--color-nassau)' : '2px solid var(--color-border)', background: settings.useHandicaps ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid var(--color-nassau)' : '2px solid var(--color-border)', background: !settings.useHandicaps ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                     Net strokes applied per hole based on player handicaps
                   </div>
                 </div>
@@ -308,10 +308,10 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
   return (
     <div>
       {/* Nassau Header */}
-      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+      <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
         <div style={{
-          background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)',
-          color: 'white',
+          background: 'var(--color-nassau)',
+          color: 'var(--color-text-on-primary)',
           padding: '12px 15px',
           fontSize: '16px',
           fontWeight: '600',
@@ -326,9 +326,9 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
         </div>
 
         {/* Settings Summary */}
-        <div style={{ padding: '10px 15px', background: '#e8f5e9', fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <div style={{ padding: '10px 15px', background: 'var(--color-success-light)', fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
           <span>3 bets/pair (front, back, overall)</span>
-          {nassauMatch.settings.useHandicaps && <span style={{ color: '#2e7d32', fontWeight: '600' }}>Net (handicaps)</span>}
+          {nassauMatch.settings.useHandicaps && <span style={{ color: 'var(--color-nassau)', fontWeight: '600' }}>Net (handicaps)</span>}
           {(nassauMatch.presses || []).length > 0 && (
             <span style={{ color: '#e65100', fontWeight: '600' }}>
               {nassauMatch.presses.length} active {nassauMatch.presses.length === 1 ? 'press' : 'presses'}
@@ -338,7 +338,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
             <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
               <button
                 onClick={() => { setShowCancelConfirm(true); setCancelPinInput('') }}
-                style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+                style={{ background: 'var(--color-danger)', color: 'var(--color-text-on-primary)', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
               >
                 Cancel Match
               </button>
@@ -349,7 +349,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
 
       {/* Player Management */}
       {(isAdmin || isCasualGame) && (
-        <div style={{ background: 'white', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
           <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '10px' }}>
             {isCasualGame ? 'Players' : 'Manage Players (Admin)'}
           </div>
@@ -368,9 +368,9 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                     style={{
                       padding: '6px 12px',
                       borderRadius: '20px',
-                      border: `2px solid ${isSettled ? '#ccc' : inNassau ? '#2e7d32' : '#ddd'}`,
-                      background: isSettled ? '#f5f5f5' : inNassau ? '#e8f5e9' : 'white',
-                      color: isSettled ? '#999' : inNassau ? '#2e7d32' : '#666',
+                      border: `2px solid ${isSettled ? '#ccc' : inNassau ? 'var(--color-nassau)' : 'var(--color-border)'}`,
+                      background: isSettled ? '#f5f5f5' : inNassau ? 'var(--color-success-light)' : 'var(--color-surface)',
+                      color: isSettled ? 'var(--color-text-tertiary)' : inNassau ? 'var(--color-nassau)' : 'var(--color-text-secondary)',
                       fontWeight: inNassau ? '600' : 'normal',
                       cursor: isSettled ? 'default' : 'pointer',
                       fontSize: '13px'
@@ -382,7 +382,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                   {inNassau && !isSettled && (isAdmin || isCasualGame) && (
                     <button
                       onClick={() => { setSettlePlayer(player); setSettleLastHole(currentHole); setShowSettleModal(true) }}
-                      style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #e74c3c', background: 'white', color: '#e74c3c', fontSize: '10px', cursor: 'pointer' }}
+                      style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-danger)', background: 'var(--color-surface)', color: 'var(--color-danger)', fontSize: '10px', cursor: 'pointer' }}
                     >
                       Settle
                     </button>
@@ -410,10 +410,10 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                   style={{
                     padding: '8px 14px',
                     borderRadius: '8px',
-                    border: `2px solid ${isActive ? '#2e7d32' : '#ddd'}`,
-                    background: isActive ? '#e8f5e9' : 'white',
+                    border: `2px solid ${isActive ? 'var(--color-nassau)' : 'var(--color-border)'}`,
+                    background: isActive ? 'var(--color-success-light)' : 'var(--color-surface)',
                     fontWeight: isActive ? '600' : 'normal',
-                    color: isActive ? '#2e7d32' : '#333',
+                    color: isActive ? 'var(--color-nassau)' : 'var(--color-text-primary)',
                     cursor: 'pointer',
                     fontSize: '12px',
                     whiteSpace: 'nowrap'
@@ -429,7 +429,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
 
       {/* Hole-by-Hole for Selected Pair */}
       {activePair && (
-        <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
           <div style={{ padding: '12px 15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: '600', fontSize: '14px' }}>
               {getPlayerName(liveRound, activePair.player1)} vs {getPlayerName(liveRound, activePair.player2)}
@@ -443,8 +443,8 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                   style={{
                     padding: '4px 10px',
                     borderRadius: '4px',
-                    border: nassauView === v ? '1px solid #2e7d32' : '1px solid #ddd',
-                    background: nassauView === v ? '#e8f5e9' : 'white',
+                    border: nassauView === v ? '1px solid var(--color-nassau)' : '1px solid var(--color-border)',
+                    background: nassauView === v ? 'var(--color-success-light)' : 'var(--color-surface)',
                     fontSize: '11px',
                     fontWeight: nassauView === v ? '600' : 'normal',
                     cursor: 'pointer'
@@ -466,7 +466,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
               const status = getSegmentStatus(seg.data, activePair.player1, activePair)
               return (
                 <div key={seg.label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '10px', color: '#999', textTransform: 'uppercase' }}>{seg.label}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>{seg.label}</div>
                   <div style={{ fontWeight: '700', fontSize: '14px', color: status.color }}>{status.text}</div>
                 </div>
               )
@@ -487,7 +487,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
               <tbody>
                 {/* Player 1 row */}
                 <tr>
-                  <td style={{ padding: '6px 8px', fontWeight: '600', position: 'sticky', left: 0, background: 'white', borderRight: '1px solid #eee' }}>
+                  <td style={{ padding: '6px 8px', fontWeight: '600', position: 'sticky', left: 0, background: 'var(--color-surface)', borderRight: '1px solid #eee' }}>
                     {getPlayerName(liveRound, activePair.player1).split(' ')[0]}
                   </td>
                   {getHoleRange().map(h => {
@@ -507,7 +507,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                 </tr>
                 {/* Player 2 row */}
                 <tr>
-                  <td style={{ padding: '6px 8px', fontWeight: '600', position: 'sticky', left: 0, background: 'white', borderRight: '1px solid #eee' }}>
+                  <td style={{ padding: '6px 8px', fontWeight: '600', position: 'sticky', left: 0, background: 'var(--color-surface)', borderRight: '1px solid #eee' }}>
                     {getPlayerName(liveRound, activePair.player2).split(' ')[0]}
                   </td>
                   {getHoleRange().map(h => {
@@ -527,7 +527,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                 </tr>
                 {/* Result row */}
                 <tr style={{ borderTop: '2px solid #eee' }}>
-                  <td style={{ padding: '4px 8px', fontSize: '10px', color: '#999', position: 'sticky', left: 0, background: 'white', borderRight: '1px solid #eee' }}>Result</td>
+                  <td style={{ padding: '4px 8px', fontSize: '10px', color: 'var(--color-text-tertiary)', position: 'sticky', left: 0, background: 'var(--color-surface)', borderRight: '1px solid #eee' }}>Result</td>
                   {getHoleRange().map(h => {
                     const hResult = activePair.holeByHole[h]
                     return (
@@ -581,7 +581,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                 }
 
                 if (buttons.length === 0) {
-                  return <span style={{ fontSize: '11px', color: '#999' }}>No press available</span>
+                  return <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>No press available</span>
                 }
                 return buttons
               })()}
@@ -590,7 +590,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
 
           {/* Active Presses for this pair */}
           {activePair.presses.length > 0 && (
-            <div style={{ padding: '10px 15px', borderTop: '1px solid #eee', background: '#fff8e1' }}>
+            <div style={{ padding: '10px 15px', borderTop: '1px solid #eee', background: 'var(--color-warning-light)' }}>
               <div style={{ fontSize: '11px', fontWeight: '600', color: '#e65100', marginBottom: '6px' }}>Active Presses</div>
               {activePair.presses.map(pr => {
                 const presserName = getPlayerName(liveRound, pr.pressedBy).split(' ')[0]
@@ -602,7 +602,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                 return (
                   <div key={pr.id} style={{ fontSize: '12px', padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
                     <span>{presserName} pressed {pr.segment} h{pr.startHole}-{pr.endHole} (${pr.betAmount})</span>
-                    <span style={{ fontWeight: '600', color: pr.winner ? '#2e7d32' : '#666' }}>{statusText}</span>
+                    <span style={{ fontWeight: '600', color: pr.winner ? 'var(--color-nassau)' : 'var(--color-text-secondary)' }}>{statusText}</span>
                   </div>
                 )
               })}
@@ -613,7 +613,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
 
       {/* Overall Summary Grid */}
       {pairKeys.length > 0 && (
-        <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
           <div style={{ padding: '12px 15px', borderBottom: '1px solid #eee', fontWeight: '600', fontSize: '14px' }}>
             Match Summary
           </div>
@@ -641,7 +641,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                   const pressCount = pair.presses.length
 
                   return (
-                    <tr key={key} style={{ borderBottom: '1px solid #f0f0f0', cursor: 'pointer', background: key === activePairKey ? '#f0fff0' : 'white' }}
+                    <tr key={key} style={{ borderBottom: '1px solid #f0f0f0', cursor: 'pointer', background: key === activePairKey ? '#f0fff0' : 'var(--color-surface)' }}
                         onClick={() => setSelectedPair(key)}>
                       <td style={{ padding: '8px', fontWeight: '500' }}>{p1Name} v {p2Name}</td>
                       <td style={{ padding: '8px', textAlign: 'center', fontWeight: '700', color: fStatus.color }}>{fStatus.text}</td>
@@ -657,7 +657,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
 
           {/* Per-player net amounts */}
           <div style={{ padding: '12px 15px', borderTop: '2px solid #eee' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: '#666' }}>Player Totals</div>
+            <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '8px', color: 'var(--color-text-secondary)' }}>Player Totals</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
               {nassauPlayers.map(player => {
                 const pid = String(player.id)
@@ -668,8 +668,8 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                   <div key={pid} style={{
                     padding: '8px 12px',
                     borderRadius: '8px',
-                    background: net > 0 ? '#e8f5e9' : net < 0 ? '#ffebee' : '#f5f5f5',
-                    border: `1px solid ${net > 0 ? '#c8e6c9' : net < 0 ? '#ffcdd2' : '#e0e0e0'}`,
+                    background: net > 0 ? 'var(--color-success-light)' : net < 0 ? 'var(--color-danger-light)' : '#f5f5f5',
+                    border: `1px solid ${net > 0 ? '#c8e6c9' : net < 0 ? '#ffcdd2' : 'var(--color-border)'}`,
                     textAlign: 'center',
                     minWidth: '80px'
                   }}>
@@ -677,11 +677,11 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                     <div style={{
                       fontSize: '16px',
                       fontWeight: '700',
-                      color: net > 0 ? '#2e7d32' : net < 0 ? '#c62828' : '#666'
+                      color: net > 0 ? 'var(--color-nassau)' : net < 0 ? '#c62828' : 'var(--color-text-secondary)'
                     }}>
                       {net > 0 ? '+' : ''}{net === 0 ? 'E' : `$${net}`}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#999' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)' }}>
                       {summary.betsWon}W {summary.betsLost}L {summary.betsPushed}P
                     </div>
                   </div>
@@ -702,8 +702,8 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
       {showPinPrompt && (
         <div className="modal-overlay" onClick={() => { setShowPinPrompt(false); setPinInput(''); setPendingPlayerId(null) }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '320px' }}>
-            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)' }}>
-              <h3 style={{ color: 'white', margin: 0 }}>Enter Admin PIN</h3>
+            <div className="modal-header" style={{ background: 'var(--color-nassau)' }}>
+              <h3 style={{ color: 'var(--color-text-on-primary)', margin: 0 }}>Enter Admin PIN</h3>
             </div>
             <div className="modal-body" style={{ textAlign: 'center' }}>
               <p>PIN required to add/remove Nassau players during a live round</p>
@@ -713,7 +713,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                 onChange={e => setPinInput(e.target.value)}
                 placeholder="Enter PIN"
                 onKeyDown={e => e.key === 'Enter' && confirmToggleParticipant()}
-                style={{ width: '100%', padding: '10px', fontSize: '16px', textAlign: 'center', borderRadius: '6px', border: '2px solid #ddd', marginBottom: '15px' }}
+                style={{ width: '100%', padding: '10px', fontSize: '16px', textAlign: 'center', borderRadius: '6px', border: '2px solid var(--color-border)', marginBottom: '15px' }}
                 autoFocus
               />
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -729,8 +729,8 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
       {showCancelConfirm && (
         <div className="modal-overlay" onClick={() => setShowCancelConfirm(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '350px' }}>
-            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #c62828 0%, #e53935 100%)' }}>
-              <h3 style={{ color: 'white', margin: 0 }}>Cancel {isCasualGame ? 'Nassau' : 'Side Nassau'} Match?</h3>
+            <div className="modal-header" style={{ background: 'var(--color-danger)' }}>
+              <h3 style={{ color: 'var(--color-text-on-primary)', margin: 0 }}>Cancel {isCasualGame ? 'Nassau' : 'Side Nassau'} Match?</h3>
             </div>
             <div className="modal-body" style={{ textAlign: 'center' }}>
               <p>This will remove the {isCasualGame ? 'Nassau' : 'Side Nassau'} match and all results. This cannot be undone.</p>
@@ -741,13 +741,13 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                   onChange={e => setCancelPinInput(e.target.value)}
                   placeholder="Enter Admin PIN"
                   onKeyDown={e => e.key === 'Enter' && cancelMatch()}
-                  style={{ width: '100%', padding: '10px', fontSize: '16px', textAlign: 'center', borderRadius: '6px', border: '2px solid #ddd', marginBottom: '15px' }}
+                  style={{ width: '100%', padding: '10px', fontSize: '16px', textAlign: 'center', borderRadius: '6px', border: '2px solid var(--color-border)', marginBottom: '15px' }}
                   autoFocus
                 />
               )}
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button className="btn" onClick={() => setShowCancelConfirm(false)} style={{ flex: 1 }}>Keep Match</button>
-                <button className="btn" onClick={cancelMatch} style={{ flex: 1, background: '#e74c3c', color: 'white' }}>Cancel Match</button>
+                <button className="btn" onClick={cancelMatch} style={{ flex: 1, background: 'var(--color-danger)', color: 'var(--color-text-on-primary)' }}>Cancel Match</button>
               </div>
             </div>
           </div>
@@ -759,15 +759,15 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
         <div className="modal-overlay" onClick={() => setShowSettleModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
             <div className="modal-header" style={{ background: 'linear-gradient(135deg, #e65100 0%, #f57c00 100%)' }}>
-              <h3 style={{ color: 'white', margin: 0 }}>Settle {settlePlayer.name}</h3>
-              <button className="modal-close" onClick={() => setShowSettleModal(false)} style={{ color: 'white' }}>&times;</button>
+              <h3 style={{ color: 'var(--color-text-on-primary)', margin: 0 }}>Settle {settlePlayer.name}</h3>
+              <button className="modal-close" onClick={() => setShowSettleModal(false)} style={{ color: 'var(--color-text-on-primary)' }}>&times;</button>
             </div>
             <div className="modal-body">
               <p style={{ marginBottom: '15px' }}>Select the last hole {settlePlayer.name} will play:</p>
               <select
                 value={settleLastHole}
                 onChange={e => setSettleLastHole(parseInt(e.target.value))}
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '2px solid #ddd', marginBottom: '15px', fontSize: '14px' }}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '2px solid var(--color-border)', marginBottom: '15px', fontSize: '14px' }}
               >
                 <option value={0}>None (left before playing)</option>
                 {Array.from({ length: 18 }, (_, i) => i + 1).map(h => (
@@ -797,7 +797,7 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
                     return (
                       <div key={key} style={{ fontSize: '12px', padding: '4px 0' }}>
                         <span style={{ fontWeight: '500' }}>vs {oppName}:</span>
-                        {segments.length === 0 && <span style={{ color: '#999' }}> No segments completed</span>}
+                        {segments.length === 0 && <span style={{ color: 'var(--color-text-tertiary)' }}> No segments completed</span>}
                         {segments.map(seg => {
                           const status = getSegmentStatus(seg.data, String(settlePlayer.id), pair)
                           return (
@@ -833,24 +833,24 @@ export default function NassauTracker({ liveRound, setLiveRound, nassauMatch, se
 
   function getCellColor(hResult, player) {
     if (!hResult || hResult.status === 'inactive') return '#f9f9f9'
-    if (hResult.status === 'pending') return 'white'
+    if (hResult.status === 'pending') return 'var(--color-surface)'
     if (hResult.status === 'halved') return '#f5f5f5'
-    if (hResult.status === player) return '#e8f5e9'
-    return '#ffebee'
+    if (hResult.status === player) return 'var(--color-success-light)'
+    return 'var(--color-danger-light)'
   }
 
   function getCellTextColor(hResult, player) {
     if (!hResult || hResult.status === 'inactive') return '#ccc'
-    if (hResult.status === 'pending') return '#333'
-    if (hResult.status === 'halved') return '#666'
-    if (hResult.status === player) return '#2e7d32'
+    if (hResult.status === 'pending') return 'var(--color-text-primary)'
+    if (hResult.status === 'halved') return 'var(--color-text-secondary)'
+    if (hResult.status === player) return 'var(--color-nassau)'
     return '#c62828'
   }
 
   function getResultColor(hResult) {
     if (!hResult || hResult.status === 'inactive' || hResult.status === 'pending') return '#ccc'
-    if (hResult.status === 'halved') return '#999'
-    return '#333'
+    if (hResult.status === 'halved') return 'var(--color-text-tertiary)'
+    return 'var(--color-text-primary)'
   }
 
   function getResultSymbol(hResult) {

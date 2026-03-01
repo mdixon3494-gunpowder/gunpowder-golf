@@ -37,8 +37,8 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, cour
             disabled={index === 0}
             style={{
               padding: '4px 8px',
-              background: index === 0 ? '#e0e0e0' : '#3498db',
-              color: 'white',
+              background: index === 0 ? 'var(--color-border)' : 'var(--color-accent-blue)',
+              color: 'var(--color-text-on-primary)',
               border: 'none',
               borderRadius: '4px',
               cursor: index === 0 ? 'not-allowed' : 'pointer',
@@ -52,8 +52,8 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, cour
             disabled={index === totalTeams - 1}
             style={{
               padding: '4px 8px',
-              background: index === totalTeams - 1 ? '#e0e0e0' : '#3498db',
-              color: 'white',
+              background: index === totalTeams - 1 ? 'var(--color-border)' : 'var(--color-accent-blue)',
+              color: 'var(--color-text-on-primary)',
               border: 'none',
               borderRadius: '4px',
               cursor: index === totalTeams - 1 ? 'not-allowed' : 'pointer',
@@ -68,7 +68,7 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, cour
       <div className="team-header" style={{ paddingRight: isAdmin ? '50px' : '0' }}>
         <span style={{
           background: '#95a5a6',
-          color: 'white',
+          color: 'var(--color-text-on-primary)',
           padding: '2px 8px',
           borderRadius: '10px',
           fontSize: '12px',
@@ -156,9 +156,9 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px', maxHeight: '90vh', overflow: 'auto' }}>
-        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)' }}>
-          <h2 style={{ margin: 0, color: 'white' }}>{skinsMatch ? 'Edit' : 'Start'} Side Skins Match</h2>
-          <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
+        <div className="modal-header" style={{ background: 'var(--color-skins)' }}>
+          <h2 style={{ margin: 0, color: 'var(--color-text-on-primary)' }}>{skinsMatch ? 'Edit' : 'Start'} Side Skins Match</h2>
+          <button className="modal-close" onClick={onClose} style={{ color: 'var(--color-text-on-primary)' }}>&times;</button>
         </div>
         <div style={{ padding: '20px' }}>
           {/* Cost per skin */}
@@ -171,7 +171,7 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
               value={settings.costPerSkin}
               onChange={(e) => setSettings({ ...settings, costPerSkin: e.target.value })}
               placeholder="1.00"
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '16px' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '16px' }}
             />
           </div>
 
@@ -183,8 +183,8 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
                 onClick={() => setSettings({ ...settings, carryovers: true })}
                 style={{
                   flex: 1, padding: '12px', borderRadius: '6px',
-                  border: settings.carryovers ? '2px solid #f39c12' : '2px solid #ddd',
-                  background: settings.carryovers ? '#fff8e1' : 'white',
+                  border: settings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)',
+                  background: settings.carryovers ? 'var(--color-warning-light)' : 'var(--color-surface)',
                   fontWeight: settings.carryovers ? '600' : 'normal',
                   cursor: 'pointer'
                 }}
@@ -193,8 +193,8 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
                 onClick={() => setSettings({ ...settings, carryovers: false })}
                 style={{
                   flex: 1, padding: '12px', borderRadius: '6px',
-                  border: !settings.carryovers ? '2px solid #f39c12' : '2px solid #ddd',
-                  background: !settings.carryovers ? '#fff8e1' : 'white',
+                  border: !settings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)',
+                  background: !settings.carryovers ? 'var(--color-warning-light)' : 'var(--color-surface)',
                   fontWeight: !settings.carryovers ? '600' : 'normal',
                   cursor: 'pointer'
                 }}
@@ -209,9 +209,9 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap Unwon Skins</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: true })}
-                    style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: settings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.wrapUnwonSkins ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
                   <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: false })}
-                    style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: !settings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: !settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                    style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !settings.wrapUnwonSkins ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: !settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                 </div>
               </div>
               {settings.wrapUnwonSkins && (
@@ -219,9 +219,9 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap To</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={() => setSettings({ ...settings, wrapTo: 'front' })}
-                      style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapTo === 'front' ? '2px solid #f39c12' : '2px solid #ddd', background: settings.wrapTo === 'front' ? '#fff8e1' : 'white', fontWeight: settings.wrapTo === 'front' ? '600' : 'normal', cursor: 'pointer' }}>Front 9</button>
+                      style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapTo === 'front' ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.wrapTo === 'front' ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.wrapTo === 'front' ? '600' : 'normal', cursor: 'pointer' }}>Front 9</button>
                     <button onClick={() => setSettings({ ...settings, wrapTo: 'back' })}
-                      style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapTo === 'back' ? '2px solid #f39c12' : '2px solid #ddd', background: settings.wrapTo === 'back' ? '#fff8e1' : 'white', fontWeight: settings.wrapTo === 'back' ? '600' : 'normal', cursor: 'pointer' }}>Back 9</button>
+                      style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.wrapTo === 'back' ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.wrapTo === 'back' ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.wrapTo === 'back' ? '600' : 'normal', cursor: 'pointer' }}>Back 9</button>
                   </div>
                 </div>
               )}
@@ -234,9 +234,9 @@ function SkinsSetupModal({ onClose, skinsMatch, onSave, liveRound, setLiveRound 
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Payout Style</label>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setSettings({ ...settings, payoutStyle: 'perSkin' })}
-                  style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.payoutStyle === 'perSkin' ? '2px solid #f39c12' : '2px solid #ddd', background: settings.payoutStyle === 'perSkin' ? '#fff8e1' : 'white', fontWeight: settings.payoutStyle === 'perSkin' ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>Per Skin</button>
+                  style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.payoutStyle === 'perSkin' ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.payoutStyle === 'perSkin' ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.payoutStyle === 'perSkin' ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>Per Skin</button>
                 <button onClick={() => setSettings({ ...settings, payoutStyle: 'fixedPot' })}
-                  style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.payoutStyle === 'fixedPot' ? '2px solid #f39c12' : '2px solid #ddd', background: settings.payoutStyle === 'fixedPot' ? '#fff8e1' : 'white', fontWeight: settings.payoutStyle === 'fixedPot' ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>Fixed Pot</button>
+                  style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.payoutStyle === 'fixedPot' ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.payoutStyle === 'fixedPot' ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.payoutStyle === 'fixedPot' ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>Fixed Pot</button>
               </div>
             </div>
           )}
@@ -307,19 +307,19 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
   if (!skinsMatch) {
     return (
       <div style={{
-        background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+        background: 'var(--color-skins)',
         padding: '20px',
         borderRadius: '10px',
         marginBottom: '20px'
       }}>
-        <h3 style={{ marginBottom: '10px', color: 'white' }}>Side Skins</h3>
+        <h3 style={{ marginBottom: '10px', color: 'var(--color-text-on-primary)' }}>Side Skins</h3>
         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>
           Set up a side skins competition that runs alongside the league round.
         </p>
         <button
           className="btn"
           onClick={() => setShowSetup(true)}
-          style={{ background: 'white', color: '#e67e22', fontWeight: '600' }}
+          style={{ background: 'var(--color-surface)', color: 'var(--color-skins)', fontWeight: '600' }}
         >
           Set Up Side Skins Match
         </button>
@@ -338,24 +338,24 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
 
   return (
     <div style={{
-      background: '#fff8e1',
-      border: '2px solid #f39c12',
+      background: 'var(--color-warning-light)',
+      border: '2px solid var(--color-skins)',
       padding: '20px',
       borderRadius: '10px',
       marginBottom: '20px'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0, color: '#e67e22' }}>Side Skins Match Active</h3>
+        <h3 style={{ margin: 0, color: 'var(--color-skins)' }}>Side Skins Match Active</h3>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setShowSetup(true)}
-            style={{ background: '#f39c12', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+            style={{ background: 'var(--color-skins)', color: 'var(--color-text-on-primary)', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
           >
             Edit
           </button>
           <button
             onClick={cancelSkins}
-            style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+            style={{ background: 'var(--color-danger)', color: 'var(--color-text-on-primary)', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
           >
             Cancel
           </button>
@@ -363,7 +363,7 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
       </div>
 
       {/* Settings summary */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '13px' }}>
         <span>${skinsMatch.settings.costPerSkin}/skin</span>
         {skinsMatch.settings.carryovers ? (
           <>
@@ -397,9 +397,9 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
                   style={{
                     padding: '10px 14px',
                     borderRadius: '20px',
-                    border: inSkins ? '2px solid #27ae60' : '2px solid #ddd',
-                    background: inSkins ? '#e8f8f5' : 'white',
-                    color: inSkins ? '#27ae60' : '#666',
+                    border: inSkins ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
+                    background: inSkins ? 'var(--color-success-light)' : 'var(--color-surface)',
+                    color: inSkins ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                     fontSize: '13px',
                     fontWeight: inSkins ? '600' : 'normal',
                     cursor: canToggle ? 'pointer' : 'not-allowed',
@@ -412,7 +412,7 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
             })}
           </div>
           {liveRound && !isAdmin && (
-            <p style={{ fontSize: '11px', color: '#999', marginTop: '8px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '8px' }}>
               Round in progress. Contact admin to change skins participation.
             </p>
           )}
@@ -423,20 +423,20 @@ function SkinsOptInSection({ teams, skinsMatch, setSkinsMatch, liveRound, setLiv
       <div style={{
         textAlign: 'center',
         padding: '10px',
-        background: '#f8f9fa',
+        background: 'var(--color-surface-sunken)',
         borderRadius: '8px',
         fontSize: '13px'
       }}>
         {isCasualGame ? (
-          <span style={{ color: '#27ae60' }}><strong>{allPlayers.length}</strong> player{allPlayers.length !== 1 ? 's' : ''} - All playing skins</span>
+          <span style={{ color: 'var(--color-primary)' }}><strong>{allPlayers.length}</strong> player{allPlayers.length !== 1 ? 's' : ''} - All playing skins</span>
         ) : (
           <>
             <strong>{skinsMatch.participants.length}</strong> player{skinsMatch.participants.length !== 1 ? 's' : ''} in skins
             {skinsMatch.participants.length >= 2 && (
-              <span style={{ color: '#27ae60' }}> - Ready to play</span>
+              <span style={{ color: 'var(--color-primary)' }}> - Ready to play</span>
             )}
             {skinsMatch.participants.length < 2 && skinsMatch.participants.length > 0 && (
-              <span style={{ color: '#e67e22' }}> (need at least 2)</span>
+              <span style={{ color: 'var(--color-skins)' }}> (need at least 2)</span>
             )}
           </>
         )}
@@ -475,9 +475,9 @@ function NassauSetupModal({ onClose, nassauMatch, onSave }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)' }}>
-          <h2 style={{ margin: 0, color: 'white' }}>{nassauMatch ? 'Edit' : 'Set Up'} Side Nassau</h2>
-          <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
+        <div className="modal-header" style={{ background: 'var(--color-nassau)' }}>
+          <h2 style={{ margin: 0, color: 'var(--color-text-on-primary)' }}>{nassauMatch ? 'Edit' : 'Set Up'} Side Nassau</h2>
+          <button className="modal-close" onClick={onClose} style={{ color: 'var(--color-text-on-primary)' }}>&times;</button>
         </div>
         <div style={{ padding: '20px' }}>
           <div style={{ marginBottom: '20px' }}>
@@ -488,25 +488,25 @@ function NassauSetupModal({ onClose, nassauMatch, onSave }) {
               onChange={(e) => setSettings({ ...settings, betAmount: parseFloat(e.target.value) || 2 })}
               min="0.5"
               step="0.5"
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '16px' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '16px' }}
             />
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
               Each pair bets this amount on front 9, back 9, and overall (3 bets total)
             </div>
           </div>
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Use Handicaps</label>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid #2e7d32' : '2px solid #ddd', background: settings.useHandicaps ? '#e8f5e9' : 'white', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-              <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid #2e7d32' : '2px solid #ddd', background: !settings.useHandicaps ? '#e8f5e9' : 'white', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+              <button onClick={() => setSettings({ ...settings, useHandicaps: true })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: settings.useHandicaps ? '2px solid var(--color-nassau)' : '2px solid var(--color-border)', background: settings.useHandicaps ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+              <button onClick={() => setSettings({ ...settings, useHandicaps: false })} style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !settings.useHandicaps ? '2px solid var(--color-nassau)' : '2px solid var(--color-border)', background: !settings.useHandicaps ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: !settings.useHandicaps ? '600' : 'normal', cursor: 'pointer' }}>No</button>
             </div>
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
               Net strokes applied per hole based on player handicaps
             </div>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleSave} style={{ flex: 1, background: '#2e7d32' }}>
+            <button className="btn btn-primary" onClick={handleSave} style={{ flex: 1, background: 'var(--color-nassau)' }}>
               {nassauMatch ? 'Save Changes' : 'Create Side Nassau'}
             </button>
           </div>
@@ -559,12 +559,12 @@ function NassauOptInSection({ teams, nassauMatch, setNassauMatch, liveRound, isA
 
   if (!nassauMatch) {
     return (
-      <div style={{ background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
-        <h3 style={{ marginBottom: '10px', color: 'white' }}>{nassauLabel}</h3>
+      <div style={{ background: 'var(--color-nassau)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+        <h3 style={{ marginBottom: '10px', color: 'var(--color-text-on-primary)' }}>{nassauLabel}</h3>
         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>
           Set up a {nassauLabel.toLowerCase()} match — 3-bet match play (front 9, back 9, overall) between every pair.
         </p>
-        <button className="btn" onClick={() => setShowSetup(true)} style={{ background: 'white', color: '#2e7d32', fontWeight: '600' }}>
+        <button className="btn" onClick={() => setShowSetup(true)} style={{ background: 'var(--color-surface)', color: 'var(--color-nassau)', fontWeight: '600' }}>
           Set Up {nassauLabel}
         </button>
         {showSetup && <NassauSetupModal onClose={() => setShowSetup(false)} nassauMatch={null} onSave={setNassauMatch} />}
@@ -573,15 +573,15 @@ function NassauOptInSection({ teams, nassauMatch, setNassauMatch, liveRound, isA
   }
 
   return (
-    <div style={{ background: '#e8f5e9', border: '2px solid #2e7d32', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
+    <div style={{ background: 'var(--color-success-light)', border: '2px solid var(--color-nassau)', padding: '20px', borderRadius: '10px', marginBottom: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0, color: '#2e7d32' }}>{nassauLabel} Active</h3>
+        <h3 style={{ margin: 0, color: 'var(--color-nassau)' }}>{nassauLabel} Active</h3>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => setShowSetup(true)} style={{ background: '#2e7d32', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Edit</button>
-          <button onClick={cancelNassau} style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Cancel</button>
+          <button onClick={() => setShowSetup(true)} style={{ background: 'var(--color-nassau)', color: 'var(--color-text-on-primary)', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Edit</button>
+          <button onClick={cancelNassau} style={{ background: 'var(--color-danger)', color: 'var(--color-text-on-primary)', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Cancel</button>
         </div>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '13px' }}>
         <span>${nassauMatch.settings.betAmount}/bet</span>
         <span>| 3 bets/pair (front, back, overall)</span>
         {nassauMatch.settings.useHandicaps && <span>| Net (handicaps)</span>}
@@ -604,9 +604,9 @@ function NassauOptInSection({ teams, nassauMatch, setNassauMatch, liveRound, isA
                   style={{
                     padding: '10px 14px',
                     borderRadius: '20px',
-                    border: inNassau ? '2px solid #2e7d32' : '2px solid #ddd',
-                    background: inNassau ? '#e8f5e9' : 'white',
-                    color: inNassau ? '#2e7d32' : '#666',
+                    border: inNassau ? '2px solid var(--color-nassau)' : '2px solid var(--color-border)',
+                    background: inNassau ? 'var(--color-success-light)' : 'var(--color-surface)',
+                    color: inNassau ? 'var(--color-nassau)' : 'var(--color-text-secondary)',
                     fontSize: '13px',
                     fontWeight: inNassau ? '600' : 'normal',
                     cursor: canToggle ? 'pointer' : 'not-allowed',
@@ -619,20 +619,20 @@ function NassauOptInSection({ teams, nassauMatch, setNassauMatch, liveRound, isA
             })}
           </div>
           {liveRound && !isAdmin && (
-            <p style={{ fontSize: '11px', color: '#999', marginTop: '8px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '8px' }}>
               Round in progress. Contact admin to change Nassau participation.
             </p>
           )}
         </div>
       )}
 
-      <div style={{ textAlign: 'center', padding: '10px', background: '#f8f9fa', borderRadius: '8px', fontSize: '13px' }}>
+      <div style={{ textAlign: 'center', padding: '10px', background: 'var(--color-surface-sunken)', borderRadius: '8px', fontSize: '13px' }}>
         {isCasualGame ? (
-          <span style={{ color: '#2e7d32' }}><strong>{allPlayers.length}</strong> player{allPlayers.length !== 1 ? 's' : ''} - All playing Nassau</span>
+          <span style={{ color: 'var(--color-nassau)' }}><strong>{allPlayers.length}</strong> player{allPlayers.length !== 1 ? 's' : ''} - All playing Nassau</span>
         ) : (
           <>
             <strong>{nassauMatch.participants.length}</strong> player{nassauMatch.participants.length !== 1 ? 's' : ''} in Nassau
-            {nassauMatch.participants.length >= 2 && <span style={{ color: '#2e7d32' }}> - Ready to play</span>}
+            {nassauMatch.participants.length >= 2 && <span style={{ color: 'var(--color-nassau)' }}> - Ready to play</span>}
             {nassauMatch.participants.length < 2 && nassauMatch.participants.length > 0 && (
               <span style={{ color: '#e65100' }}> (need at least 2)</span>
             )}
@@ -807,7 +807,7 @@ function TeamsPage() {
                   width: '100%',
                   padding: '15px',
                   fontSize: '16px',
-                  background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)'
+                  background: 'var(--color-warning)'
                 }}
               >
                 Go to Live Round in Progress

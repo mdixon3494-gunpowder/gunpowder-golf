@@ -56,9 +56,9 @@ function Leaderboard({ liveRound, view, setView }) {
   // Match Play: special display
   if (displayMode === 'matchplay' && matchResult) {
     return (
-      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
+      <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
         <div style={{
-          background: 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%)',
+          background: 'var(--color-primary-dark)',
           color: 'white',
           padding: '12px 15px',
           textAlign: 'center'
@@ -68,11 +68,11 @@ function Leaderboard({ liveRound, view, setView }) {
           </span>
         </div>
         <div style={{ padding: '20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1a472a', marginBottom: '8px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--color-primary-dark)', marginBottom: '8px' }}>
             {matchResult.holesUp === 0 ? 'ALL SQUARE' : (
               <>
                 {entries.find(e => e.isLeader)?.name || ''}
-                <span style={{ color: '#e74c3c', marginLeft: '10px' }}>
+                <span style={{ color: 'var(--color-danger)', marginLeft: '10px' }}>
                   {matchResult.isDecided
                     ? `${matchResult.holesUp}&${matchResult.holesRemaining}`
                     : `${matchResult.holesUp} UP`
@@ -81,14 +81,14 @@ function Leaderboard({ liveRound, view, setView }) {
               </>
             )}
           </div>
-          <div style={{ fontSize: '14px', color: '#666' }}>
+          <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
             {matchResult.thru >= 18 ? 'Final' : matchResult.thru > 0 ? `thru ${matchResult.thru}` : '--'}
           </div>
           <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '30px' }}>
             {entries.map(e => (
               <div key={e.id}>
                 <div style={{ fontWeight: '600', fontSize: '15px' }}>{e.name}</div>
-                <div style={{ fontSize: '13px', color: '#888' }}>{e.holesWon} holes won</div>
+                <div style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>{e.holesWon} holes won</div>
               </div>
             ))}
           </div>
@@ -112,22 +112,22 @@ function Leaderboard({ liveRound, view, setView }) {
   const renderScore = (score) => {
     if (displayMode === 'relative') {
       return (
-        <span style={{ color: score < 0 ? '#27ae60' : score > 0 ? '#e74c3c' : '#333' }}>
+        <span style={{ color: score < 0 ? 'var(--color-primary)' : score > 0 ? 'var(--color-danger)' : 'var(--color-text-primary)' }}>
           {formatRelativeToPar(score)}
         </span>
       )
     }
     if (displayMode === 'points') {
-      return <span style={{ color: '#b8860b' }}>{score} pts</span>
+      return <span style={{ color: 'var(--color-accent-gold)' }}>{score} pts</span>
     }
     // gross or net: plain number
-    return <span style={{ color: '#333' }}>{score}</span>
+    return <span style={{ color: 'var(--color-text-primary)' }}>{score}</span>
   }
 
   return (
-    <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
+    <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px' }}>
       <div style={{
-        background: 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%)',
+        background: 'var(--color-primary-dark)',
         color: 'white',
         padding: '12px 15px',
         display: 'flex',
@@ -158,8 +158,8 @@ function Leaderboard({ liveRound, view, setView }) {
             fontWeight: '600',
             borderRadius: '6px',
             border: 'none',
-            background: 'white',
-            color: '#1a472a',
+            background: 'var(--color-surface)',
+            color: 'var(--color-primary-dark)',
             cursor: 'pointer',
             minWidth: '120px'
           }}
@@ -179,17 +179,17 @@ function Leaderboard({ liveRound, view, setView }) {
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '12px',
-              background: idx === 0 ? (displayMode === 'points' ? '#fff8e1' : '#fff8e1') : (idx % 2 === 0 ? '#f8f9fa' : 'white'),
+              background: idx === 0 ? 'var(--color-warning-light)' : (idx % 2 === 0 ? 'var(--color-surface-sunken)' : 'var(--color-surface)'),
               borderRadius: '8px',
               marginBottom: '8px',
-              border: idx === 0 ? '2px solid #f9a825' : 'none'
+              border: idx === 0 ? '2px solid var(--color-gold)' : 'none'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{
                   width: '28px',
                   height: '28px',
                   borderRadius: '50%',
-                  background: idx === 0 ? '#f9a825' : '#95a5a6',
+                  background: idx === 0 ? 'var(--color-gold)' : 'var(--color-silver)',
                   color: 'white',
                   display: 'flex',
                   alignItems: 'center',
@@ -201,9 +201,9 @@ function Leaderboard({ liveRound, view, setView }) {
                 </span>
                 <div>
                   <div style={{ fontWeight: '600' }}>{entry.name}</div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     {entry.holesCompleted === 18 ? (
-                      <span style={{ color: '#27ae60', fontWeight: '600' }}>F</span>
+                      <span style={{ color: 'var(--color-primary)', fontWeight: '600' }}>F</span>
                     ) : entry.holesCompleted > 0 ? (
                       <span>thru {entry.holesCompleted}</span>
                     ) : (
@@ -241,20 +241,20 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
       zIndex: 2000
     }}>
       <div style={{
-        background: 'white',
+        background: 'var(--color-surface)',
         padding: '20px',
         borderRadius: '15px',
         width: '90%',
         maxWidth: '320px',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+        boxShadow: 'var(--shadow-lg)'
       }}>
         {/* Header with hole navigation */}
         <div style={{
           marginBottom: '15px',
           paddingBottom: '10px',
-          borderBottom: '2px solid #e0e0e0'
+          borderBottom: '2px solid var(--color-border)'
         }}>
-          <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#27ae60', textAlign: 'center' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '18px', color: 'var(--color-primary)', textAlign: 'center' }}>
             {playerName}
           </div>
           <div style={{
@@ -272,8 +272,8 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
                 height: '40px',
                 borderRadius: '50%',
                 border: 'none',
-                background: hole > 1 ? 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)' : '#e0e0e0',
-                color: hole > 1 ? 'white' : '#999',
+                background: hole > 1 ? 'var(--color-accent-blue)' : 'var(--color-border)',
+                color: hole > 1 ? 'white' : 'var(--color-text-tertiary)',
                 fontSize: '20px',
                 fontWeight: 'bold',
                 cursor: hole > 1 ? 'pointer' : 'default',
@@ -285,10 +285,10 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
               ←
             </button>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '16px', fontWeight: '600', color: '#333' }}>
+              <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--color-text-primary)' }}>
                 Hole {hole}
               </div>
-              <div style={{ fontSize: '13px', color: '#666' }}>
+              <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
                 Par {holeInfo?.par}
               </div>
             </div>
@@ -300,8 +300,8 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
                 height: '40px',
                 borderRadius: '50%',
                 border: 'none',
-                background: hole < 18 ? 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)' : '#e0e0e0',
-                color: hole < 18 ? 'white' : '#999',
+                background: hole < 18 ? 'var(--color-accent-blue)' : 'var(--color-border)',
+                color: hole < 18 ? 'white' : 'var(--color-text-tertiary)',
                 fontSize: '20px',
                 fontWeight: 'bold',
                 cursor: hole < 18 ? 'pointer' : 'default',
@@ -317,7 +317,7 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
 
         {/* Display */}
         <div style={{
-          background: '#f8f9fa',
+          background: 'var(--color-surface-sunken)',
           padding: '15px',
           borderRadius: '10px',
           textAlign: 'center',
@@ -328,7 +328,7 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '2px solid #e0e0e0'
+          border: '2px solid var(--color-border)'
         }}>
           {value || '-'}
         </div>
@@ -348,8 +348,8 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
                 padding: '18px',
                 fontSize: '24px',
                 fontWeight: 'bold',
-                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                border: '2px solid #dee2e6',
+                background: 'var(--color-surface-sunken)',
+                border: '2px solid var(--color-border)',
                 borderRadius: '10px',
                 cursor: 'pointer'
               }}
@@ -363,7 +363,7 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
               padding: '18px',
               fontSize: '24px',
               fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+              background: 'var(--color-danger)',
               color: 'white',
               border: 'none',
               borderRadius: '10px',
@@ -378,8 +378,8 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
               padding: '18px',
               fontSize: '24px',
               fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-              border: '2px solid #dee2e6',
+              background: 'var(--color-surface-sunken)',
+              border: '2px solid var(--color-border)',
               borderRadius: '10px',
               cursor: 'pointer'
             }}
@@ -392,8 +392,8 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
               padding: '18px',
               fontSize: '20px',
               fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-              border: '2px solid #dee2e6',
+              background: 'var(--color-surface-sunken)',
+              border: '2px solid var(--color-border)',
               borderRadius: '10px',
               cursor: 'pointer'
             }}
@@ -411,8 +411,8 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
               padding: '14px',
               fontSize: '16px',
               fontWeight: 'bold',
-              background: '#f8f9fa',
-              border: '2px solid #dee2e6',
+              background: 'var(--color-surface-sunken)',
+              border: '2px solid var(--color-border)',
               borderRadius: '10px',
               cursor: 'pointer'
             }}
@@ -426,7 +426,7 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
               padding: '14px',
               fontSize: '16px',
               fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+              background: 'var(--color-danger)',
               color: 'white',
               border: 'none',
               borderRadius: '10px',
@@ -442,7 +442,7 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
               padding: '14px',
               fontSize: '16px',
               fontWeight: 'bold',
-              background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+              background: 'var(--color-primary)',
               color: 'white',
               border: 'none',
               borderRadius: '10px',
@@ -730,9 +730,9 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 onClick={() => setSelectedTeamId(t.id)}
                 style={{
                   padding: '15px',
-                  background: t.isFinished ? '#d4edda' : 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
-                  color: t.isFinished ? '#155724' : 'white',
-                  border: t.isFinished ? '2px solid #27ae60' : 'none',
+                  background: t.isFinished ? 'var(--color-success-light)' : 'var(--color-accent-blue)',
+                  color: t.isFinished ? 'var(--color-success)' : 'var(--color-surface)',
+                  border: t.isFinished ? '2px solid var(--color-primary)' : 'none',
                   borderRadius: '10px',
                   cursor: 'pointer',
                   fontSize: '16px',
@@ -766,11 +766,11 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
     <div>
       {/* Team Header */}
       <div style={{
-        background: selectedTeam.isFinished ? '#d4edda' : 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%)',
+        background: selectedTeam.isFinished ? 'var(--color-success-light)' : 'var(--color-primary-dark)',
         padding: '15px',
         borderRadius: '10px',
         marginBottom: '15px',
-        color: selectedTeam.isFinished ? '#155724' : 'white'
+        color: selectedTeam.isFinished ? 'var(--color-success)' : 'white'
       }}>
         {!isIndividualRound && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
@@ -785,8 +785,8 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 fontWeight: '600',
                 borderRadius: '6px',
                 border: 'none',
-                background: 'white',
-                color: '#1a472a',
+                background: 'var(--color-surface)',
+                color: 'var(--color-primary-dark)',
                 cursor: 'pointer',
                 minWidth: '150px'
               }}
@@ -844,10 +844,10 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
       {/* Player Tracking Selector - hidden for individual rounds */}
       {!isIndividualRound && (
       <div style={{
-        background: 'white',
+        background: 'var(--color-surface)',
         borderRadius: '10px',
         marginBottom: '15px',
-        border: '1px solid #e0e0e0',
+        border: '1px solid var(--color-border)',
         overflow: 'hidden'
       }}>
         <button
@@ -855,7 +855,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
           style={{
             width: '100%',
             padding: '10px 15px',
-            background: '#f8f9fa',
+            background: 'var(--color-surface-sunken)',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
@@ -864,15 +864,15 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
             fontSize: '13px'
           }}
         >
-          <span style={{ fontWeight: '600', color: '#555' }}>
+          <span style={{ fontWeight: '600', color: 'var(--color-text-secondary)' }}>
             Keeping Score For: {getTrackedPlayerIds(selectedTeam.id).size} of {selectedTeam.players.filter(p => !p.isDNF).length} players
           </span>
-          <span style={{ color: '#999' }}>{showPlayerSelector ? '▲' : '▼'}</span>
+          <span style={{ color: 'var(--color-text-tertiary)' }}>{showPlayerSelector ? '▲' : '▼'}</span>
         </button>
 
         {showPlayerSelector && (
-          <div style={{ padding: '12px', borderTop: '1px solid #e0e0e0' }}>
-            <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+          <div style={{ padding: '12px', borderTop: '1px solid var(--color-border)' }}>
+            <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
               Select which players you're keeping score for. Auto-advance will only go to selected players.
               You can still tap any cell to enter scores for anyone.
             </p>
@@ -881,10 +881,10 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 onClick={selectAllPlayers}
                 style={{
                   padding: '6px 12px',
-                  background: '#e3f2fd',
-                  border: '1px solid #2196f3',
+                  background: 'var(--color-info-light)',
+                  border: '1px solid var(--color-info)',
                   borderRadius: '4px',
-                  color: '#1976d2',
+                  color: 'var(--color-info-dark)',
                   fontSize: '12px',
                   cursor: 'pointer'
                 }}
@@ -895,10 +895,10 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 onClick={selectNoPlayers}
                 style={{
                   padding: '6px 12px',
-                  background: '#fff',
-                  border: '1px solid #ddd',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '4px',
-                  color: '#666',
+                  color: 'var(--color-text-secondary)',
                   fontSize: '12px',
                   cursor: 'pointer'
                 }}
@@ -916,9 +916,9 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                     style={{
                       padding: '8px 14px',
                       borderRadius: '20px',
-                      border: isTracked ? '2px solid #27ae60' : '2px solid #ddd',
-                      background: isTracked ? '#e8f5e9' : 'white',
-                      color: isTracked ? '#27ae60' : '#666',
+                      border: isTracked ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
+                      background: isTracked ? 'var(--color-success-light)' : 'var(--color-surface)',
+                      color: isTracked ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                       fontSize: '13px',
                       fontWeight: isTracked ? '600' : 'normal',
                       cursor: 'pointer'
@@ -941,7 +941,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
           style={{
             width: '100%',
             padding: '18px',
-            background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+            background: 'var(--color-primary)',
             color: 'white',
             border: 'none',
             borderRadius: '10px',
@@ -949,7 +949,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
             fontSize: '18px',
             fontWeight: 'bold',
             marginBottom: '15px',
-            boxShadow: '0 4px 15px rgba(39, 174, 96, 0.3)'
+            boxShadow: 'var(--shadow-md)'
           }}
         >
           Enter Score: {nextNeeded.player.name} - Hole {nextNeeded.hole}
@@ -959,11 +959,11 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
       {!nextNeeded && !selectedTeam.isFinished && (
         <div style={{
           padding: '15px',
-          background: '#d4edda',
+          background: 'var(--color-success-light)',
           borderRadius: '10px',
           textAlign: 'center',
           marginBottom: '15px',
-          color: '#155724'
+          color: 'var(--color-success)'
         }}>
           All scores entered! Tap any cell below to edit.
         </div>
@@ -971,27 +971,27 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
       {/* Scorecard Grid */}
       <div style={{
-        background: 'white',
+        background: 'var(--color-surface)',
         borderRadius: '10px',
         overflow: 'hidden',
-        border: '1px solid #e0e0e0'
+        border: '1px solid var(--color-border)'
       }}>
         {/* Front 9 - hidden for back-9 only individual rounds */}
         {!(is9HoleRound && roundStartingHole === 10) && (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '340px' }}>
             <thead>
-              <tr style={{ background: '#27ae60', color: 'white' }}>
-                <th style={{ padding: '6px 4px', textAlign: 'left', minWidth: '60px', position: 'sticky', left: 0, background: '#27ae60' }}>Front 9</th>
+              <tr style={{ background: 'var(--color-primary)', color: 'white' }}>
+                <th style={{ padding: '6px 4px', textAlign: 'left', minWidth: '60px', position: 'sticky', left: 0, background: 'var(--color-primary)' }}>Front 9</th>
                 {GUNPOWDER_SCORECARD.front9.map(h => (
                   <th key={h.hole} style={{ padding: '6px 3px', textAlign: 'center', minWidth: '26px' }}>{h.hole}</th>
                 ))}
-                <th style={{ padding: '6px 4px', textAlign: 'center', background: '#229954', minWidth: '32px' }}>OUT</th>
+                <th style={{ padding: '6px 4px', textAlign: 'center', background: 'var(--color-primary-dark)', minWidth: '32px' }}>OUT</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ background: '#f0f0f0' }}>
-                <td style={{ padding: '5px 4px', fontWeight: 'bold', fontSize: '10px', position: 'sticky', left: 0, background: '#f0f0f0' }}>Par</td>
+              <tr style={{ background: 'var(--color-surface-sunken)' }}>
+                <td style={{ padding: '5px 4px', fontWeight: 'bold', fontSize: '10px', position: 'sticky', left: 0, background: 'var(--color-surface-sunken)' }}>Par</td>
                 {GUNPOWDER_SCORECARD.front9.map(h => (
                   <td key={h.hole} style={{ padding: '5px 3px', textAlign: 'center', fontSize: '10px' }}>{h.par}</td>
                 ))}
@@ -1010,8 +1010,8 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
                 return (
                   <tr key={player.id} style={{
-                    background: isDNF ? '#f8d7da' : (idx % 2 === 0 ? 'white' : '#fafafa'),
-                    borderTop: '1px solid #e0e0e0'
+                    background: isDNF ? 'var(--color-danger-light)' : (idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)'),
+                    borderTop: '1px solid var(--color-border)'
                   }}>
                     <td style={{
                       padding: '4px',
@@ -1019,7 +1019,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       fontSize: '10px',
                       position: 'sticky',
                       left: 0,
-                      background: isDNF ? '#f8d7da' : (idx % 2 === 0 ? 'white' : '#fafafa'),
+                      background: isDNF ? 'var(--color-danger-light)' : (idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)'),
                       whiteSpace: 'nowrap',
                       maxWidth: '60px',
                       overflow: 'hidden',
@@ -1042,12 +1042,12 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
                       if (hasScore && score !== 'X') {
                         if (scoreToPar !== null && scoreToPar <= -2) {
-                          bgColor = '#fff8e1'
-                          border = '2px double #f39c12'
+                          bgColor = 'var(--color-warning-light)'
+                          border = '2px double var(--color-skins)'
                           borderRadius = '50%'
                         } else if (scoreToPar === -1) {
-                          bgColor = '#e8f5e9'
-                          border = '2px solid #27ae60'
+                          bgColor = 'var(--color-success-light)'
+                          border = '2px solid var(--color-primary)'
                           borderRadius = '50%'
                         }
                       }
@@ -1088,14 +1088,14 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                             borderRadius: borderRadius,
                             fontWeight: 'bold',
                             fontSize: isXorCapped ? '8px' : '12px',
-                            color: isXorCapped ? '#e74c3c' : '#333'
+                            color: isXorCapped ? 'var(--color-danger)' : 'var(--color-text-primary)'
                           }}>
                             {displayText}
                           </div>
                         </td>
                       )
                     })}
-                    <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: '#e8f5e9', fontSize: '12px' }}>
+                    <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: 'var(--color-success-light)', fontSize: '12px' }}>
                       {frontTotal || '-'}
                     </td>
                   </tr>
@@ -1108,20 +1108,20 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
         {/* Back 9 - hidden for front-9 only individual rounds */}
         {!(is9HoleRound && roundStartingHole === 1) && (
-        <div style={{ overflowX: 'auto', borderTop: is9HoleRound ? 'none' : '2px solid #34495e' }}>
+        <div style={{ overflowX: 'auto', borderTop: is9HoleRound ? 'none' : '2px solid var(--color-border-dark)' }}>
           <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '340px' }}>
             <thead>
-              <tr style={{ background: '#ef6c00', color: 'white' }}>
-                <th style={{ padding: '6px 4px', textAlign: 'left', minWidth: '60px', position: 'sticky', left: 0, background: '#ef6c00' }}>Back 9</th>
+              <tr style={{ background: 'var(--color-back9)', color: 'white' }}>
+                <th style={{ padding: '6px 4px', textAlign: 'left', minWidth: '60px', position: 'sticky', left: 0, background: 'var(--color-back9)' }}>Back 9</th>
                 {GUNPOWDER_SCORECARD.back9.map(h => (
                   <th key={h.hole} style={{ padding: '6px 3px', textAlign: 'center', minWidth: '26px' }}>{h.hole}</th>
                 ))}
-                <th style={{ padding: '6px 4px', textAlign: 'center', background: '#e65100', minWidth: '32px' }}>IN</th>
+                <th style={{ padding: '6px 4px', textAlign: 'center', background: 'var(--color-back9-dark)', minWidth: '32px' }}>IN</th>
               </tr>
             </thead>
             <tbody>
-              <tr style={{ background: '#f0f0f0' }}>
-                <td style={{ padding: '5px 4px', fontWeight: 'bold', fontSize: '10px', position: 'sticky', left: 0, background: '#f0f0f0' }}>Par</td>
+              <tr style={{ background: 'var(--color-surface-sunken)' }}>
+                <td style={{ padding: '5px 4px', fontWeight: 'bold', fontSize: '10px', position: 'sticky', left: 0, background: 'var(--color-surface-sunken)' }}>Par</td>
                 {GUNPOWDER_SCORECARD.back9.map(h => (
                   <td key={h.hole} style={{ padding: '5px 3px', textAlign: 'center', fontSize: '10px' }}>{h.par}</td>
                 ))}
@@ -1140,8 +1140,8 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
                 return (
                   <tr key={player.id} style={{
-                    background: isDNF ? '#f8d7da' : (idx % 2 === 0 ? 'white' : '#fafafa'),
-                    borderTop: '1px solid #e0e0e0'
+                    background: isDNF ? 'var(--color-danger-light)' : (idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)'),
+                    borderTop: '1px solid var(--color-border)'
                   }}>
                     <td style={{
                       padding: '4px',
@@ -1149,7 +1149,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       fontSize: '10px',
                       position: 'sticky',
                       left: 0,
-                      background: isDNF ? '#f8d7da' : (idx % 2 === 0 ? 'white' : '#fafafa'),
+                      background: isDNF ? 'var(--color-danger-light)' : (idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)'),
                       whiteSpace: 'nowrap',
                       maxWidth: '60px',
                       overflow: 'hidden',
@@ -1172,12 +1172,12 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
                       if (hasScore && score !== 'X') {
                         if (scoreToPar !== null && scoreToPar <= -2) {
-                          bgColor = '#fff8e1'
-                          border = '2px double #f39c12'
+                          bgColor = 'var(--color-warning-light)'
+                          border = '2px double var(--color-skins)'
                           borderRadius = '50%'
                         } else if (scoreToPar === -1) {
-                          bgColor = '#e8f5e9'
-                          border = '2px solid #27ae60'
+                          bgColor = 'var(--color-success-light)'
+                          border = '2px solid var(--color-primary)'
                           borderRadius = '50%'
                         }
                       }
@@ -1218,14 +1218,14 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                             borderRadius: borderRadius,
                             fontWeight: 'bold',
                             fontSize: isXorCapped ? '8px' : '12px',
-                            color: isXorCapped ? '#e74c3c' : '#333'
+                            color: isXorCapped ? 'var(--color-danger)' : 'var(--color-text-primary)'
                           }}>
                             {displayText}
                           </div>
                         </td>
                       )
                     })}
-                    <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: '#fff3e0', fontSize: '12px' }}>
+                    <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: 'var(--color-skins-light)', fontSize: '12px' }}>
                       {backTotal || '-'}
                     </td>
                   </tr>
@@ -1244,7 +1244,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
           style={{
             width: '100%',
             padding: '14px',
-            background: selectedTeam.isFinished ? '#e74c3c' : '#27ae60',
+            background: selectedTeam.isFinished ? 'var(--color-danger)' : 'var(--color-primary)',
             color: 'white',
             border: 'none',
             borderRadius: '8px',
@@ -1287,7 +1287,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
           zIndex: 1000
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             borderRadius: '16px',
             padding: '20px',
             width: '90%',
@@ -1296,7 +1296,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
             overflow: 'auto'
           }}>
             <div style={{
-              background: '#27ae60',
+              background: 'var(--color-primary)',
               color: 'white',
               padding: '15px',
               borderRadius: '10px',
@@ -1319,26 +1319,26 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
               return playersCompleted < totalPlayers ? (
                 <div style={{
                   padding: '10px 12px',
-                  background: '#e3f2fd',
+                  background: 'var(--color-info-light)',
                   borderRadius: '8px',
                   marginBottom: '15px',
                   textAlign: 'center',
                   fontSize: '13px',
-                  color: '#1976d2',
-                  border: '1px solid #90caf9'
+                  color: 'var(--color-info-dark)',
+                  border: '1px solid var(--color-info-light-border)'
                 }}>
                   <strong>{playersCompleted}</strong> of <strong>{totalPlayers}</strong> players have played this hole
                 </div>
               ) : (
                 <div style={{
                   padding: '10px 12px',
-                  background: '#d4edda',
+                  background: 'var(--color-success-light)',
                   borderRadius: '8px',
                   marginBottom: '15px',
                   textAlign: 'center',
                   fontSize: '13px',
-                  color: '#27ae60',
-                  border: '1px solid #27ae60'
+                  color: 'var(--color-primary)',
+                  border: '1px solid var(--color-primary)'
                 }}>
                   All players have completed this hole
                 </div>
@@ -1355,8 +1355,8 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       onClick={() => setGreenieSelectedPlayer(player)}
                       style={{
                         padding: '12px 15px',
-                        background: isSelected ? '#e8f5e9' : 'white',
-                        border: isSelected ? '3px solid #27ae60' : '2px solid #ddd',
+                        background: isSelected ? 'var(--color-success-light)' : 'var(--color-surface)',
+                        border: isSelected ? '3px solid var(--color-primary)' : '2px solid var(--color-border)',
                         borderRadius: '8px',
                         cursor: 'pointer',
                         fontSize: '14px',
@@ -1368,7 +1368,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       }}
                     >
                       <span>{player.name}</span>
-                      <span style={{ fontSize: '12px', color: '#666' }}>{team.name}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{team.name}</span>
                     </button>
                   )
                 })
@@ -1382,11 +1382,11 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 alignItems: 'center',
                 gap: '10px',
                 padding: '12px',
-                background: markGreenieAsFinal ? '#e8f5e9' : '#fff3e0',
+                background: markGreenieAsFinal ? 'var(--color-success-light)' : 'var(--color-skins-light)',
                 borderRadius: '8px',
                 marginTop: '15px',
                 cursor: 'pointer',
-                border: markGreenieAsFinal ? '2px solid #27ae60' : '2px solid #f39c12'
+                border: markGreenieAsFinal ? '2px solid var(--color-primary)' : '2px solid var(--color-skins)'
               }}>
                 <input
                   type="checkbox"
@@ -1395,10 +1395,10 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                   style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                 />
                 <div>
-                  <div style={{ fontWeight: '600', color: markGreenieAsFinal ? '#27ae60' : '#e67e22' }}>
+                  <div style={{ fontWeight: '600', color: markGreenieAsFinal ? 'var(--color-primary)' : 'var(--color-skins-dark)' }}>
                     {markGreenieAsFinal ? 'Will be marked Final' : 'Mark as Final?'}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     Check this if all teams have played this hole
                   </div>
                 </div>
@@ -1415,12 +1415,12 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#f8f9fa',
-                  border: '1px solid #ddd',
+                  background: 'var(--color-surface-sunken)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  color: '#666'
+                  color: 'var(--color-text-secondary)'
                 }}
               >
                 Skip
@@ -1438,7 +1438,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: greenieSelectedPlayer ? '#27ae60' : '#ccc',
+                  background: greenieSelectedPlayer ? 'var(--color-primary)' : 'var(--color-disabled)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -1565,13 +1565,13 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
   return (
     <div>
       <div style={{
-        background: '#e8f5e9',
+        background: 'var(--color-success-light)',
         padding: '15px',
         borderRadius: '10px',
         marginBottom: '20px',
-        border: '2px solid #27ae60'
+        border: '2px solid var(--color-primary)'
       }}>
-        <h3 style={{ marginBottom: '10px', color: '#27ae60' }}>Par 3 Holes (Greenie Holes)</h3>
+        <h3 style={{ marginBottom: '10px', color: 'var(--color-primary)' }}>Par 3 Holes (Greenie Holes)</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
           {PAR_3_HOLES.map(hole => {
             const greenie = getCurrentGreenie(hole)
@@ -1588,31 +1588,31 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                 style={{
                   padding: '12px',
                   borderRadius: '8px',
-                  border: selectedHole === hole ? '3px solid #27ae60' : '1px solid #ddd',
+                  border: selectedHole === hole ? '3px solid var(--color-primary)' : '1px solid var(--color-border)',
                   background: hasCurrentWinner
-                    ? (greenie.isFinal ? '#d4edda' : '#fff3e0')
-                    : (hasCarryoverWinner ? '#fff3e0' : (isCleared ? '#f5f5f5' : 'white')),
+                    ? (greenie.isFinal ? 'var(--color-success-light)' : 'var(--color-skins-light)')
+                    : (hasCarryoverWinner ? 'var(--color-skins-light)' : (isCleared ? 'var(--color-surface-sunken)' : 'var(--color-surface)')),
                   cursor: 'pointer',
                   textAlign: 'center'
                 }}
               >
                 <div style={{ fontWeight: 'bold', fontSize: '18px' }}>#{hole}</div>
-                <div style={{ fontSize: '11px', color: '#666' }}>{holeInfo?.blue} yds</div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{holeInfo?.blue} yds</div>
                 {greenie && greenie.playerId && (
-                  <div style={{ fontSize: '11px', color: greenie.isFinal ? '#27ae60' : '#e67e22', marginTop: '4px' }}>
+                  <div style={{ fontSize: '11px', color: greenie.isFinal ? 'var(--color-primary)' : 'var(--color-skins-dark)', marginTop: '4px' }}>
                     {greenie.playerName}
                     {greenie.isFinal && <span style={{ marginLeft: '4px' }}>✓</span>}
                   </div>
                 )}
                 {hasCarryoverWinner && (
                   <>
-                    <div style={{ fontSize: '11px', color: '#e67e22', marginTop: '4px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--color-skins-dark)', marginTop: '4px' }}>
                       {coInfo.wonByName}
                     </div>
                     <div style={{
                       fontSize: '9px',
-                      color: '#e67e22',
-                      background: '#fff3e0',
+                      color: 'var(--color-skins-dark)',
+                      background: 'var(--color-skins-light)',
                       padding: '1px 4px',
                       borderRadius: '3px',
                       marginTop: '2px'
@@ -1622,11 +1622,11 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                   </>
                 )}
                 {isCleared && !hasCarryoverWinner && (
-                  <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                     (cleared)
                   </div>
                 )}
-                <div style={{ fontSize: '10px', color: '#1976d2', marginTop: '4px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--color-info-dark)', marginTop: '4px' }}>
                   {completed}/{totalPlayers}
                 </div>
               </button>
@@ -1635,7 +1635,7 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
         </div>
       </div>
 
-      <div style={{ background: 'white', padding: '15px', borderRadius: '10px' }}>
+      <div style={{ background: 'var(--color-surface)', padding: '15px', borderRadius: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <select
@@ -1646,9 +1646,9 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                 fontSize: '16px',
                 fontWeight: '600',
                 borderRadius: '6px',
-                border: '2px solid #27ae60',
-                background: 'white',
-                color: '#1a472a',
+                border: '2px solid var(--color-primary)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-primary-dark)',
                 cursor: 'pointer'
               }}
             >
@@ -1667,11 +1667,11 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                 )
               })}
             </select>
-            <span style={{ fontSize: '14px', color: '#666' }}>Select Greenie Winner</span>
+            <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Select Greenie Winner</span>
           </div>
           <span style={{
-            background: playersCompleted === totalPlayers ? '#d4edda' : '#e3f2fd',
-            color: playersCompleted === totalPlayers ? '#27ae60' : '#1976d2',
+            background: playersCompleted === totalPlayers ? 'var(--color-success-light)' : 'var(--color-info-light)',
+            color: playersCompleted === totalPlayers ? 'var(--color-primary)' : 'var(--color-info-dark)',
             padding: '4px 10px',
             borderRadius: '12px',
             fontSize: '12px',
@@ -1683,11 +1683,11 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
 
         {currentGreenie && currentGreenie.playerId && (
           <div style={{
-            background: currentGreenie.isFinal ? '#d4edda' : '#fff3e0',
+            background: currentGreenie.isFinal ? 'var(--color-success-light)' : 'var(--color-skins-light)',
             padding: '12px',
             borderRadius: '8px',
             marginBottom: '15px',
-            border: currentGreenie.isFinal ? '2px solid #27ae60' : '2px solid #f39c12'
+            border: currentGreenie.isFinal ? '2px solid var(--color-primary)' : '2px solid var(--color-skins)'
           }}>
             <div style={{
               display: 'flex',
@@ -1697,7 +1697,7 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
               <span>
                 Current: <strong>{currentGreenie.playerName}</strong>
                 {currentGreenie.isFinal && (
-                  <span style={{ marginLeft: '8px', color: '#27ae60', fontWeight: '600' }}>
+                  <span style={{ marginLeft: '8px', color: 'var(--color-primary)', fontWeight: '600' }}>
                     (FINAL)
                   </span>
                 )}
@@ -1706,7 +1706,7 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                 onClick={() => onUpdateGreenie(selectedHole, null)}
                 style={{
                   padding: '6px 12px',
-                  background: '#e74c3c',
+                  background: 'var(--color-danger)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
@@ -1718,14 +1718,14 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
             </div>
             {!currentGreenie.isFinal && (
               <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '12px', color: '#e67e22' }}>
+                <div style={{ fontSize: '12px', color: 'var(--color-skins-dark)' }}>
                   Pending - other teams may still play this hole
                 </div>
                 <button
                   onClick={() => onUpdateGreenie(selectedHole, { id: currentGreenie.playerId, name: currentGreenie.playerName }, true)}
                   style={{
                     padding: '6px 12px',
-                    background: '#27ae60',
+                    background: 'var(--color-primary)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
@@ -1744,13 +1744,13 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
         {/* History section - shown even when no current winner */}
         {currentGreenie?.history && currentGreenie.history.length > 0 && (
           <div style={{
-            background: '#f8f9fa',
+            background: 'var(--color-surface-sunken)',
             padding: '12px',
             borderRadius: '8px',
             marginBottom: '15px',
-            border: '1px solid #ddd'
+            border: '1px solid var(--color-border)'
           }}>
-            <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px', fontWeight: '600' }}>
+            <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginBottom: '8px', fontWeight: '600' }}>
               Previous Winners (most recent first):
             </div>
             {currentGreenie.history.map((entry, idx) => (
@@ -1760,7 +1760,7 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                 alignItems: 'center',
                 fontSize: '12px',
                 padding: '4px 0',
-                color: '#666'
+                color: 'var(--color-text-secondary)'
               }}>
                 <span>
                   <span style={{
@@ -1768,7 +1768,7 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                     width: '20px',
                     height: '20px',
                     borderRadius: '50%',
-                    background: '#e0e0e0',
+                    background: 'var(--color-border)',
                     textAlign: 'center',
                     lineHeight: '20px',
                     fontSize: '10px',
@@ -1778,18 +1778,18 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                     {idx + 1}
                   </span>
                   {entry.playerName}
-                  {entry.wasFinal && <span style={{ marginLeft: '4px', color: '#27ae60', fontSize: '10px' }}>(was final)</span>}
+                  {entry.wasFinal && <span style={{ marginLeft: '4px', color: 'var(--color-primary)', fontSize: '10px' }}>(was final)</span>}
                 </span>
                 <button
                   onClick={() => onUpdateGreenie(selectedHole, { id: entry.playerId, name: entry.playerName }, false)}
                   style={{
                     padding: '3px 8px',
-                    background: '#f0f0f0',
-                    border: '1px solid #ccc',
+                    background: 'var(--color-surface-sunken)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '4px',
                     cursor: 'pointer',
                     fontSize: '11px',
-                    color: '#555'
+                    color: 'var(--color-text-secondary)'
                   }}
                 >
                   Restore
@@ -1801,13 +1801,13 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
 
         {/* Winner Selection */}
         <div style={{
-          background: '#f8f9fa',
+          background: 'var(--color-surface-sunken)',
           padding: '15px',
           borderRadius: '8px',
-          border: '1px solid #ddd'
+          border: '1px solid var(--color-border)'
         }}>
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '6px', fontWeight: '600' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '6px', fontWeight: '600' }}>
               Select Winner
             </label>
             <select
@@ -1818,8 +1818,8 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
                 padding: '10px 12px',
                 fontSize: '14px',
                 borderRadius: '6px',
-                border: '1px solid #ccc',
-                background: 'white',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
                 cursor: 'pointer'
               }}
             >
@@ -1875,7 +1875,7 @@ function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
             style={{
               width: '100%',
               padding: '12px',
-              background: selectedPlayerId ? 'linear-gradient(135deg, #27ae60 0%, #229954 100%)' : '#ccc',
+              background: selectedPlayerId ? 'var(--color-primary)' : 'var(--color-disabled)',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
@@ -1917,13 +1917,13 @@ function DNFManager({ liveRound, onMarkDNF, onUndoDNF, isAdmin }) {
   return (
     <div>
       <h3 style={{ marginBottom: '15px' }}>Player Status (DNF)</h3>
-      <p style={{ color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '13px' }}>
         Mark players as "Did Not Finish" if they leave early. Their existing scores can still count toward the team.
       </p>
 
       {liveRound.teams.map(team => (
         <div key={team.id} style={{ marginBottom: '20px' }}>
-          <h4 style={{ marginBottom: '10px', color: '#666' }}>{team.name}</h4>
+          <h4 style={{ marginBottom: '10px', color: 'var(--color-text-secondary)' }}>{team.name}</h4>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {team.players.map(player => {
               const isDNF = player.isDNF === true
@@ -1941,8 +1941,8 @@ function DNFManager({ liveRound, onMarkDNF, onUndoDNF, isAdmin }) {
                     padding: '10px 15px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: isDNF ? '#e74c3c' : '#e8e8e8',
-                    color: isDNF ? 'white' : '#333',
+                    background: isDNF ? 'var(--color-danger)' : 'var(--color-disabled)',
+                    color: isDNF ? 'white' : 'var(--color-text-primary)',
                     cursor: 'pointer',
                     fontWeight: isDNF ? 'bold' : 'normal'
                   }}
@@ -2099,10 +2099,10 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlay
                         <button
                           key={team.id}
                           onClick={() => { setSelectedTeamId(team.id); setStep(2) }}
-                          style={{ padding: '15px', borderRadius: '8px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', textAlign: 'left' }}
+                          style={{ padding: '15px', borderRadius: '8px', border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer', textAlign: 'left' }}
                         >
                           <div style={{ fontWeight: '600' }}>{team.name}</div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>{team.players.map(p => p.name).join(', ')}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{team.players.map(p => p.name).join(', ')}</div>
                         </button>
                       ))}
                     </div>
@@ -2119,7 +2119,7 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlay
                         value={guestName}
                         onChange={e => setGuestName(e.target.value)}
                         placeholder="Player name"
-                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px', boxSizing: 'border-box' }}
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '14px', boxSizing: 'border-box' }}
                         autoFocus
                       />
                     </div>
@@ -2129,7 +2129,7 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlay
                         type="number"
                         value={guestHandicap}
                         onChange={e => setGuestHandicap(parseInt(e.target.value) || 0)}
-                        style={{ width: '80px', padding: '10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '14px' }}
+                        style={{ width: '80px', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '14px' }}
                       />
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
@@ -2167,7 +2167,7 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlay
       </button>
 
       {availablePlayers.length === 0 && (
-        <p style={{ color: '#666', fontSize: '12px', marginTop: '8px', textAlign: 'center' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginTop: '8px', textAlign: 'center' }}>
           All active players are already in the round
         </p>
       )}
@@ -2194,14 +2194,14 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlay
                         style={{
                           padding: '15px',
                           borderRadius: '8px',
-                          border: '1px solid #ddd',
-                          background: 'white',
+                          border: '1px solid var(--color-border)',
+                          background: 'var(--color-surface)',
                           cursor: 'pointer',
                           textAlign: 'left'
                         }}
                       >
                         <div style={{ fontWeight: '600' }}>{team.name}</div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                           {team.players.length} players
                         </div>
                       </button>
@@ -2224,8 +2224,8 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlay
                         style={{
                           padding: '12px',
                           borderRadius: '8px',
-                          border: '1px solid #ddd',
-                          background: 'white',
+                          border: '1px solid var(--color-border)',
+                          background: 'var(--color-surface)',
                           cursor: 'pointer',
                           textAlign: 'left'
                         }}
@@ -2253,42 +2253,42 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlay
                       style={{
                         padding: '15px',
                         borderRadius: '8px',
-                        border: paymentStatus === 'full' ? '2px solid #27ae60' : '1px solid #ddd',
-                        background: paymentStatus === 'full' ? '#d4edda' : 'white',
+                        border: paymentStatus === 'full' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        background: paymentStatus === 'full' ? 'var(--color-success-light)' : 'var(--color-surface)',
                         cursor: 'pointer',
                         textAlign: 'left'
                       }}
                     >
                       <div style={{ fontWeight: '600' }}>Full Round</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>Paying for entire round</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Paying for entire round</div>
                     </button>
                     <button
                       onClick={() => setPaymentStatus('back')}
                       style={{
                         padding: '15px',
                         borderRadius: '8px',
-                        border: paymentStatus === 'back' ? '2px solid #27ae60' : '1px solid #ddd',
-                        background: paymentStatus === 'back' ? '#d4edda' : 'white',
+                        border: paymentStatus === 'back' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        background: paymentStatus === 'back' ? 'var(--color-success-light)' : 'var(--color-surface)',
                         cursor: 'pointer',
                         textAlign: 'left'
                       }}
                     >
                       <div style={{ fontWeight: '600' }}>Back 9 Only</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>Joining on hole 10</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Joining on hole 10</div>
                     </button>
                     <button
                       onClick={() => setPaymentStatus('none')}
                       style={{
                         padding: '15px',
                         borderRadius: '8px',
-                        border: paymentStatus === 'none' ? '2px solid #27ae60' : '1px solid #ddd',
-                        background: paymentStatus === 'none' ? '#d4edda' : 'white',
+                        border: paymentStatus === 'none' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        background: paymentStatus === 'none' ? 'var(--color-success-light)' : 'var(--color-surface)',
                         cursor: 'pointer',
                         textAlign: 'left'
                       }}
                     >
                       <div style={{ fontWeight: '600' }}>Just Playing</div>
-                      <div style={{ fontSize: '12px', color: '#666' }}>Not in team competition</div>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Not in team competition</div>
                     </button>
                   </div>
 
@@ -3405,13 +3405,13 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
     return (
       <div>
         <div style={{
-          background: '#fff3e0',
+          background: 'var(--color-skins-light)',
           padding: '20px',
           borderRadius: '10px',
           textAlign: 'center'
         }}>
           <h3 style={{ marginBottom: '15px' }}>No {isCasualGame ? 'Skins' : 'Side Skins'} Match Active</h3>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '20px' }}>
             Set up a {isCasualGame ? 'skins' : 'side skins'} match to track individual hole winners.
           </p>
           <button className="btn btn-primary" onClick={() => setShowSetup(true)}>
@@ -3422,7 +3422,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
         {showSetup && (
           <div className="modal-overlay" onClick={() => setShowSetup(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-              <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)' }}>
+              <div className="modal-header" style={{ background: 'var(--color-skins)' }}>
                 <h3 style={{ color: 'white', margin: 0 }}>{isCasualGame ? 'Skins' : 'Side Skins'} Match Settings</h3>
                 <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'white' }}>&times;</button>
               </div>
@@ -3440,20 +3440,20 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Carryovers</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => setSettings({ ...settings, carryovers: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.carryovers ? '2px solid #f39c12' : '2px solid #ddd', background: settings.carryovers ? '#fff8e1' : 'white', fontWeight: settings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                    <button onClick={() => setSettings({ ...settings, carryovers: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.carryovers ? '2px solid #f39c12' : '2px solid #ddd', background: !settings.carryovers ? '#fff8e1' : 'white', fontWeight: !settings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                    <button onClick={() => setSettings({ ...settings, carryovers: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.carryovers ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setSettings({ ...settings, carryovers: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !settings.carryovers ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: !settings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                   </div>
                 </div>
                 {settings.carryovers && (
                   <div style={{ marginBottom: '15px' }}>
                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap Unwon Skins</label>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: settings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                      <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: !settings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: !settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                      <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: settings.wrapUnwonSkins ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                      <button onClick={() => setSettings({ ...settings, wrapUnwonSkins: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !settings.wrapUnwonSkins ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: !settings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                     </div>
                   </div>
                 )}
-                <div style={{ marginBottom: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                <div style={{ marginBottom: '15px', borderTop: '1px solid var(--color-border-light)', paddingTop: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600' }}>Optional Rules</label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', cursor: 'pointer' }}>
                     <input type="checkbox" checked={settings.parOrBetterRequired} onChange={e => setSettings({ ...settings, parOrBetterRequired: e.target.checked })} style={{ width: '18px', height: '18px' }} />
@@ -3461,12 +3461,12 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   </label>
 
                   {/* Score Multipliers */}
-                  <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '8px' }}>
+                  <div style={{ background: 'var(--color-surface-sunken)', padding: '12px', borderRadius: '8px' }}>
                     <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px' }}>Score Multipliers</div>
 
                     {/* Birdie */}
                     <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', marginBottom: '4px', color: '#666' }}>Birdie (1 under)</div>
+                      <div style={{ fontSize: '11px', marginBottom: '4px', color: 'var(--color-text-secondary)' }}>Birdie (1 under)</div>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         {[1, 2].map(val => (
                           <button
@@ -3483,8 +3483,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                             }}
                             style={{
                               flex: 1, padding: '6px', borderRadius: '4px', fontSize: '11px',
-                              border: (settings.birdieMultiplier || 1) === val ? '2px solid #9c27b0' : '1px solid #ddd',
-                              background: (settings.birdieMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                              border: (settings.birdieMultiplier || 1) === val ? '2px solid var(--color-multiplier)' : '1px solid var(--color-border)',
+                              background: (settings.birdieMultiplier || 1) === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                               fontWeight: (settings.birdieMultiplier || 1) === val ? '600' : 'normal',
                               cursor: 'pointer'
                             }}
@@ -3497,7 +3497,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                     {/* Eagle */}
                     <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', marginBottom: '4px', color: '#666' }}>Eagle (2 under)</div>
+                      <div style={{ fontSize: '11px', marginBottom: '4px', color: 'var(--color-text-secondary)' }}>Eagle (2 under)</div>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         {[1, 2, 3].map(val => (
                           <button
@@ -3513,8 +3513,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                             }}
                             style={{
                               flex: 1, padding: '6px', borderRadius: '4px', fontSize: '11px',
-                              border: (settings.eagleMultiplier || 1) === val ? '2px solid #9c27b0' : '1px solid #ddd',
-                              background: (settings.eagleMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                              border: (settings.eagleMultiplier || 1) === val ? '2px solid var(--color-multiplier)' : '1px solid var(--color-border)',
+                              background: (settings.eagleMultiplier || 1) === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                               fontWeight: (settings.eagleMultiplier || 1) === val ? '600' : 'normal',
                               cursor: 'pointer'
                             }}
@@ -3527,7 +3527,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                     {/* Double Eagle */}
                     <div style={{ marginBottom: '8px' }}>
-                      <div style={{ fontSize: '11px', marginBottom: '4px', color: '#666' }}>Double Eagle (3 under)</div>
+                      <div style={{ fontSize: '11px', marginBottom: '4px', color: 'var(--color-text-secondary)' }}>Double Eagle (3 under)</div>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         {[1, 2, 3, 4].map(val => (
                           <button
@@ -3542,8 +3542,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                             }}
                             style={{
                               flex: 1, padding: '6px', borderRadius: '4px', fontSize: '11px',
-                              border: (settings.doubleEagleMultiplier || 1) === val ? '2px solid #9c27b0' : '1px solid #ddd',
-                              background: (settings.doubleEagleMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                              border: (settings.doubleEagleMultiplier || 1) === val ? '2px solid var(--color-multiplier)' : '1px solid var(--color-border)',
+                              background: (settings.doubleEagleMultiplier || 1) === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                               fontWeight: (settings.doubleEagleMultiplier || 1) === val ? '600' : 'normal',
                               cursor: 'pointer'
                             }}
@@ -3556,7 +3556,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                     {/* Hole in One */}
                     <div>
-                      <div style={{ fontSize: '11px', marginBottom: '4px', color: '#666' }}>Hole in One</div>
+                      <div style={{ fontSize: '11px', marginBottom: '4px', color: 'var(--color-text-secondary)' }}>Hole in One</div>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         {[1, 2, 3, 4, 5].map(val => (
                           <button
@@ -3564,8 +3564,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                             onClick={() => setSettings({ ...settings, holeInOneMultiplier: val })}
                             style={{
                               flex: 1, padding: '6px', borderRadius: '4px', fontSize: '11px',
-                              border: (settings.holeInOneMultiplier || 1) === val ? '2px solid #9c27b0' : '1px solid #ddd',
-                              background: (settings.holeInOneMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                              border: (settings.holeInOneMultiplier || 1) === val ? '2px solid var(--color-multiplier)' : '1px solid var(--color-border)',
+                              background: (settings.holeInOneMultiplier || 1) === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                               fontWeight: (settings.holeInOneMultiplier || 1) === val ? '600' : 'normal',
                               cursor: 'pointer'
                             }}
@@ -3580,11 +3580,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                 {/* Greenies Settings — only for casual/quick skins; league rounds already have greenies */}
                 {isCasualGame && (
-                <div style={{ marginBottom: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                <div style={{ marginBottom: '15px', borderTop: '1px solid var(--color-border-light)', paddingTop: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Greenies (Par 3s)</label>
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                    <button onClick={() => setSettings({ ...settings, greeniesEnabled: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.greeniesEnabled ? '2px solid #27ae60' : '2px solid #ddd', background: settings.greeniesEnabled ? '#e8f5e9' : 'white', fontWeight: settings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                    <button onClick={() => setSettings({ ...settings, greeniesEnabled: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.greeniesEnabled ? '2px solid #27ae60' : '2px solid #ddd', background: !settings.greeniesEnabled ? '#e8f5e9' : 'white', fontWeight: !settings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                    <button onClick={() => setSettings({ ...settings, greeniesEnabled: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.greeniesEnabled ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: settings.greeniesEnabled ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: settings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setSettings({ ...settings, greeniesEnabled: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.greeniesEnabled ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: !settings.greeniesEnabled ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: !settings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                   </div>
                   {settings.greeniesEnabled && (
                     <>
@@ -3601,10 +3601,10 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       <div style={{ marginBottom: '10px' }}>
                         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Greenie Carryovers</label>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                          <button onClick={() => setSettings({ ...settings, greeniesCarryover: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.greeniesCarryover ? '2px solid #27ae60' : '2px solid #ddd', background: settings.greeniesCarryover ? '#e8f5e9' : 'white', fontWeight: settings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                          <button onClick={() => setSettings({ ...settings, greeniesCarryover: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.greeniesCarryover ? '2px solid #27ae60' : '2px solid #ddd', background: !settings.greeniesCarryover ? '#e8f5e9' : 'white', fontWeight: !settings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                          <button onClick={() => setSettings({ ...settings, greeniesCarryover: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: settings.greeniesCarryover ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: settings.greeniesCarryover ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: settings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                          <button onClick={() => setSettings({ ...settings, greeniesCarryover: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !settings.greeniesCarryover ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: !settings.greeniesCarryover ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: !settings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '6px' }}>
                           Par 3 holes: 4, 8, 12, 17
                         </div>
                       </div>
@@ -3627,9 +3627,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
   return (
     <div>
       {/* Skins Header */}
-      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+      <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
         <div style={{
-          background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+          background: 'var(--color-skins)',
           color: 'white',
           padding: '12px 15px',
           fontSize: '16px',
@@ -3645,7 +3645,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
         </div>
 
         {/* Settings Summary */}
-        <div style={{ padding: '10px 15px', background: '#fff8e1', fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+        <div style={{ padding: '10px 15px', background: 'var(--color-warning-light)', fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
           {skinsMatch.settings.carryovers && <span>Carryovers</span>}
           {skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && <span>Wrap to {skinsMatch.settings.wrapTo === 'front' ? 'Front 9' : 'Back 9'}</span>}
           {skinsMatch.settings.parOrBetterRequired && <span>Par or Better</span>}
@@ -3659,10 +3659,10 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             if (s.eagleMultiplier > 1) parts.push(`Eagle ×${s.eagleMultiplier}`)
             if (s.doubleEagleMultiplier > 1) parts.push(`Dbl Eagle ×${s.doubleEagleMultiplier}`)
             if (s.holeInOneMultiplier > 1) parts.push(`HIO ×${s.holeInOneMultiplier}`)
-            return parts.length > 0 ? <span style={{ color: '#9c27b0' }}>{parts.join(', ')}</span> : null
+            return parts.length > 0 ? <span style={{ color: 'var(--color-multiplier)' }}>{parts.join(', ')}</span> : null
           })()}
           {greeniesEnabled && (
-            <span style={{ color: '#27ae60', fontWeight: '600' }}>
+            <span style={{ color: 'var(--color-primary)', fontWeight: '600' }}>
               Greenies ${greeniesCostPerHole}/hole {greeniesCarryover && '(carryovers)'}
             </span>
           )}
@@ -3675,13 +3675,13 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   setEditPinInput('')
                   setShowEditSettings(true)
                 }}
-                style={{ background: '#3498db', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+                style={{ background: 'var(--color-accent-blue)', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
               >
                 Edit Settings
               </button>
               <button
                 onClick={() => { setShowCancelConfirm(true); setCancelPinInput('') }}
-                style={{ background: '#e74c3c', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
+                style={{ background: 'var(--color-danger)', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
               >
                 Cancel Match
               </button>
@@ -3692,7 +3692,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
       {/* Admin/Casual Manage Players */}
       {(isAdmin || isCasualGame) && (
-        <div style={{ background: 'white', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <div style={{ fontWeight: '600', fontSize: '14px' }}>
               {isCasualGame ? 'Players' : 'Manage Players (Admin)'}
@@ -3704,7 +3704,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   padding: '6px 12px',
                   borderRadius: '6px',
                   border: 'none',
-                  background: '#27ae60',
+                  background: 'var(--color-primary)',
                   color: 'white',
                   fontSize: '12px',
                   fontWeight: '600',
@@ -3732,9 +3732,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     style={{
                       padding: '8px 12px',
                       borderRadius: '20px',
-                      border: isSettled ? '2px solid #95a5a6' : inSkins ? '2px solid #27ae60' : '2px solid #ddd',
-                      background: isSettled ? '#ecf0f1' : inSkins ? '#e8f8f5' : 'white',
-                      color: isSettled ? '#7f8c8d' : inSkins ? '#27ae60' : '#666',
+                      border: isSettled ? '2px solid var(--color-silver)' : inSkins ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
+                      background: isSettled ? 'var(--color-surface-sunken)' : inSkins ? 'var(--color-success-light)' : 'var(--color-surface)',
+                      color: isSettled ? 'var(--color-text-tertiary)' : inSkins ? 'var(--color-primary)' : 'var(--color-text-secondary)',
                       fontSize: '12px',
                       fontWeight: inSkins ? '600' : 'normal',
                       cursor: isCasualGame ? 'default' : isSettled ? 'not-allowed' : 'pointer',
@@ -3756,9 +3756,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       style={{
                         padding: '4px 8px',
                         borderRadius: '4px',
-                        border: '1px solid #e67e22',
-                        background: 'white',
-                        color: '#e67e22',
+                        border: '1px solid var(--color-skins-dark)',
+                        background: 'var(--color-surface)',
+                        color: 'var(--color-skins-dark)',
                         fontSize: '10px',
                         cursor: 'pointer'
                       }}
@@ -3783,9 +3783,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
-              border: skinsView === view ? '2px solid #f39c12' : '1px solid #ddd',
-              background: skinsView === view ? '#f39c12' : 'white',
-              color: skinsView === view ? 'white' : '#333',
+              border: skinsView === view ? '2px solid var(--color-skins)' : '1px solid var(--color-border)',
+              background: skinsView === view ? 'var(--color-skins)' : 'var(--color-surface)',
+              color: skinsView === view ? 'white' : 'var(--color-text-primary)',
               fontSize: '12px',
               fontWeight: skinsView === view ? '600' : 'normal',
               cursor: 'pointer'
@@ -3798,38 +3798,38 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
       {/* Skins Scoreboard Table */}
       {skinsPlayers.length >= 2 ? (
-        <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', minWidth: skinsView === 'overall' ? '600px' : '400px' }}>
               <thead>
-                <tr style={{ background: '#f39c12', color: 'white' }}>
-                  <th style={{ padding: '8px 6px', textAlign: 'left', position: 'sticky', left: 0, background: '#f39c12', zIndex: 1, minWidth: '70px' }}>Player</th>
+                <tr style={{ background: 'var(--color-skins)', color: 'white' }}>
+                  <th style={{ padding: '8px 6px', textAlign: 'left', position: 'sticky', left: 0, background: 'var(--color-skins)', zIndex: 1, minWidth: '70px' }}>Player</th>
                   {displayHoles.map(h => (
                     <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
                   ))}
-                  <th style={{ padding: '8px 6px', textAlign: 'center', background: '#e67e22', minWidth: '40px' }}>Skins</th>
+                  <th style={{ padding: '8px 6px', textAlign: 'center', background: 'var(--color-skins-dark)', minWidth: '40px' }}>Skins</th>
                 </tr>
-                <tr style={{ background: '#ffe0b2' }}>
-                  <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: '#ffe0b2', zIndex: 1 }}>Par</td>
+                <tr style={{ background: 'var(--color-skins-light)' }}>
+                  <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: 'var(--color-skins-light)', zIndex: 1 }}>Par</td>
                   {displayHoles.map(h => (
                     <td key={h.hole} style={{ padding: '4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
                   ))}
-                  <td style={{ background: '#ffcc80' }}></td>
+                  <td style={{ background: 'var(--color-skins-light)' }}></td>
                 </tr>
               </thead>
               <tbody>
                 {skinsPlayers.map((player, idx) => {
                   const pSummary = playerSummary[String(player.id)] || { skinsWon: 0 }
                   return (
-                    <tr key={player.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                    <tr key={player.id} style={{ background: idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)' }}>
                       <td style={{
                         padding: '8px 6px',
                         fontWeight: '600',
                         position: 'sticky',
                         left: 0,
-                        background: idx % 2 === 0 ? '#fff' : '#f9f9f9',
+                        background: idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)',
                         zIndex: 1,
-                        borderRight: '1px solid #eee',
+                        borderRight: '1px solid var(--color-border-light)',
                         whiteSpace: 'nowrap'
                       }}>
                         {player.name.split(' ')[0]}
@@ -3846,8 +3846,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                         // Check if this player won this hole outright
                         if (holeResult.winner === player.id) {
-                          bgColor = '#d4edda'  // Solid green for outright win
-                          borderColor = '#28a745'
+                          bgColor = 'var(--color-success-light)'  // Solid green for outright win
+                          borderColor = 'var(--color-primary)'
                         } else {
                           // Check if this hole was won via carryover by this player
                           // (i.e., this hole is in another hole's carryoverFromHoles/carryoverWinners)
@@ -3856,8 +3856,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                             if (otherResult.winner === player.id &&
                                 otherResult.carryoverFromHoles &&
                                 otherResult.carryoverFromHoles.includes(h.hole)) {
-                              bgColor = '#e8f5e9'  // Lighter green for carryover win
-                              borderColor = '#81c784'
+                              bgColor = 'var(--color-success-light)'  // Lighter green for carryover win
+                              borderColor = 'var(--color-success-border)'
                               isCarryoverWin = true
                               break
                             }
@@ -3866,8 +3866,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                               cw.playerId === player.id && cw.fromHoles?.includes(h.hole)
                             )
                             if (coWin) {
-                              bgColor = '#e8f5e9'  // Lighter green for carryover win
-                              borderColor = '#81c784'
+                              bgColor = 'var(--color-success-light)'  // Lighter green for carryover win
+                              borderColor = 'var(--color-success-border)'
                               isCarryoverWin = true
                               break
                             }
@@ -3876,8 +3876,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                         // Check for current leader (not yet decided)
                         if (bgColor === 'transparent' && holeResult.currentLeader === player.id && !holeResult.allScored) {
-                          bgColor = '#fff9c4'
-                          borderColor = '#fbc02d'
+                          bgColor = 'var(--color-leading)'
+                          borderColor = 'var(--color-leading-border)'
                         }
 
                         // Check if this hole is a push (tied, not won, not claimed via carryover)
@@ -3900,8 +3900,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           }
                           if (!claimedViaCarryover) {
                             isPushedHole = true
-                            bgColor = '#ffebee'  // Light red/pink for pushed hole
-                            borderColor = '#ef9a9a'
+                            bgColor = 'var(--color-danger-light)'  // Light red/pink for pushed hole
+                            borderColor = 'var(--color-danger-border)'
                           }
                         }
 
@@ -3910,19 +3910,19 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                             padding: '4px',
                             textAlign: 'center',
                             background: isCarryoverWin
-                              ? `repeating-linear-gradient(45deg, ${bgColor}, ${bgColor} 3px, #c8e6c9 3px, #c8e6c9 6px)`
+                              ? `repeating-linear-gradient(45deg, ${bgColor}, ${bgColor} 3px, var(--color-success-stripe) 3px, var(--color-success-stripe) 6px)`
                               : bgColor,
                             border: borderColor !== 'transparent' ? `2px solid ${borderColor}` : 'none',
                             borderRadius: '4px'
                           }}>
                             {hasScore ? (score === 'X' ? 'X' : score) : '-'}
                             {holeResult.winner === player.id && holeResult.skinValue > 1 && (
-                              <div style={{ fontSize: '8px', color: '#9c27b0', fontWeight: '700', marginTop: '1px' }}>
+                              <div style={{ fontSize: '8px', color: 'var(--color-multiplier)', fontWeight: '700', marginTop: '1px' }}>
                                 ×{holeResult.skinValue}
                               </div>
                             )}
                             {holeResult.winner === player.id && holeResult.carryoverCount > 0 && (
-                              <div style={{ fontSize: '8px', color: '#2e7d32', marginTop: '1px' }}>
+                              <div style={{ fontSize: '8px', color: 'var(--color-success-dark)', marginTop: '1px' }}>
                                 +{holeResult.carryoverCount}
                               </div>
                             )}
@@ -3934,14 +3934,14 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         textAlign: 'center',
                         fontWeight: '700',
                         fontSize: '14px',
-                        background: pSummary.skinsWon > 0 ? '#fff3e0' : '#f5f5f5',
-                        color: pSummary.skinsWon > 0 ? '#e65100' : '#999'
+                        background: pSummary.skinsWon > 0 ? 'var(--color-skins-light)' : 'var(--color-surface-sunken)',
+                        color: pSummary.skinsWon > 0 ? 'var(--color-back9-dark)' : 'var(--color-text-tertiary)'
                       }}>
                         {(() => {
                           const s = skinsMatch.settings
                           const hasMultipliers = s.birdieDoubleEagleTriple || s.birdieMultiplier > 1 || s.eagleMultiplier > 1 || s.doubleEagleMultiplier > 1 || s.holeInOneMultiplier > 1
                           return hasMultipliers && pSummary.totalValue !== pSummary.skinsWon
-                            ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: '#9c27b0' }}>({pSummary.skinsWon})</span></span>
+                            ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: 'var(--color-multiplier)' }}>({pSummary.skinsWon})</span></span>
                             : pSummary.skinsWon
                         })()}
                       </td>
@@ -3953,18 +3953,18 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           </div>
 
           {/* Legend */}
-          <div style={{ padding: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '11px' }}>
+          <div style={{ padding: '10px', borderTop: '1px solid var(--color-border-light)', display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '11px' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '14px', height: '14px', background: '#fff9c4', border: '2px solid #fbc02d', borderRadius: '3px' }}></span> Leading
+              <span style={{ width: '14px', height: '14px', background: 'var(--color-leading)', border: '2px solid var(--color-leading-border)', borderRadius: '3px' }}></span> Leading
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '14px', height: '14px', background: '#ffebee', border: '2px solid #ef9a9a', borderRadius: '3px' }}></span> Push
+              <span style={{ width: '14px', height: '14px', background: 'var(--color-danger-light)', border: '2px solid var(--color-danger-border)', borderRadius: '3px' }}></span> Push
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '14px', height: '14px', background: '#d4edda', border: '2px solid #28a745', borderRadius: '3px' }}></span> Won Outright
+              <span style={{ width: '14px', height: '14px', background: 'var(--color-success-light)', border: '2px solid var(--color-primary)', borderRadius: '3px' }}></span> Won Outright
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, #e8f5e9, #e8f5e9 3px, #c8e6c9 3px, #c8e6c9 6px)', border: '2px solid #81c784', borderRadius: '3px' }}></span> Won w/ Carryover
+              <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, var(--color-success-light), var(--color-success-light) 3px, var(--color-success-stripe) 3px, var(--color-success-stripe) 6px)', border: '2px solid var(--color-success-border)', borderRadius: '3px' }}></span> Won w/ Carryover
             </span>
             {/* Show multiplier legend if any multipliers are active */}
             {(skinsMatch.settings.birdieDoubleEagleTriple ||
@@ -3973,13 +3973,13 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
               skinsMatch.settings.doubleEagleMultiplier > 1 ||
               skinsMatch.settings.holeInOneMultiplier > 1) && (
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ color: '#9c27b0', fontWeight: '700' }}>×N</span> Multiplier
+                <span style={{ color: 'var(--color-multiplier)', fontWeight: '700' }}>×N</span> Multiplier
               </span>
             )}
           </div>
         </div>
       ) : (
-        <div style={{ background: 'white', borderRadius: '10px', padding: '30px', textAlign: 'center', color: '#666' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', padding: '30px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
           Need at least 2 players to start skins match.
           <br /><br />
           Tap player names above to join.
@@ -3988,9 +3988,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
       {/* Greenies Section */}
       {greeniesEnabled && skinsPlayers.length >= 2 && (
-        <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
           <div style={{
-            background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
+            background: 'var(--color-primary)',
             color: 'white',
             padding: '10px 15px',
             fontWeight: '600',
@@ -4039,43 +4039,43 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 return (
                   <div key={hole} style={{
                     background: result.winner
-                      ? (hasCarryover ? '#e8f5e9' : '#d4edda')
-                      : (carryoverWonBy ? '#fff3e0' : '#f8f9fa'),
+                      ? (hasCarryover ? 'var(--color-success-light)' : 'var(--color-success-light)')
+                      : (carryoverWonBy ? 'var(--color-skins-light)' : 'var(--color-surface-sunken)'),
                     padding: '12px 8px',
                     borderRadius: '8px',
                     textAlign: 'center',
                     border: result.winner
-                      ? '2px solid #27ae60'
-                      : (carryoverWonBy ? '2px solid #f39c12' : '1px solid #ddd')
+                      ? '2px solid var(--color-primary)'
+                      : (carryoverWonBy ? '2px solid var(--color-skins)' : '1px solid var(--color-border)')
                   }}>
                     <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>#{hole}</div>
-                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '6px' }}>Par 3</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Par 3</div>
                     {result.winner ? (
                       <>
-                        <div style={{ fontWeight: '600', color: '#27ae60', fontSize: '13px' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--color-primary)', fontSize: '13px' }}>
                           {result.winnerName || 'Winner'}
                         </div>
                         {result.distance && (
-                          <div style={{ fontSize: '11px', color: '#666' }}>{result.distance}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{result.distance}</div>
                         )}
-                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#27ae60', marginTop: '4px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-primary)', marginTop: '4px' }}>
                           ${holePot.toFixed(2)}
                         </div>
                         {hasCarryover && (
-                          <div style={{ fontSize: '10px', color: '#2e7d32', marginTop: '2px' }}>
+                          <div style={{ fontSize: '10px', color: 'var(--color-success-dark)', marginTop: '2px' }}>
                             +{result.carryoverCount} carryover{result.carryoverCount > 1 ? 's' : ''}
                           </div>
                         )}
                       </>
                     ) : carryoverWonBy ? (
                       <>
-                        <div style={{ fontWeight: '600', color: '#e67e22', fontSize: '13px' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--color-skins-dark)', fontSize: '13px' }}>
                           {carryoverWonBy}
                         </div>
                         <div style={{
                           fontSize: '10px',
-                          color: '#e67e22',
-                          background: '#fff3e0',
+                          color: 'var(--color-skins-dark)',
+                          background: 'var(--color-skins-light)',
                           padding: '2px 6px',
                           borderRadius: '4px',
                           marginTop: '2px',
@@ -4083,12 +4083,12 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         }}>
                           ↗ Won on #{carryoverWonOnHole}
                         </div>
-                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                           ${holePot.toFixed(2)}
                         </div>
                       </>
                     ) : (
-                      <div style={{ color: '#999', fontSize: '12px' }}>
+                      <div style={{ color: 'var(--color-text-tertiary)', fontSize: '12px' }}>
                         No winner
                         {greeniesCarryover && <div style={{ fontSize: '10px' }}>→ carries over</div>}
                       </div>
@@ -4098,28 +4098,28 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
               })}
             </div>
             {totalGreeniesWon > 0 && (
-              <div style={{ marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+              <div style={{ marginTop: '15px', borderTop: '1px solid var(--color-border-light)', paddingTop: '10px' }}>
                 <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px' }}>Greenie Payouts:</div>
                 {skinsPlayers
                   .filter(p => (greeniePlayerSummary[String(p.id)]?.greeniesWon || 0) > 0)
                   .map(player => {
                     const summary = greeniePlayerSummary[String(player.id)] || {}
                     return (
-                      <div key={player.id} style={{ background: '#e8f5e9', borderRadius: '4px', marginBottom: '6px', padding: '8px' }}>
+                      <div key={player.id} style={{ background: 'var(--color-success-light)', borderRadius: '4px', marginBottom: '6px', padding: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                           <span style={{ fontWeight: '600' }}>{player.name}</span>
-                          <span style={{ color: '#27ae60', fontWeight: '700' }}>${summary.totalPot?.toFixed(2)}</span>
+                          <span style={{ color: 'var(--color-primary)', fontWeight: '700' }}>${summary.totalPot?.toFixed(2)}</span>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                           {summary.holeDetails?.map((detail, idx) => (
                             <span key={idx} style={{
-                              background: detail.isCarryover ? '#fff3e0' : '#d4edda',
+                              background: detail.isCarryover ? 'var(--color-skins-light)' : 'var(--color-success-light)',
                               padding: '2px 6px',
                               borderRadius: '4px',
-                              border: detail.isCarryover ? '1px solid #f39c12' : '1px solid #27ae60'
+                              border: detail.isCarryover ? '1px solid var(--color-skins)' : '1px solid var(--color-primary)'
                             }}>
                               #{detail.hole} ({detail.playerCount}p = ${detail.pot.toFixed(2)})
-                              {detail.isCarryover && <span style={{ color: '#e67e22' }}> ↗{detail.wonOnHole}</span>}
+                              {detail.isCarryover && <span style={{ color: 'var(--color-skins-dark)' }}> ↗{detail.wonOnHole}</span>}
                             </span>
                           ))}
                         </div>
@@ -4134,9 +4134,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
       {/* Payout Summary */}
       {skinsPlayers.length >= 2 && (totalSkinsWon > 0 || totalGreeniesWon > 0) && (
-        <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden' }}>
           <div style={{
-            background: '#27ae60',
+            background: 'var(--color-primary)',
             color: 'white',
             padding: '10px 15px',
             fontWeight: '600',
@@ -4168,32 +4168,32 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 return (
                   <div key={player.id} style={{
                     padding: '8px 10px',
-                    borderBottom: '1px solid #eee',
-                    background: isSettled ? '#f5f5f5' : 'transparent',
+                    borderBottom: '1px solid var(--color-border-light)',
+                    background: isSettled ? 'var(--color-surface-sunken)' : 'transparent',
                     opacity: isSettled ? 0.8 : 1
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>
                         <strong>{player.name}</strong>
                         {(joinHole > 1 || leftHole) && (
-                          <span style={{ fontSize: '10px', color: '#999', marginLeft: '4px' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginLeft: '4px' }}>
                             (h{joinHole}{leftHole ? `-${leftHole}` : '-18'})
                           </span>
                         )}
                         {isSettled && (
-                          <span style={{ fontSize: '10px', color: '#e67e22', marginLeft: '6px', fontWeight: '600' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--color-skins-dark)', marginLeft: '6px', fontWeight: '600' }}>
                             SETTLED
                           </span>
                         )}
                       </span>
                       <span style={{
                         fontWeight: '700',
-                        color: totalNet > 0 ? '#27ae60' : totalNet < 0 ? '#e74c3c' : '#666'
+                        color: totalNet > 0 ? 'var(--color-primary)' : totalNet < 0 ? 'var(--color-danger)' : 'var(--color-text-secondary)'
                       }}>
                         {totalNet >= 0 ? '+' : ''}${totalNet.toFixed(2)}
                       </span>
                     </div>
-                    <div style={{ fontSize: '11px', color: '#666', marginTop: '2px', display: 'flex', gap: '12px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px', display: 'flex', gap: '12px' }}>
                       <span>
                         Skins: {(() => {
                           const s = skinsMatch.settings
@@ -4201,17 +4201,17 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           const totalVal = skinsSummary.totalValue || 0
                           const skinsWon = skinsSummary.skinsWon || 0
                           return hasMultipliers && totalVal !== skinsWon
-                            ? <>{totalVal} <span style={{ fontSize: '9px', color: '#9c27b0' }}>({skinsWon})</span></>
+                            ? <>{totalVal} <span style={{ fontSize: '9px', color: 'var(--color-multiplier)' }}>({skinsWon})</span></>
                             : skinsWon
                         })()} won
-                        <span style={{ color: skinsNet >= 0 ? '#27ae60' : '#e74c3c', marginLeft: '4px' }}>
+                        <span style={{ color: skinsNet >= 0 ? 'var(--color-primary)' : 'var(--color-danger)', marginLeft: '4px' }}>
                           ({skinsNet >= 0 ? '+' : ''}${skinsNet.toFixed(2)})
                         </span>
                       </span>
                       {greeniesEnabled && (
                         <span>
                           Greenies: {greenieSummary.greeniesWon || 0} won
-                          <span style={{ color: greeniesNet >= 0 ? '#27ae60' : '#e74c3c', marginLeft: '4px' }}>
+                          <span style={{ color: greeniesNet >= 0 ? 'var(--color-primary)' : 'var(--color-danger)', marginLeft: '4px' }}>
                             ({greeniesNet >= 0 ? '+' : ''}${greeniesNet.toFixed(2)})
                           </span>
                         </span>
@@ -4225,18 +4225,18 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           {/* Settled Players Summary */}
           {skinsMatch.settlements?.length > 0 && (
             <div style={{
-              borderTop: '2px solid #e67e22',
+              borderTop: '2px solid var(--color-skins-dark)',
               padding: '10px 15px',
-              background: '#fff8e1'
+              background: 'var(--color-warning-light)'
             }}>
-              <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: '#e67e22' }}>
+              <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: 'var(--color-skins-dark)' }}>
                 Early Settlements
               </div>
               {skinsMatch.settlements.map((settlement, idx) => {
                 const player = skinsPlayers.find(p => String(p.id) === settlement.playerId)
                 return (
                   <div key={idx} style={{
-                    background: 'white',
+                    background: 'var(--color-surface)',
                     padding: '10px',
                     borderRadius: '6px',
                     marginBottom: idx < skinsMatch.settlements.length - 1 ? '8px' : 0,
@@ -4249,14 +4249,14 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       const otherPlayer = skinsPlayers.find(p => String(p.id) === tx.withPlayerId)
                       const hasBreakdown = tx.skinsAmount !== undefined || tx.greeniesAmount !== undefined
                       return (
-                        <div key={txIdx} style={{ color: '#666', fontSize: '11px', marginLeft: '10px' }}>
+                        <div key={txIdx} style={{ color: 'var(--color-text-secondary)', fontSize: '11px', marginLeft: '10px' }}>
                           {tx.direction === 'owed' ? (
-                            <span>Owed {otherPlayer?.name}: <span style={{ color: '#e74c3c' }}>${tx.amount.toFixed(2)}</span></span>
+                            <span>Owed {otherPlayer?.name}: <span style={{ color: 'var(--color-danger)' }}>${tx.amount.toFixed(2)}</span></span>
                           ) : (
-                            <span>Collected from {otherPlayer?.name}: <span style={{ color: '#27ae60' }}>${tx.amount.toFixed(2)}</span></span>
+                            <span>Collected from {otherPlayer?.name}: <span style={{ color: 'var(--color-primary)' }}>${tx.amount.toFixed(2)}</span></span>
                           )}
                           {hasBreakdown && (tx.skinsAmount > 0.01 || tx.greeniesAmount > 0.01) && (
-                            <span style={{ color: '#999', marginLeft: '6px' }}>
+                            <span style={{ color: 'var(--color-text-tertiary)', marginLeft: '6px' }}>
                               ({tx.skinsAmount > 0.01 && `Skins: $${tx.skinsAmount.toFixed(2)}`}
                               {tx.skinsAmount > 0.01 && tx.greeniesAmount > 0.01 && ', '}
                               {tx.greeniesAmount > 0.01 && `Greenies: $${tx.greeniesAmount.toFixed(2)}`})
@@ -4266,7 +4266,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       )
                     })}
                     {settlement.carryoverCollection && (
-                      <div style={{ color: '#e67e22', fontSize: '11px', marginLeft: '10px', marginTop: '4px' }}>
+                      <div style={{ color: 'var(--color-skins-dark)', fontSize: '11px', marginLeft: '10px', marginTop: '4px' }}>
                         Paid ${settlement.carryoverCollection.amount.toFixed(2)} for carryovers (held by {skinsPlayers.find(p => String(p.id) === settlement.carryoverCollection.collectedBy)?.name})
                       </div>
                     )}
@@ -4278,11 +4278,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
           {/* Who Owes Who - Only for active (non-settled) players */}
           <div style={{
-            borderTop: '2px solid #27ae60',
+            borderTop: '2px solid var(--color-primary)',
             padding: '10px 15px',
-            background: '#f8fff8'
+            background: 'var(--color-success-light)'
           }}>
-            <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: '#27ae60' }}>
+            <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: 'var(--color-primary)' }}>
               Who Owes Who (Active Players)
             </div>
             {(() => {
@@ -4368,7 +4368,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
               }
 
               if (settlements.length === 0) {
-                return <div style={{ color: '#666', fontSize: '12px' }}>Everyone is even!</div>
+                return <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>Everyone is even!</div>
               }
 
               const paidSettlements = skinsMatch.paidSettlements || {}
@@ -4416,21 +4416,21 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     alignItems: 'center',
                     marginBottom: '10px',
                     padding: '6px 10px',
-                    background: remainingCount === 0 ? '#d4edda' : '#fff3cd',
+                    background: remainingCount === 0 ? 'var(--color-success-light)' : 'var(--color-warning-light)',
                     borderRadius: '6px',
                     fontSize: '12px'
                   }}>
                     <span>
                       {remainingCount === 0 ? (
-                        <span style={{ color: '#27ae60', fontWeight: '600' }}>✓ All payments complete!</span>
+                        <span style={{ color: 'var(--color-primary)', fontWeight: '600' }}>✓ All payments complete!</span>
                       ) : (
-                        <span style={{ color: '#856404' }}>
+                        <span style={{ color: 'var(--color-warning-dark)' }}>
                           <strong>{remainingCount}</strong> payment{remainingCount !== 1 ? 's' : ''} remaining
                         </span>
                       )}
                     </span>
                     {paidCount > 0 && (
-                      <span style={{ color: '#666' }}>
+                      <span style={{ color: 'var(--color-text-secondary)' }}>
                         {paidCount} of {settlements.length} paid
                       </span>
                     )}
@@ -4441,7 +4441,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 return (
                   <div key={idx} style={{
                     padding: '8px 0',
-                    borderBottom: idx < sortedSettlements.length - 1 ? '1px solid #e8f5e9' : 'none',
+                    borderBottom: idx < sortedSettlements.length - 1 ? '1px solid var(--color-success-light)' : 'none',
                     fontSize: '13px',
                     opacity: status.isFullyPaid ? 0.75 : 1
                   }}>
@@ -4455,33 +4455,33 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         />
                       </label>
                       <span style={{
-                        color: '#e74c3c',
+                        color: 'var(--color-danger)',
                         fontWeight: '600',
                         textDecoration: status.isFullyPaid ? 'line-through' : 'none'
                       }}>{s.from}</span>
-                      <span style={{ margin: '0 8px', color: '#666' }}>→</span>
+                      <span style={{ margin: '0 8px', color: 'var(--color-text-secondary)' }}>→</span>
                       <span style={{
-                        color: '#27ae60',
+                        color: 'var(--color-primary)',
                         fontWeight: '600',
                         textDecoration: status.isFullyPaid ? 'line-through' : 'none'
                       }}>{s.to}</span>
                       <span style={{
                         marginLeft: 'auto',
                         fontWeight: '700',
-                        color: status.isFullyPaid ? '#999' : '#333',
+                        color: status.isFullyPaid ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
                         textDecoration: status.isFullyPaid ? 'line-through' : 'none'
                       }}>
                         ${s.amount.toFixed(2)}
                       </span>
                       {status.isFullyPaid && (
-                        <span style={{ marginLeft: '8px', color: '#27ae60', fontSize: '11px', fontWeight: '600' }}>
+                        <span style={{ marginLeft: '8px', color: 'var(--color-primary)', fontSize: '11px', fontWeight: '600' }}>
                           ✓ PAID
                         </span>
                       )}
                     </div>
                     {hasPartialPayment && (
-                      <div style={{ marginLeft: '38px', marginTop: '4px', padding: '4px 8px', background: '#fff3cd', borderRadius: '4px', fontSize: '11px', border: '1px solid #ffc107', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#856404' }}>
+                      <div style={{ marginLeft: '38px', marginTop: '4px', padding: '4px 8px', background: 'var(--color-warning-light)', borderRadius: '4px', fontSize: '11px', border: '1px solid var(--color-warning)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--color-warning-dark)' }}>
                           Paid ${status.paidAmount.toFixed(2)} earlier — <strong>${status.remaining.toFixed(2)} additional owed</strong>
                         </span>
                         <button
@@ -4493,7 +4493,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           }}
                           style={{
                             padding: '2px 8px',
-                            background: '#e74c3c',
+                            background: 'var(--color-danger)',
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
@@ -4508,7 +4508,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         </button>
                       </div>
                     )}
-                    <div style={{ fontSize: '10px', color: '#888', marginTop: '2px', marginLeft: '38px', display: 'flex', gap: '12px' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '2px', marginLeft: '38px', display: 'flex', gap: '12px' }}>
                       {s.skins > 0.001 && <span>Skins: ${s.skins.toFixed(2)}</span>}
                       {greeniesEnabled && s.greenies > 0.001 && <span>Greenies: ${s.greenies.toFixed(2)}</span>}
                     </div>
@@ -4537,7 +4537,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           zIndex: 3000
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '25px',
             borderRadius: '12px',
             width: '90%',
@@ -4545,7 +4545,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             textAlign: 'center'
           }}>
             <h3 style={{ marginBottom: '15px' }}>Enter Admin PIN</h3>
-            <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '15px' }}>
               PIN required to add/remove skins players during a live round
             </p>
             <input
@@ -4558,7 +4558,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 padding: '12px',
                 fontSize: '18px',
                 textAlign: 'center',
-                border: '2px solid #ddd',
+                border: '2px solid var(--color-border)',
                 borderRadius: '8px',
                 marginBottom: '15px'
               }}
@@ -4571,8 +4571,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#f8f9fa',
-                  border: '1px solid #ddd',
+                  background: 'var(--color-surface-sunken)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: '600'
@@ -4585,7 +4585,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#27ae60',
+                  background: 'var(--color-primary)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -4615,7 +4615,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           zIndex: 3000
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
             borderRadius: '12px',
             width: '90%',
@@ -4623,11 +4623,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             maxHeight: '90vh',
             overflow: 'auto'
           }}>
-            <h3 style={{ marginBottom: '15px', color: '#f39c12' }}>Edit Skins Settings</h3>
+            <h3 style={{ marginBottom: '15px', color: 'var(--color-skins)' }}>Edit Skins Settings</h3>
 
             {!editPinVerified ? (
               <div>
-                <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '15px' }}>
                   Enter admin PIN to edit skins settings
                 </p>
                 <input
@@ -4640,7 +4640,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     padding: '12px',
                     fontSize: '18px',
                     textAlign: 'center',
-                    border: '2px solid #ddd',
+                    border: '2px solid var(--color-border)',
                     borderRadius: '8px',
                     marginBottom: '15px'
                   }}
@@ -4659,7 +4659,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
                     onClick={() => { setShowEditSettings(false); setEditPinInput('') }}
-                    style={{ flex: 1, padding: '12px', background: '#f8f9fa', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                    style={{ flex: 1, padding: '12px', background: 'var(--color-surface-sunken)', border: '1px solid var(--color-border)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
                   >
                     Cancel
                   </button>
@@ -4672,7 +4672,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         setEditPinInput('')
                       }
                     }}
-                    style={{ flex: 1, padding: '12px', background: '#f39c12', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                    style={{ flex: 1, padding: '12px', background: 'var(--color-skins)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
                   >
                     Continue
                   </button>
@@ -4686,15 +4686,15 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     type="number"
                     value={editSettings.costPerSkin}
                     onChange={(e) => setEditSettings({ ...editSettings, costPerSkin: parseFloat(e.target.value) || 0 })}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
                   />
                 </div>
 
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px' }}>Carryovers on Ties?</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => setEditSettings({ ...editSettings, carryovers: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.carryovers ? '2px solid #f39c12' : '2px solid #ddd', background: editSettings.carryovers ? '#fff8e1' : 'white', fontWeight: editSettings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                    <button onClick={() => setEditSettings({ ...editSettings, carryovers: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.carryovers ? '2px solid #f39c12' : '2px solid #ddd', background: !editSettings.carryovers ? '#fff8e1' : 'white', fontWeight: !editSettings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                    <button onClick={() => setEditSettings({ ...editSettings, carryovers: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: editSettings.carryovers ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: editSettings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setEditSettings({ ...editSettings, carryovers: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !editSettings.carryovers ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: !editSettings.carryovers ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                   </div>
                 </div>
 
@@ -4702,8 +4702,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   <div style={{ marginBottom: '15px' }}>
                     <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px' }}>Wrap Unwon Skins to Next 9?</label>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <button onClick={() => setEditSettings({ ...editSettings, wrapUnwonSkins: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: editSettings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: editSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                      <button onClick={() => setEditSettings({ ...editSettings, wrapUnwonSkins: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: !editSettings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: !editSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                      <button onClick={() => setEditSettings({ ...editSettings, wrapUnwonSkins: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: editSettings.wrapUnwonSkins ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: editSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                      <button onClick={() => setEditSettings({ ...editSettings, wrapUnwonSkins: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !editSettings.wrapUnwonSkins ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: !editSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                     </div>
                   </div>
                 )}
@@ -4711,8 +4711,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 <div style={{ marginBottom: '15px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px' }}>Par or Better Required to Win?</label>
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => setEditSettings({ ...editSettings, parOrBetterRequired: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.parOrBetterRequired ? '2px solid #f39c12' : '2px solid #ddd', background: editSettings.parOrBetterRequired ? '#fff8e1' : 'white', fontWeight: editSettings.parOrBetterRequired ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                    <button onClick={() => setEditSettings({ ...editSettings, parOrBetterRequired: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.parOrBetterRequired ? '2px solid #f39c12' : '2px solid #ddd', background: !editSettings.parOrBetterRequired ? '#fff8e1' : 'white', fontWeight: !editSettings.parOrBetterRequired ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                    <button onClick={() => setEditSettings({ ...editSettings, parOrBetterRequired: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.parOrBetterRequired ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: editSettings.parOrBetterRequired ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: editSettings.parOrBetterRequired ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setEditSettings({ ...editSettings, parOrBetterRequired: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.parOrBetterRequired ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !editSettings.parOrBetterRequired ? 'var(--color-warning-light)' : 'var(--color-surface)', fontWeight: !editSettings.parOrBetterRequired ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                   </div>
                 </div>
 
@@ -4722,7 +4722,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                   {/* Birdie */}
                   <div style={{ marginBottom: '8px' }}>
-                    <div style={{ fontSize: '12px', marginBottom: '4px', color: '#666' }}>Birdie (1 under par)</div>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: 'var(--color-text-secondary)' }}>Birdie (1 under par)</div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {[1, 2].map(val => (
                         <button
@@ -4739,8 +4739,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           }}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '6px', fontSize: '12px',
-                            border: (editSettings.birdieMultiplier || 1) === val ? '2px solid #9c27b0' : '2px solid #ddd',
-                            background: (editSettings.birdieMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                            border: (editSettings.birdieMultiplier || 1) === val ? '2px solid var(--color-multiplier)' : '2px solid var(--color-border)',
+                            background: (editSettings.birdieMultiplier || 1) === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                             fontWeight: (editSettings.birdieMultiplier || 1) === val ? '600' : 'normal',
                             cursor: 'pointer'
                           }}
@@ -4753,7 +4753,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                   {/* Eagle */}
                   <div style={{ marginBottom: '8px' }}>
-                    <div style={{ fontSize: '12px', marginBottom: '4px', color: '#666' }}>Eagle (2 under par)</div>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: 'var(--color-text-secondary)' }}>Eagle (2 under par)</div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {[1, 2, 3].map(val => (
                         <button
@@ -4769,8 +4769,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           }}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '6px', fontSize: '12px',
-                            border: (editSettings.eagleMultiplier || 1) === val ? '2px solid #9c27b0' : '2px solid #ddd',
-                            background: (editSettings.eagleMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                            border: (editSettings.eagleMultiplier || 1) === val ? '2px solid var(--color-multiplier)' : '2px solid var(--color-border)',
+                            background: (editSettings.eagleMultiplier || 1) === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                             fontWeight: (editSettings.eagleMultiplier || 1) === val ? '600' : 'normal',
                             cursor: 'pointer'
                           }}
@@ -4783,7 +4783,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                   {/* Double Eagle */}
                   <div style={{ marginBottom: '8px' }}>
-                    <div style={{ fontSize: '12px', marginBottom: '4px', color: '#666' }}>Double Eagle / Albatross (3 under par)</div>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: 'var(--color-text-secondary)' }}>Double Eagle / Albatross (3 under par)</div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {[1, 2, 3, 4].map(val => (
                         <button
@@ -4798,8 +4798,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           }}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '6px', fontSize: '12px',
-                            border: (editSettings.doubleEagleMultiplier || 1) === val ? '2px solid #9c27b0' : '2px solid #ddd',
-                            background: (editSettings.doubleEagleMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                            border: (editSettings.doubleEagleMultiplier || 1) === val ? '2px solid var(--color-multiplier)' : '2px solid var(--color-border)',
+                            background: (editSettings.doubleEagleMultiplier || 1) === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                             fontWeight: (editSettings.doubleEagleMultiplier || 1) === val ? '600' : 'normal',
                             cursor: 'pointer'
                           }}
@@ -4812,7 +4812,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                   {/* Hole in One */}
                   <div>
-                    <div style={{ fontSize: '12px', marginBottom: '4px', color: '#666' }}>Hole in One</div>
+                    <div style={{ fontSize: '12px', marginBottom: '4px', color: 'var(--color-text-secondary)' }}>Hole in One</div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       {[1, 2, 3, 4, 5].map(val => (
                         <button
@@ -4820,8 +4820,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           onClick={() => setEditSettings({ ...editSettings, holeInOneMultiplier: val, birdieDoubleEagleTriple: false })}
                           style={{
                             flex: 1, padding: '8px', borderRadius: '6px', fontSize: '12px',
-                            border: (editSettings.holeInOneMultiplier || 1) === val ? '2px solid #9c27b0' : '2px solid #ddd',
-                            background: (editSettings.holeInOneMultiplier || 1) === val ? '#f3e5f5' : 'white',
+                            border: (editSettings.holeInOneMultiplier || 1) === val ? '2px solid var(--color-multiplier)' : '2px solid var(--color-border)',
+                            background: (editSettings.holeInOneMultiplier || 1) === val ? 'var(--color-multiplier-light)' : 'var(--color-surface)',
                             fontWeight: (editSettings.holeInOneMultiplier || 1) === val ? '600' : 'normal',
                             cursor: 'pointer'
                           }}
@@ -4835,11 +4835,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                 {/* Greenies Settings — only for casual/quick skins; league rounds already have greenies */}
                 {isCasualGame && (
-                <div style={{ borderTop: '1px solid #eee', paddingTop: '15px', marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px', color: '#27ae60' }}>Greenies (Par 3s)</label>
+                <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '15px', marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px', color: 'var(--color-primary)' }}>Greenies (Par 3s)</label>
                   <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                    <button onClick={() => setEditSettings({ ...editSettings, greeniesEnabled: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.greeniesEnabled ? '2px solid #27ae60' : '2px solid #ddd', background: editSettings.greeniesEnabled ? '#e8f5e9' : 'white', fontWeight: editSettings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
-                    <button onClick={() => setEditSettings({ ...editSettings, greeniesEnabled: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.greeniesEnabled ? '2px solid #27ae60' : '2px solid #ddd', background: !editSettings.greeniesEnabled ? '#e8f5e9' : 'white', fontWeight: !editSettings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                    <button onClick={() => setEditSettings({ ...editSettings, greeniesEnabled: true })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: editSettings.greeniesEnabled ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: editSettings.greeniesEnabled ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: editSettings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                    <button onClick={() => setEditSettings({ ...editSettings, greeniesEnabled: false })} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: !editSettings.greeniesEnabled ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: !editSettings.greeniesEnabled ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: !editSettings.greeniesEnabled ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                   </div>
                   {editSettings.greeniesEnabled && (
                     <>
@@ -4849,7 +4849,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           type="number"
                           value={editSettings.greeniesCostPerHole || 1}
                           onChange={(e) => setEditSettings({ ...editSettings, greeniesCostPerHole: parseFloat(e.target.value) || 1 })}
-                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
+                          style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
                           min="0.5"
                           step="0.5"
                         />
@@ -4857,8 +4857,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       <div>
                         <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '12px' }}>Greenie Carryovers</label>
                         <div style={{ display: 'flex', gap: '10px' }}>
-                          <button onClick={() => setEditSettings({ ...editSettings, greeniesCarryover: true })} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: editSettings.greeniesCarryover ? '2px solid #27ae60' : '2px solid #ddd', background: editSettings.greeniesCarryover ? '#e8f5e9' : 'white', fontWeight: editSettings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>Yes</button>
-                          <button onClick={() => setEditSettings({ ...editSettings, greeniesCarryover: false })} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: !editSettings.greeniesCarryover ? '2px solid #27ae60' : '2px solid #ddd', background: !editSettings.greeniesCarryover ? '#e8f5e9' : 'white', fontWeight: !editSettings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>No</button>
+                          <button onClick={() => setEditSettings({ ...editSettings, greeniesCarryover: true })} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: editSettings.greeniesCarryover ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: editSettings.greeniesCarryover ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: editSettings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>Yes</button>
+                          <button onClick={() => setEditSettings({ ...editSettings, greeniesCarryover: false })} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: !editSettings.greeniesCarryover ? '2px solid var(--color-primary)' : '2px solid var(--color-border)', background: !editSettings.greeniesCarryover ? 'var(--color-success-light)' : 'var(--color-surface)', fontWeight: !editSettings.greeniesCarryover ? '600' : 'normal', cursor: 'pointer', fontSize: '12px' }}>No</button>
                         </div>
                       </div>
                     </>
@@ -4869,7 +4869,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button
                     onClick={() => { setShowEditSettings(false); setEditPinVerified(false) }}
-                    style={{ flex: 1, padding: '12px', background: '#f8f9fa', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                    style={{ flex: 1, padding: '12px', background: 'var(--color-surface-sunken)', border: '1px solid var(--color-border)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
                   >
                     Cancel
                   </button>
@@ -4879,7 +4879,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       setShowEditSettings(false)
                       setEditPinVerified(false)
                     }}
-                    style={{ flex: 1, padding: '12px', background: '#27ae60', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                    style={{ flex: 1, padding: '12px', background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
                   >
                     Save Changes
                   </button>
@@ -4905,15 +4905,15 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           zIndex: 3000
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '25px',
             borderRadius: '12px',
             width: '90%',
             maxWidth: '300px',
             textAlign: 'center'
           }}>
-            <h3 style={{ marginBottom: '15px', color: '#e74c3c' }}>Cancel {isCasualGame ? 'Skins' : 'Side Skins'} Match?</h3>
-            <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+            <h3 style={{ marginBottom: '15px', color: 'var(--color-danger)' }}>Cancel {isCasualGame ? 'Skins' : 'Side Skins'} Match?</h3>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '15px' }}>
               Enter admin PIN to cancel the skins match. This cannot be undone.
             </p>
             <input
@@ -4926,7 +4926,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 padding: '12px',
                 fontSize: '18px',
                 textAlign: 'center',
-                border: '2px solid #ddd',
+                border: '2px solid var(--color-border)',
                 borderRadius: '8px',
                 marginBottom: '15px'
               }}
@@ -4950,8 +4950,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#f8f9fa',
-                  border: '1px solid #ddd',
+                  background: 'var(--color-surface-sunken)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: '600'
@@ -4973,7 +4973,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#e74c3c',
+                  background: 'var(--color-danger)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -5003,14 +5003,14 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           zIndex: 3000
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '25px',
             borderRadius: '12px',
             width: '90%',
             maxWidth: '350px'
           }}>
-            <h3 style={{ marginBottom: '15px', color: '#27ae60' }}>Add Player Mid-Round</h3>
-            <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+            <h3 style={{ marginBottom: '15px', color: 'var(--color-primary)' }}>Add Player Mid-Round</h3>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '15px' }}>
               Player will only be eligible for skins and greenies from their join hole onwards.
             </p>
 
@@ -5022,8 +5022,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   flex: 1,
                   padding: '8px',
                   borderRadius: '6px',
-                  border: addPlayerMode === 'existing' ? '2px solid #27ae60' : '1px solid #ddd',
-                  background: addPlayerMode === 'existing' ? '#e8f5e9' : 'white',
+                  border: addPlayerMode === 'existing' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                  background: addPlayerMode === 'existing' ? 'var(--color-success-light)' : 'var(--color-surface)',
                   fontWeight: addPlayerMode === 'existing' ? '600' : 'normal',
                   cursor: 'pointer',
                   fontSize: '12px'
@@ -5037,8 +5037,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   flex: 1,
                   padding: '8px',
                   borderRadius: '6px',
-                  border: addPlayerMode === 'guest' ? '2px solid #27ae60' : '1px solid #ddd',
-                  background: addPlayerMode === 'guest' ? '#e8f5e9' : 'white',
+                  border: addPlayerMode === 'guest' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                  background: addPlayerMode === 'guest' ? 'var(--color-success-light)' : 'var(--color-surface)',
                   fontWeight: addPlayerMode === 'guest' ? '600' : 'normal',
                   cursor: 'pointer',
                   fontSize: '12px'
@@ -5060,7 +5060,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     width: '100%',
                     padding: '10px',
                     borderRadius: '6px',
-                    border: '1px solid #ddd',
+                    border: '1px solid var(--color-border)',
                     fontSize: '14px'
                   }}
                 >
@@ -5074,7 +5074,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   }
                 </select>
                 {(leaguePlayers || []).filter(p => !skinsMatch.participants.includes(String(p.id))).length === 0 && (
-                  <div style={{ fontSize: '11px', color: '#e74c3c', marginTop: '5px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--color-danger)', marginTop: '5px' }}>
                     All league players are already in the skins match. Use "Add Guest" to add someone new.
                   </div>
                 )}
@@ -5093,7 +5093,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     width: '100%',
                     padding: '10px',
                     borderRadius: '6px',
-                    border: '1px solid #ddd',
+                    border: '1px solid var(--color-border)',
                     fontSize: '14px'
                   }}
                 />
@@ -5112,7 +5112,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   width: '100%',
                   padding: '10px',
                   borderRadius: '6px',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--color-border)',
                   fontSize: '14px'
                 }}
               >
@@ -5139,11 +5139,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   width: '100%',
                   padding: '10px',
                   borderRadius: '6px',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--color-border)',
                   fontSize: '14px'
                 }}
               />
-              <div style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '5px' }}>
                 Eligible for holes {addPlayerJoinHole}-18 only
               </div>
             </div>
@@ -5161,8 +5161,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#f8f9fa',
-                  border: '1px solid #ddd',
+                  background: 'var(--color-surface-sunken)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: '600'
@@ -5301,7 +5301,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#27ae60',
+                  background: 'var(--color-primary)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -5331,7 +5331,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
           zIndex: 3000
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '25px',
             borderRadius: '12px',
             width: '90%',
@@ -5339,13 +5339,13 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
             maxHeight: '90vh',
             overflow: 'auto'
           }}>
-            <h3 style={{ marginBottom: '15px', color: '#e67e22' }}>
+            <h3 style={{ marginBottom: '15px', color: 'var(--color-skins-dark)' }}>
               Settle & Leave: {settlePlayer.name}
             </h3>
 
             {settleStep === 1 && (
               <>
-                <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '15px' }}>
                   Select the last hole this player completed before leaving. Choose "None" if they left before playing.
                 </p>
 
@@ -5360,7 +5360,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       width: '100%',
                       padding: '10px',
                       borderRadius: '6px',
-                      border: '1px solid #ddd',
+                      border: '1px solid var(--color-border)',
                       fontSize: '14px'
                     }}
                   >
@@ -5373,7 +5373,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
                 {/* Show current settlement status with WHO owes whom */}
                 <div style={{
-                  background: '#f8f9fa',
+                  background: 'var(--color-surface-sunken)',
                   padding: '15px',
                   borderRadius: '8px',
                   marginBottom: '20px'
@@ -5460,7 +5460,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                               return (
                                 <div key={idx} style={{
                                   padding: '8px',
-                                  background: tx.net > 0 ? '#e8f5e9' : '#ffebee',
+                                  background: tx.net > 0 ? 'var(--color-success-light)' : 'var(--color-danger-light)',
                                   borderRadius: '4px',
                                   marginBottom: '4px',
                                   fontSize: '12px'
@@ -5468,20 +5468,20 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span>
                                       {tx.net > 0 ? (
-                                        <><span style={{ color: '#27ae60' }}>Collect from</span> {tx.playerName}</>
+                                        <><span style={{ color: 'var(--color-primary)' }}>Collect from</span> {tx.playerName}</>
                                       ) : (
-                                        <><span style={{ color: '#e74c3c' }}>Owe</span> {tx.playerName}</>
+                                        <><span style={{ color: 'var(--color-danger)' }}>Owe</span> {tx.playerName}</>
                                       )}
                                     </span>
                                     <span style={{
                                       fontWeight: '600',
-                                      color: tx.net > 0 ? '#27ae60' : '#e74c3c'
+                                      color: tx.net > 0 ? 'var(--color-primary)' : 'var(--color-danger)'
                                     }}>
                                       ${Math.abs(tx.net).toFixed(2)}
                                     </span>
                                   </div>
                                   {/* Breakdown of skins vs greenies */}
-                                  <div style={{ fontSize: '10px', color: '#888', marginTop: '2px', display: 'flex', gap: '10px' }}>
+                                  <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginTop: '2px', display: 'flex', gap: '10px' }}>
                                     {Math.abs(netSkins) > 0.01 && (
                                       <span>Skins: {netSkins > 0 ? '+' : ''}${netSkins.toFixed(2)}</span>
                                     )}
@@ -5494,19 +5494,19 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                             })}
                           </div>
                         ) : (
-                          <div style={{ color: '#666', fontSize: '12px', marginBottom: '10px' }}>
+                          <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '10px' }}>
                             No settlements needed - everyone is even!
                           </div>
                         )}
 
                         {/* Summary breakdown */}
                         {(Math.abs(totalSkinsNet) > 0.01 || hasGreeniesTotal) && (
-                          <div style={{ fontSize: '11px', color: '#666', marginBottom: '8px', display: 'flex', gap: '15px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginBottom: '8px', display: 'flex', gap: '15px' }}>
                             {Math.abs(totalSkinsNet) > 0.01 && (
-                              <span>Skins: <span style={{ color: totalSkinsNet >= 0 ? '#27ae60' : '#e74c3c' }}>{totalSkinsNet >= 0 ? '+' : ''}${totalSkinsNet.toFixed(2)}</span></span>
+                              <span>Skins: <span style={{ color: totalSkinsNet >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>{totalSkinsNet >= 0 ? '+' : ''}${totalSkinsNet.toFixed(2)}</span></span>
                             )}
                             {hasGreeniesTotal && (
-                              <span>Greenies: <span style={{ color: totalGreeniesNet >= 0 ? '#27ae60' : '#e74c3c' }}>{totalGreeniesNet >= 0 ? '+' : ''}${totalGreeniesNet.toFixed(2)}</span></span>
+                              <span>Greenies: <span style={{ color: totalGreeniesNet >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>{totalGreeniesNet >= 0 ? '+' : ''}${totalGreeniesNet.toFixed(2)}</span></span>
                             )}
                           </div>
                         )}
@@ -5515,11 +5515,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                           justifyContent: 'space-between',
                           fontSize: '14px',
                           fontWeight: '600',
-                          borderTop: '1px solid #ddd',
+                          borderTop: '1px solid var(--color-border)',
                           paddingTop: '8px'
                         }}>
                           <span>Net Total:</span>
-                          <span style={{ color: grandTotal >= 0 ? '#27ae60' : '#e74c3c' }}>
+                          <span style={{ color: grandTotal >= 0 ? 'var(--color-primary)' : 'var(--color-danger)' }}>
                             {grandTotal >= 0 ? '+' : ''}${grandTotal.toFixed(2)}
                           </span>
                         </div>
@@ -5541,7 +5541,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   if (relevantCOs.length > 0) {
                     return (
                       <div style={{
-                        background: '#fff3e0',
+                        background: 'var(--color-skins-light)',
                         padding: '12px',
                         borderRadius: '8px',
                         marginBottom: '15px',
@@ -5566,8 +5566,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     style={{
                       flex: 1,
                       padding: '12px',
-                      background: '#f8f9fa',
-                      border: '1px solid #ddd',
+                      background: 'var(--color-surface-sunken)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600'
@@ -5596,7 +5596,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     style={{
                       flex: 1,
                       padding: '12px',
-                      background: '#e67e22',
+                      background: 'var(--color-skins-dark)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '8px',
@@ -5612,7 +5612,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
             {settleStep === 2 && (
               <>
-                <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '15px' }}>
                   How should {settlePlayer.name}'s unresolved carryovers be handled?
                 </p>
 
@@ -5624,14 +5624,14 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       padding: '15px',
                       marginBottom: '10px',
                       borderRadius: '8px',
-                      border: carryoverHandling === 'pay' ? '2px solid #e67e22' : '1px solid #ddd',
-                      background: carryoverHandling === 'pay' ? '#fff8e1' : 'white',
+                      border: carryoverHandling === 'pay' ? '2px solid var(--color-skins-dark)' : '1px solid var(--color-border)',
+                      background: carryoverHandling === 'pay' ? 'var(--color-warning-light)' : 'var(--color-surface)',
                       textAlign: 'left',
                       cursor: 'pointer'
                     }}
                   >
                     <div style={{ fontWeight: '600' }}>Pay my carryovers</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                       Leaving player pays their share for carryover holes. Someone holds the money until resolved.
                     </div>
                   </button>
@@ -5641,14 +5641,14 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       width: '100%',
                       padding: '15px',
                       borderRadius: '8px',
-                      border: carryoverHandling === 'forgive' ? '2px solid #e67e22' : '1px solid #ddd',
-                      background: carryoverHandling === 'forgive' ? '#fff8e1' : 'white',
+                      border: carryoverHandling === 'forgive' ? '2px solid var(--color-skins-dark)' : '1px solid var(--color-border)',
+                      background: carryoverHandling === 'forgive' ? 'var(--color-warning-light)' : 'var(--color-surface)',
                       textAlign: 'left',
                       cursor: 'pointer'
                     }}
                   >
                     <div style={{ fontWeight: '600' }}>Forgive carryovers</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                       Remaining players absorb the cost. Treat as if there was one fewer player for those holes.
                     </div>
                   </button>
@@ -5666,7 +5666,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         width: '100%',
                         padding: '10px',
                         borderRadius: '6px',
-                        border: '1px solid #ddd',
+                        border: '1px solid var(--color-border)',
                         fontSize: '14px'
                       }}
                     >
@@ -5687,8 +5687,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     style={{
                       flex: 1,
                       padding: '12px',
-                      background: '#f8f9fa',
-                      border: '1px solid #ddd',
+                      background: 'var(--color-surface-sunken)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '600'
@@ -5707,7 +5707,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     style={{
                       flex: 1,
                       padding: '12px',
-                      background: '#27ae60',
+                      background: 'var(--color-primary)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '8px',
@@ -5746,18 +5746,18 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
   const totalGreeniePayouts = Object.values(settlement.greeniePayouts).reduce((sum, amt) => sum + amt, 0)
 
   return (
-    <div style={{ background: 'white', borderRadius: '10px', padding: '15px' }}>
-      <h3 style={{ marginBottom: '15px', color: '#27ae60' }}>💰 Treasurer's Settlement Guide</h3>
+    <div style={{ background: 'var(--color-surface)', borderRadius: '10px', padding: '15px' }}>
+      <h3 style={{ marginBottom: '15px', color: 'var(--color-primary)' }}>💰 Treasurer's Settlement Guide</h3>
 
       {/* Entry Fee Summary */}
-      <div style={{ background: '#e3f2fd', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '2px solid #2196f3' }}>
-        <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1565c0' }}>Entry Fee Per Player: ${perPlayerEntry.toFixed(2)}</div>
-        <div style={{ fontSize: '11px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+      <div style={{ background: 'var(--color-info-light)', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '2px solid var(--color-info)' }}>
+        <div style={{ fontWeight: '700', marginBottom: '8px', color: 'var(--color-info-dark)' }}>Entry Fee Per Player: ${perPlayerEntry.toFixed(2)}</div>
+        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           <span>Team: ${(format.front9 + format.back9 + (settlement.format === 'matchPlay' ? format.overall : 0)).toFixed(2)}</span>
           <span>Greenies: ${(4 * format.greeniePerHole).toFixed(2)}</span>
           {settlement.hio.enabled && <span>HIO: ${format.holeInOne.toFixed(2)}</span>}
         </div>
-        <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>
+        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '6px' }}>
           {settlement.totalPlayers} players × ${perPlayerEntry.toFixed(2)} = <strong>${(settlement.totalPlayers * perPlayerEntry).toFixed(2)}</strong> total collected
         </div>
       </div>
@@ -5765,7 +5765,7 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
       {/* Step 1: Collect from Teams */}
       <div style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>1</span>
+          <span style={{ background: 'var(--color-info-dark)', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>1</span>
           Collect From Each Team
         </h4>
         {settlement.teamSettlements.map(team => {
@@ -5778,35 +5778,35 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
 
           return (
             <div key={team.teamId} style={{
-              background: '#f8f9fa',
+              background: 'var(--color-surface-sunken)',
               padding: '12px',
               borderRadius: '8px',
               marginBottom: '10px',
-              border: '1px solid #ddd'
+              border: '1px solid var(--color-border)'
             }}>
               <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '15px' }}>
-                {team.teamName} <span style={{ fontWeight: 'normal', fontSize: '12px', color: '#666' }}>({team.teamSize} players)</span>
+                {team.teamName} <span style={{ fontWeight: 'normal', fontSize: '12px', color: 'var(--color-text-secondary)' }}>({team.teamSize} players)</span>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px', fontSize: '12px' }}>
-                <div style={{ background: '#ffebee', padding: '8px', borderRadius: '6px' }}>
-                  <div style={{ color: '#c62828', fontWeight: '600' }}>Team Owes</div>
+                <div style={{ background: 'var(--color-danger-light)', padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ color: 'var(--color-danger-dark)', fontWeight: '600' }}>Team Owes</div>
                   <div style={{ fontSize: '18px', fontWeight: '700' }}>${teamOwes.toFixed(2)}</div>
-                  <div style={{ fontSize: '10px', color: '#666' }}>${(teamOwes / team.teamSize).toFixed(2)}/player</div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>${(teamOwes / team.teamSize).toFixed(2)}/player</div>
                 </div>
-                <div style={{ background: '#e8f5e9', padding: '8px', borderRadius: '6px' }}>
-                  <div style={{ color: '#2e7d32', fontWeight: '600' }}>Team Wins</div>
+                <div style={{ background: 'var(--color-success-light)', padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ color: 'var(--color-success-dark)', fontWeight: '600' }}>Team Wins</div>
                   <div style={{ fontSize: '18px', fontWeight: '700' }}>${teamWins.toFixed(2)}</div>
-                  <div style={{ fontSize: '10px', color: '#666' }}>${(teamWins / team.teamSize).toFixed(2)}/player</div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>${(teamWins / team.teamSize).toFixed(2)}/player</div>
                 </div>
               </div>
 
               {/* Show what they won */}
               {(team.wins.length > 0 || team.ties?.length > 0) && (
-                <div style={{ fontSize: '11px', marginBottom: '10px', padding: '6px', background: '#e8f5e9', borderRadius: '4px' }}>
-                  {team.wins.length > 0 && <span style={{ color: '#2e7d32' }}>✓ Won: {team.wins.join(', ')}</span>}
+                <div style={{ fontSize: '11px', marginBottom: '10px', padding: '6px', background: 'var(--color-success-light)', borderRadius: '4px' }}>
+                  {team.wins.length > 0 && <span style={{ color: 'var(--color-success-dark)' }}>✓ Won: {team.wins.join(', ')}</span>}
                   {team.ties?.length > 0 && team.ties.map((tie, i) => (
-                    <span key={i} style={{ color: '#1565c0', marginLeft: team.wins.length > 0 ? '8px' : '0' }}>
+                    <span key={i} style={{ color: 'var(--color-info-dark)', marginLeft: team.wins.length > 0 ? '8px' : '0' }}>
                       ≈ Tied: {tie.category} ({tie.numTeams} teams)
                     </span>
                   ))}
@@ -5814,43 +5814,43 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
               )}
 
               {/* Settlement Options */}
-              <div style={{ background: '#fff8e1', padding: '10px', borderRadius: '6px', border: '1px solid #f9a825' }}>
-                <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px', color: '#f57f17' }}>Settlement Options:</div>
+              <div style={{ background: 'var(--color-warning-light)', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-gold)' }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px', color: 'var(--color-skins-dark)' }}>Settlement Options:</div>
 
                 {winsMore ? (
                   <>
-                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                       <strong>Option A:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: '#2e7d32', fontWeight: '600' }}>+${(netAmount / team.teamSize).toFixed(2)} net</span>
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: 'var(--color-success-dark)', fontWeight: '600' }}>+${(netAmount / team.teamSize).toFixed(2)} net</span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                       <strong>Option B:</strong> Captain collects $0, gets back ${netAmount.toFixed(2)} net
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                        Each player pays $0, gets back <span style={{ color: '#2e7d32', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)}</span>
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                        Each player pays $0, gets back <span style={{ color: 'var(--color-success-dark)', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)}</span>
                       </div>
                     </div>
                   </>
                 ) : owesMore ? (
                   <>
-                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                       <strong>Option A:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: '#c62828', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)} net</span>
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: 'var(--color-danger-dark)', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)} net</span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                       <strong>Option B:</strong> Captain collects ${Math.abs(netAmount).toFixed(2)} net, gets back $0
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                        Each player pays <span style={{ color: '#c62828', fontWeight: '600' }}>${(Math.abs(netAmount) / team.teamSize).toFixed(2)}</span>, gets back $0
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                        Each player pays <span style={{ color: 'var(--color-danger-dark)', fontWeight: '600' }}>${(Math.abs(netAmount) / team.teamSize).toFixed(2)}</span>, gets back $0
                       </div>
                     </div>
                   </>
                 ) : (
-                  <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                  <div style={{ fontSize: '12px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                     <strong>Break Even:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
-                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                       Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ fontWeight: '600' }}>$0 net</span>
                     </div>
                   </div>
@@ -5864,26 +5864,26 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
       {/* Step 2: Pay Greenie Winners */}
       <div style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>2</span>
+          <span style={{ background: 'var(--color-info-dark)', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>2</span>
           Pay Greenie Winners
         </h4>
-        <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
+        <div style={{ background: 'var(--color-surface-sunken)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
             {[4, 8, 12, 17].map(hole => {
               const result = settlement.greenieResults[hole]
               const winnerPlayer = result?.winner ? liveRound.teams.flatMap(t => t.players).find(p => String(p.id) === String(result.winner)) : null
               return (
                 <div key={hole} style={{
-                  background: result?.isFinal ? (result.winner ? '#e8f5e9' : '#fff3e0') : '#f5f5f5',
+                  background: result?.isFinal ? (result.winner ? 'var(--color-success-light)' : 'var(--color-skins-light)') : 'var(--color-surface-sunken)',
                   padding: '8px',
                   borderRadius: '6px',
                   textAlign: 'center',
-                  border: result?.isFinal ? (result.winner ? '2px solid #27ae60' : '2px solid #f39c12') : '1px solid #ddd'
+                  border: result?.isFinal ? (result.winner ? '2px solid var(--color-primary)' : '2px solid var(--color-skins)') : '1px solid var(--color-border)'
                 }}>
-                  <div style={{ fontSize: '11px', color: '#666' }}>Hole {hole}</div>
-                  <div style={{ fontWeight: '700', color: '#27ae60' }}>${result?.pot?.toFixed(2) || '0.00'}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Hole {hole}</div>
+                  <div style={{ fontWeight: '700', color: 'var(--color-primary)' }}>${result?.pot?.toFixed(2) || '0.00'}</div>
                   {result?.isFinal && (
-                    <div style={{ fontSize: '10px', marginTop: '4px', color: result.winner ? '#2e7d32' : '#e67e22' }}>
+                    <div style={{ fontSize: '10px', marginTop: '4px', color: result.winner ? 'var(--color-success-dark)' : 'var(--color-skins-dark)' }}>
                       {result.winner ? `${winnerPlayer?.name || 'Unknown'}` : 'No winner'}
                     </div>
                   )}
@@ -5893,25 +5893,25 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
           </div>
 
           {Object.keys(settlement.greeniePayouts).length > 0 ? (
-            <div style={{ borderTop: '1px solid #ddd', paddingTop: '10px' }}>
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '10px' }}>
               <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px' }}>Pay to individuals:</div>
               {Object.entries(settlement.greeniePayouts).map(([playerId, amount]) => {
                 const player = liveRound.teams.flatMap(t => t.players).find(p => String(p.id) === String(playerId))
                 return (
-                  <div key={playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#e8f5e9', borderRadius: '4px', marginBottom: '4px' }}>
+                  <div key={playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: 'var(--color-success-light)', borderRadius: '4px', marginBottom: '4px' }}>
                     <span style={{ fontWeight: '500' }}>{player?.name || 'Unknown'}</span>
-                    <span style={{ color: '#2e7d32', fontWeight: '700' }}>${amount.toFixed(2)}</span>
+                    <span style={{ color: 'var(--color-success-dark)', fontWeight: '700' }}>${amount.toFixed(2)}</span>
                   </div>
                 )
               })}
               {settlement.carryoverRemaining > 0 && (
-                <div style={{ marginTop: '8px', color: '#e67e22', fontSize: '11px' }}>
+                <div style={{ marginTop: '8px', color: 'var(--color-skins-dark)', fontSize: '11px' }}>
                   ⏳ ${settlement.carryoverRemaining.toFixed(2)} carrying over (waiting for final greenie)
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ color: '#666', fontSize: '12px', fontStyle: 'italic' }}>
+            <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontStyle: 'italic' }}>
               No greenie winners yet
             </div>
           )}
@@ -5922,16 +5922,16 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
       {settlement.hio.enabled && (
         <div style={{ marginBottom: '20px' }}>
           <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>3</span>
+            <span style={{ background: 'var(--color-info-dark)', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>3</span>
             Hole-in-One Pot
           </h4>
-          <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', border: '2px solid #f39c12' }}>
+          <div style={{ background: 'var(--color-skins-light)', padding: '12px', borderRadius: '8px', border: '2px solid var(--color-skins)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: '600' }}>Add to HIO Pot</div>
-                <div style={{ fontSize: '11px', color: '#666' }}>{settlement.hio.eligibleCount} eligible players × ${format.holeInOne.toFixed(2)}</div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{settlement.hio.eligibleCount} eligible players × ${format.holeInOne.toFixed(2)}</div>
               </div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: '#f57f17' }}>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--color-skins-dark)' }}>
                 ${settlement.hio.contribution.toFixed(2)}
               </div>
             </div>
@@ -5940,7 +5940,7 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
       )}
 
       {/* Verification */}
-      <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
+      <div style={{ background: 'var(--color-surface-sunken)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
         <h4 style={{ fontSize: '13px', marginBottom: '10px' }}>✓ Verification</h4>
         <div style={{ fontSize: '11px', display: 'grid', gap: '4px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -5962,14 +5962,14 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
             </div>
           )}
           {settlement.carryoverRemaining > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e67e22' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-skins-dark)' }}>
               <span>Greenie Carryover (pending):</span>
               <span>${settlement.carryoverRemaining.toFixed(2)}</span>
             </div>
           )}
-          <div style={{ borderTop: '1px solid #ddd', paddingTop: '6px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}>
+          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '6px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}>
             <span>Remaining (should be $0):</span>
-            <span style={{ color: Math.abs((settlement.totalPlayers * perPlayerEntry) - settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0) - totalGreeniePayouts - (settlement.hio.enabled ? settlement.hio.contribution : 0) - settlement.carryoverRemaining) < 0.01 ? '#2e7d32' : '#c62828' }}>
+            <span style={{ color: Math.abs((settlement.totalPlayers * perPlayerEntry) - settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0) - totalGreeniePayouts - (settlement.hio.enabled ? settlement.hio.contribution : 0) - settlement.carryoverRemaining) < 0.01 ? 'var(--color-success-dark)' : 'var(--color-danger-dark)' }}>
               ${((settlement.totalPlayers * perPlayerEntry) - settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0) - totalGreeniePayouts - (settlement.hio.enabled ? settlement.hio.contribution : 0) - settlement.carryoverRemaining).toFixed(2)}
             </span>
           </div>
@@ -6851,7 +6851,7 @@ function LivePage() {
       {/* Quick Skins Mode Banner */}
       {effectiveQuickSkinsMode && (
         <div style={{
-          background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+          background: 'var(--color-skins)',
           color: 'white',
           padding: '15px',
           borderRadius: '10px',
@@ -6872,7 +6872,7 @@ function LivePage() {
                 flex: 1,
                 background: 'rgba(255,255,255,0.95)',
                 border: 'none',
-                color: '#27ae60',
+                color: 'var(--color-primary)',
                 padding: '10px 16px',
                 borderRadius: '6px',
                 cursor: 'pointer',
@@ -6912,7 +6912,7 @@ function LivePage() {
         marginBottom: '20px',
         borderRadius: '10px',
         overflow: 'hidden',
-        border: '2px solid #27ae60'
+        border: '2px solid var(--color-primary)'
       }}>
         {subTabs.map((tab, idx) => (
           <button
@@ -6922,9 +6922,9 @@ function LivePage() {
               flex: 1,
               padding: '12px 4px',
               border: 'none',
-              borderLeft: idx > 0 ? '1px solid #27ae60' : 'none',
-              background: subTab === tab.id ? '#27ae60' : 'white',
-              color: subTab === tab.id ? 'white' : '#27ae60',
+              borderLeft: idx > 0 ? '1px solid var(--color-primary)' : 'none',
+              background: subTab === tab.id ? 'var(--color-primary)' : 'var(--color-surface)',
+              color: subTab === tab.id ? 'white' : 'var(--color-primary)',
               fontWeight: 'bold',
               cursor: 'pointer',
               fontSize: '12px'
@@ -7021,26 +7021,26 @@ function LivePage() {
         <div style={{ marginTop: '30px' }}>
           {!showFinishConfirm ? (
             <details style={{
-              background: '#f8f9fa',
+              background: 'var(--color-surface-sunken)',
               borderRadius: '10px',
-              border: '1px solid #ddd'
+              border: '1px solid var(--color-border)'
             }}>
               <summary style={{
                 padding: '12px 15px',
                 cursor: 'pointer',
                 fontWeight: '600',
-                color: '#666',
+                color: 'var(--color-text-secondary)',
                 fontSize: '14px'
               }}>
                 {isCasualGame ? 'Game Actions' : isIndividualRound ? 'Round Actions' : 'Admin Actions'}
               </summary>
-              <div style={{ padding: '15px', borderTop: '1px solid #ddd' }}>
+              <div style={{ padding: '15px', borderTop: '1px solid var(--color-border)' }}>
                 <button
                   onClick={() => setShowFinishConfirm(true)}
                   style={{
                     width: '100%',
                     padding: '12px',
-                    background: '#e74c3c',
+                    background: 'var(--color-danger)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
@@ -7051,20 +7051,20 @@ function LivePage() {
                 >
                   {isCasualGame ? 'Finish Game' : isIndividualRound ? 'Finish Round' : 'Finish Round (End League Round)'}
                 </button>
-                <p style={{ fontSize: '12px', color: '#999', marginTop: '10px', textAlign: 'center' }}>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '10px', textAlign: 'center' }}>
                   This saves all scores to history and updates player statistics.
                 </p>
               </div>
             </details>
           ) : (
             <div style={{
-              background: '#fff3cd',
+              background: 'var(--color-warning-light)',
               padding: '20px',
               borderRadius: '10px',
-              border: '2px solid #f9a825'
+              border: '2px solid var(--color-gold)'
             }}>
               <h3 style={{ marginBottom: '15px' }}>{isCasualGame ? 'Finish Game?' : isIndividualRound ? 'Finish Round?' : 'Finish Round?'}</h3>
-              <p style={{ marginBottom: '15px', color: '#666' }}>
+              <p style={{ marginBottom: '15px', color: 'var(--color-text-secondary)' }}>
                 This will save all scores to history and update player statistics.
               </p>
               {/* Only show PIN for league games */}
@@ -7114,7 +7114,7 @@ function LivePage() {
           padding: '20px'
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             borderRadius: '16px',
             padding: '24px',
             maxWidth: '400px',
@@ -7123,14 +7123,14 @@ function LivePage() {
             overflowY: 'auto'
           }}>
             <h3 style={{ margin: '0 0 8px', fontSize: '18px' }}>Game Complete!</h3>
-            <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
               Save round results to player profiles.
             </p>
 
             {/* List app users with handicap toggle */}
             {casualRoundData && casualRoundData.filter(p => p.profileId && !p.isGuest).length > 0 && (
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#888', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-tertiary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Apply to Handicap Tracking
                 </div>
                 {casualRoundData
@@ -7143,14 +7143,14 @@ function LivePage() {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '10px 12px',
-                        background: '#f8f9fa',
+                        background: 'var(--color-surface-sunken)',
                         borderRadius: '8px',
                         marginBottom: '8px'
                       }}
                     >
                       <div>
                         <div style={{ fontWeight: '600', fontSize: '14px' }}>{player.name}</div>
-                        <div style={{ fontSize: '12px', color: '#888' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)' }}>
                           Score: {player.total || '--'} ({player.front9 || '--'} / {player.back9 || '--'})
                         </div>
                       </div>
@@ -7164,7 +7164,7 @@ function LivePage() {
                               [player.profileId]: e.target.checked
                             }))
                           }}
-                          style={{ width: '18px', height: '18px', accentColor: '#27ae60' }}
+                          style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }}
                         />
                       </label>
                     </div>
@@ -7175,7 +7175,7 @@ function LivePage() {
             {/* Guest players (info only) */}
             {casualRoundData && casualRoundData.filter(p => p.isGuest).length > 0 && (
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#888', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-tertiary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Guests (no profile)
                 </div>
                 {casualRoundData
@@ -7185,14 +7185,14 @@ function LivePage() {
                       key={player.id}
                       style={{
                         padding: '10px 12px',
-                        background: '#f8f9fa',
+                        background: 'var(--color-surface-sunken)',
                         borderRadius: '8px',
                         marginBottom: '8px',
                         opacity: 0.7
                       }}
                     >
                       <span style={{ fontWeight: '600', fontSize: '14px' }}>{player.name}</span>
-                      <span style={{ fontSize: '12px', color: '#888', marginLeft: '8px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginLeft: '8px' }}>
                         Score: {player.total || '--'}
                       </span>
                     </div>
@@ -7209,7 +7209,7 @@ function LivePage() {
                   padding: '14px',
                   borderRadius: '10px',
                   border: 'none',
-                  background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                  background: 'var(--color-primary)',
                   color: 'white',
                   fontSize: '16px',
                   fontWeight: '600',
@@ -7226,9 +7226,9 @@ function LivePage() {
                   width: '100%',
                   padding: '14px',
                   borderRadius: '10px',
-                  border: '2px solid #27ae60',
-                  background: 'white',
-                  color: '#27ae60',
+                  border: '2px solid var(--color-primary)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-primary)',
                   fontSize: '16px',
                   fontWeight: '600',
                   cursor: savingCasualRound ? 'default' : 'pointer',
@@ -7258,7 +7258,7 @@ function LivePage() {
           padding: '20px'
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             borderRadius: '16px',
             padding: '24px',
             maxWidth: '400px',
@@ -7267,13 +7267,13 @@ function LivePage() {
             overflowY: 'auto'
           }}>
             <h3 style={{ margin: '0 0 4px', fontSize: '18px', textAlign: 'center' }}>Round Complete!</h3>
-            <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', marginBottom: '20px' }}>
+            <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '20px' }}>
               Gunpowder Golf Course
             </div>
 
             {/* Score Summary */}
             <div style={{
-              background: 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%)',
+              background: 'var(--color-primary-dark)',
               color: 'white',
               borderRadius: '12px',
               padding: '20px',
@@ -7313,26 +7313,26 @@ function LivePage() {
 
             {/* Scoring Breakdown */}
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#888', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-tertiary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Scoring Breakdown
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                 {[
-                  { label: 'Eagles+', count: individualSummaryData.breakdown.eagles, color: '#f39c12' },
-                  { label: 'Birdies', count: individualSummaryData.breakdown.birdies, color: '#27ae60' },
-                  { label: 'Pars', count: individualSummaryData.breakdown.pars, color: '#3498db' },
-                  { label: 'Bogeys', count: individualSummaryData.breakdown.bogeys, color: '#e67e22' },
-                  { label: 'Double', count: individualSummaryData.breakdown.doubleBogeys, color: '#e74c3c' },
-                  { label: 'Worse', count: individualSummaryData.breakdown.worse, color: '#8e44ad' }
+                  { label: 'Eagles+', count: individualSummaryData.breakdown.eagles, color: 'var(--color-skins)' },
+                  { label: 'Birdies', count: individualSummaryData.breakdown.birdies, color: 'var(--color-primary)' },
+                  { label: 'Pars', count: individualSummaryData.breakdown.pars, color: 'var(--color-accent-blue)' },
+                  { label: 'Bogeys', count: individualSummaryData.breakdown.bogeys, color: 'var(--color-skins-dark)' },
+                  { label: 'Double', count: individualSummaryData.breakdown.doubleBogeys, color: 'var(--color-danger)' },
+                  { label: 'Worse', count: individualSummaryData.breakdown.worse, color: 'var(--color-multiplier)' }
                 ].map(item => (
                   <div key={item.label} style={{
                     textAlign: 'center',
                     padding: '8px',
-                    background: '#f8f9fa',
+                    background: 'var(--color-surface-sunken)',
                     borderRadius: '8px'
                   }}>
                     <div style={{ fontSize: '20px', fontWeight: 'bold', color: item.color }}>{item.count}</div>
-                    <div style={{ fontSize: '11px', color: '#888' }}>{item.label}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>{item.label}</div>
                   </div>
                 ))}
               </div>
@@ -7347,7 +7347,7 @@ function LivePage() {
                 padding: '14px',
                 borderRadius: '10px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
+                background: 'var(--color-accent-blue)',
                 color: 'white',
                 fontSize: '16px',
                 fontWeight: '600',

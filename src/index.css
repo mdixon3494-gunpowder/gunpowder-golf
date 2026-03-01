@@ -17,6 +17,8 @@
   --color-surface-sunken: #F0F1F3;
   --color-border: #E2E4E8;
   --color-border-light: #EDEEF1;
+  --color-border-dark: #34495e;
+  --color-disabled: #cccccc;
 
   /* Text */
   --color-text-primary: #1A1D23;
@@ -26,13 +28,21 @@
 
   /* Semantic */
   --color-success: #1B7A4A;
-  --color-warning: #D4870E;
-  --color-danger: #D03E3E;
-  --color-info: #2B6CB0;
+  --color-success-dark: #155724;
   --color-success-light: #E8F5ED;
+  --color-success-border: #81c784;
+  --color-success-stripe: #c8e6c9;
+  --color-warning: #D4870E;
+  --color-warning-dark: #856404;
   --color-warning-light: #FEF5E7;
+  --color-danger: #D03E3E;
+  --color-danger-dark: #c62828;
   --color-danger-light: #FDF0F0;
+  --color-danger-border: #ef9a9a;
+  --color-info: #2B6CB0;
+  --color-info-dark: #1565c0;
   --color-info-light: #EBF4FF;
+  --color-info-light-border: #90caf9;
 
   /* Accents */
   --color-accent-blue: #2B6CB0;
@@ -47,13 +57,23 @@
 
   /* Side game themes */
   --color-skins: #D4870E;
+  --color-skins-dark: #e67e22;
+  --color-skins-light: #fff3e0;
   --color-nassau: #1B7A4A;
   --color-wolf: #7C3AED;
+  --color-multiplier: #9c27b0;
+  --color-multiplier-light: #f3e5f5;
 
   /* Leaderboard */
   --color-gold: #C6930A;
   --color-silver: #8C919D;
   --color-bronze: #A0744E;
+
+  /* Scorecard */
+  --color-back9: #ef6c00;
+  --color-back9-dark: #e65100;
+  --color-leading: #fff9c4;
+  --color-leading-border: #fbc02d;
 
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
