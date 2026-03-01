@@ -3243,6 +3243,8 @@ function SettingsPage({ onShowLeagueSelector }) {
     userRole
   } = useLeague()
 
+  const [activeCategory, setActiveCategory] = useState(null)
+
   const handleStartQuickSkins = ({ players: qsPlayers, teams, skinsSettings, greenieSettings }) => {
     // Create the quick skins round
     const quickRound = {
@@ -3286,142 +3288,258 @@ function SettingsPage({ onShowLeagueSelector }) {
     navigate('/live')
   }
 
+  const categories = [
+    { key: 'account', label: 'Account', subtitle: 'Sign in/out, admin login' },
+    { key: 'gameSetup', label: 'Game Setup', subtitle: 'Quick Skins, announcements, round settings' },
+    { key: 'league', label: 'League', subtitle: 'Info, invites, members, join settings' },
+    { key: 'handicaps', label: 'Handicaps', subtitle: 'Scope, mode, tees, caps, freeze' },
+    { key: 'payouts', label: 'Payouts & Pots', subtitle: 'Payout formats, hole-in-one pot' },
+    ...(actualSiteOwner ? [{ key: 'adminTools', label: 'Admin Tools', subtitle: 'Profiles, migrations, course mapping' }] : [])
+  ]
+
+  const activeCategoryLabel = categories.find(c => c.key === activeCategory)?.label || ''
+
+  const renderCategoryContent = () => {
+    switch (activeCategory) {
+      case 'account':
+        return (
+          <>
+            <AccountSection user={user} profile={profile} onSignOut={signOut} onUnlinkProfile={unlinkMyProfile} />
+            <AdminLoginSection isAdmin={isAdmin} onLogin={adminLogin} onLogout={adminLogout} />
+          </>
+        )
+      case 'gameSetup':
+        return (
+          <>
+            {isAdmin && (
+              <NextRoundAnnouncementSection
+                leagueSettings={leagueSettings}
+                onUpdate={setLeagueSettings}
+                isAdmin={isAdmin}
+              />
+            )}
+            <QuickSkinsSection
+              players={players}
+              liveRound={liveRound}
+              onStartQuickSkins={handleStartQuickSkins}
+            />
+            <RoundSettingsSection
+              defaultStartingHole={defaultStartingHole}
+              onUpdate={setDefaultStartingHole}
+              isAdmin={isAdmin}
+            />
+            <SideGamesSettingsSection
+              leagueSettings={leagueSettings}
+              onUpdate={setLeagueSettings}
+              isAdmin={isAdmin}
+            />
+          </>
+        )
+      case 'league':
+        return (
+          <>
+            <LeagueInfoSection
+              leagueId={leagueId}
+              onLeave={() => {
+                if (profile?.id) {
+                  removeLeagueMember(leagueId, profile.id).catch(err => {
+                    console.warn('Could not remove league member row:', err)
+                  })
+                }
+                leaveLeague()
+              }}
+              onDelete={async () => {
+                try {
+                  await softDeleteLeague(leagueId)
+                  leaveLeague()
+                } catch (err) {
+                  console.error('Failed to delete league:', err)
+                }
+              }}
+              onCloneToTest={cloneLeagueToTest}
+              isAdmin={isAdmin}
+              isLeagueOwner={isLeagueOwner}
+              onSwitchLeague={onShowLeagueSelector}
+              isAuthenticated={!!user}
+            />
+            {isAdmin && <InviteSection leagueId={leagueId} />}
+            {isAdmin && (
+              <PendingApprovalList
+                leagueId={leagueId}
+                pendingRequests={pendingPlayerRequests}
+                onUpdate={setPendingPlayerRequests}
+              />
+            )}
+            {isAdmin && profile?.id && (
+              <MemberManagement
+                leagueId={leagueId}
+                currentProfileId={profile.id}
+                isLeagueOwner={isLeagueOwner}
+              />
+            )}
+            {isAdmin && <JoinSettingsSection leagueId={leagueId} />}
+          </>
+        )
+      case 'handicaps':
+        return (
+          <HandicapSettingsSection
+            handicapSettings={handicapSettings}
+            onUpdateHandicap={setHandicapSettings}
+            courseTees={courseTees}
+            onUpdateTees={setCourseTees}
+            isAdmin={isAdmin}
+            players={players}
+            leagueId={leagueId}
+          />
+        )
+      case 'payouts':
+        return (
+          <>
+            <HoleInOnePotSection
+              holeInOnePot={holeInOnePot}
+              onUpdate={setHoleInOnePot}
+              isAdmin={isAdmin}
+            />
+            <PayoutSettingsSection
+              payoutFormats={payoutFormats}
+              onUpdate={setPayoutFormats}
+              isAdmin={isAdmin}
+            />
+          </>
+        )
+      case 'adminTools':
+        return (
+          <>
+            <div style={{
+              background: 'var(--color-surface)',
+              padding: '20px',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '20px',
+              border: '1px solid var(--color-border)'
+            }}>
+              <h3 style={{ marginBottom: '15px' }}>GPS Yardage</h3>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '15px' }}>
+                Show the GPS tab for all users. When disabled, the GPS page and navigation link are hidden.
+              </p>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                padding: '12px',
+                background: leagueSettings.gpsEnabled ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+                borderRadius: '8px',
+                border: leagueSettings.gpsEnabled ? '2px solid var(--color-success)' : '2px solid var(--color-border)'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={!!leagueSettings.gpsEnabled}
+                  onChange={(e) => setLeagueSettings({ ...leagueSettings, gpsEnabled: e.target.checked })}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <span style={{ fontWeight: '600', color: leagueSettings.gpsEnabled ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
+                  {leagueSettings.gpsEnabled ? 'GPS Enabled' : 'GPS Disabled'}
+                </span>
+              </label>
+            </div>
+            <ManageProfilesSection />
+            <MigrationSection
+              leagueId={leagueId}
+              players={players}
+              onPlayersUpdate={setPlayers}
+            />
+            <SiteOwnerAccessSection
+              isSiteOwner={isSiteOwner}
+              actualSiteOwner={actualSiteOwner}
+              onLogin={siteOwnerLogin}
+              onLogout={siteOwnerLogout}
+              courseMapping={courseMapping}
+              onUpdateCourseMapping={setCourseMapping}
+              viewAsRole={viewAsRole}
+              onSetViewAsRole={setViewAsRole}
+            />
+          </>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
     <div>
-      <h2 style={{ marginBottom: '20px' }}>Settings</h2>
-
-      {/* Account Section */}
-      <AccountSection user={user} profile={profile} onSignOut={signOut} onUnlinkProfile={unlinkMyProfile} />
-
-      <AdminLoginSection
-        isAdmin={isAdmin}
-        onLogin={adminLogin}
-        onLogout={adminLogout}
-      />
-
-      {/* Next Round Announcement - Admin Only */}
-      {isAdmin && (
-        <NextRoundAnnouncementSection
-          leagueSettings={leagueSettings}
-          onUpdate={setLeagueSettings}
-          isAdmin={isAdmin}
-        />
-      )}
-
-      {/* Quick Skins Section */}
-      <QuickSkinsSection
-        players={players}
-        liveRound={liveRound}
-        onStartQuickSkins={handleStartQuickSkins}
-      />
-
-      {/* Invite Players - Admin Only */}
-      {isAdmin && <InviteSection leagueId={leagueId} />}
-
-      {/* Pending Join Requests - Admin Only */}
-      {isAdmin && (
-        <PendingApprovalList
-          leagueId={leagueId}
-          pendingRequests={pendingPlayerRequests}
-          onUpdate={setPendingPlayerRequests}
-        />
-      )}
-
-      {/* Member Management - Admin Only */}
-      {isAdmin && profile?.id && (
-        <MemberManagement
-          leagueId={leagueId}
-          currentProfileId={profile.id}
-          isLeagueOwner={isLeagueOwner}
-        />
-      )}
-
-      {/* Join Settings - Admin Only */}
-      {isAdmin && <JoinSettingsSection leagueId={leagueId} />}
-
-      <LeagueInfoSection
-        leagueId={leagueId}
-        onLeave={() => {
-          // Remove league_members row if authenticated
-          if (profile?.id) {
-            removeLeagueMember(leagueId, profile.id).catch(err => {
-              console.warn('Could not remove league member row:', err)
-            })
-          }
-          leaveLeague()
-        }}
-        onDelete={async () => {
-          try {
-            await softDeleteLeague(leagueId)
-            leaveLeague()
-          } catch (err) {
-            console.error('Failed to delete league:', err)
-          }
-        }}
-        onCloneToTest={cloneLeagueToTest}
-        isAdmin={isAdmin}
-        isLeagueOwner={isLeagueOwner}
-        onSwitchLeague={onShowLeagueSelector}
-        isAuthenticated={!!user}
-      />
-
-      <RoundSettingsSection
-        defaultStartingHole={defaultStartingHole}
-        onUpdate={setDefaultStartingHole}
-        isAdmin={isAdmin}
-      />
-
-      <SideGamesSettingsSection
-        leagueSettings={leagueSettings}
-        onUpdate={setLeagueSettings}
-        isAdmin={isAdmin}
-      />
-
-      <HandicapSettingsSection
-        handicapSettings={handicapSettings}
-        onUpdateHandicap={setHandicapSettings}
-        courseTees={courseTees}
-        onUpdateTees={setCourseTees}
-        isAdmin={isAdmin}
-        players={players}
-        leagueId={leagueId}
-      />
-
-      <HoleInOnePotSection
-        holeInOnePot={holeInOnePot}
-        onUpdate={setHoleInOnePot}
-        isAdmin={isAdmin}
-      />
-
-      <PayoutSettingsSection
-        payoutFormats={payoutFormats}
-        onUpdate={setPayoutFormats}
-        isAdmin={isAdmin}
-      />
-
-      {/* Site Owner Tools - visible when actually site owner (even when "viewing as" lower role) */}
-      {actualSiteOwner && (
+      {activeCategory ? (
         <>
-          <ManageProfilesSection />
-          <MigrationSection
-            leagueId={leagueId}
-            players={players}
-            onPlayersUpdate={setPlayers}
-          />
+          <button
+            onClick={() => setActiveCategory(null)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: 'var(--color-text-primary)',
+              padding: '8px 0',
+              marginBottom: '16px'
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>&larr;</span>
+            {activeCategoryLabel}
+          </button>
+          {renderCategoryContent()}
+        </>
+      ) : (
+        <>
+          <h2 style={{ marginBottom: '20px' }}>Settings</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {categories.map(cat => (
+              <button
+                key={cat.key}
+                onClick={() => setActiveCategory(cat.key)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  width: '100%',
+                  padding: '16px 20px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  minHeight: '60px'
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: '600', fontSize: '15px', color: 'var(--color-text-primary)' }}>
+                    {cat.label}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                    {cat.subtitle}
+                  </div>
+                </div>
+                <span style={{ color: 'var(--color-text-tertiary)', fontSize: '20px', marginLeft: '12px' }}>&rsaquo;</span>
+              </button>
+            ))}
+          </div>
+          {!actualSiteOwner && (
+            <div style={{ marginTop: '20px' }}>
+              <SiteOwnerAccessSection
+                isSiteOwner={isSiteOwner}
+                actualSiteOwner={actualSiteOwner}
+                onLogin={siteOwnerLogin}
+                onLogout={siteOwnerLogout}
+                courseMapping={courseMapping}
+                onUpdateCourseMapping={setCourseMapping}
+                viewAsRole={viewAsRole}
+                onSetViewAsRole={setViewAsRole}
+              />
+            </div>
+          )}
         </>
       )}
-
-      {/* Site Owner Access - auto-shown for profile-based owners, triple-tap for PIN */}
-      <SiteOwnerAccessSection
-        isSiteOwner={isSiteOwner}
-        actualSiteOwner={actualSiteOwner}
-        onLogin={siteOwnerLogin}
-        onLogout={siteOwnerLogout}
-        courseMapping={courseMapping}
-        onUpdateCourseMapping={setCourseMapping}
-        viewAsRole={viewAsRole}
-        onSetViewAsRole={setViewAsRole}
-      />
     </div>
   )
 }

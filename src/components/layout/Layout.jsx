@@ -235,7 +235,7 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
 /* ================================
    BOTTOM NAV (mobile)
    ================================ */
-function BottomNav({ moreOpen, setMoreOpen }) {
+function BottomNav({ moreOpen, setMoreOpen, gpsEnabled }) {
   const location = useLocation()
 
   // Pages shown in the More sheet
@@ -263,10 +263,12 @@ function BottomNav({ moreOpen, setMoreOpen }) {
           {Icons.clipboard}
           <span>Check-In</span>
         </NavLink>
-        <NavLink to="/gps" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          {Icons.crosshair}
-          <span>GPS</span>
-        </NavLink>
+        {gpsEnabled && (
+          <NavLink to="/gps" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+            {Icons.crosshair}
+            <span>GPS</span>
+          </NavLink>
+        )}
         <button
           className={`bottom-nav-item ${isMoreActive || moreOpen ? 'active' : ''}`}
           onClick={() => setMoreOpen(true)}
@@ -305,7 +307,7 @@ function BottomNav({ moreOpen, setMoreOpen }) {
 /* ================================
    DESKTOP TABS
    ================================ */
-function DesktopTabs() {
+function DesktopTabs({ gpsEnabled }) {
   return (
     <nav className="tabs">
       <NavLink to="/players" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
@@ -320,9 +322,11 @@ function DesktopTabs() {
       <NavLink to="/live" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
         Live
       </NavLink>
-      <NavLink to="/gps" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
-        GPS
-      </NavLink>
+      {gpsEnabled && (
+        <NavLink to="/gps" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+          GPS
+        </NavLink>
+      )}
       <NavLink to="/history" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
         History
       </NavLink>
@@ -339,7 +343,7 @@ function DesktopTabs() {
 /* ================================
    INDIVIDUAL ROUND LAYOUT
    ================================ */
-function IndividualRoundTabs() {
+function IndividualRoundTabs({ gpsEnabled }) {
   return (
     <nav className="tabs">
       <NavLink to="/live" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
@@ -348,9 +352,11 @@ function IndividualRoundTabs() {
       <NavLink to="/scorecard" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
         Scorecard
       </NavLink>
-      <NavLink to="/gps" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
-        GPS
-      </NavLink>
+      {gpsEnabled && (
+        <NavLink to="/gps" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+          GPS
+        </NavLink>
+      )}
       <NavLink to="/history" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
         History
       </NavLink>
@@ -361,7 +367,7 @@ function IndividualRoundTabs() {
   )
 }
 
-function IndividualRoundBottomNav() {
+function IndividualRoundBottomNav({ gpsEnabled }) {
   return (
     <nav className="bottom-nav">
       <NavLink to="/live" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
@@ -372,10 +378,12 @@ function IndividualRoundBottomNav() {
         {Icons.grid}
         <span>Scorecard</span>
       </NavLink>
-      <NavLink to="/gps" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-        {Icons.crosshair}
-        <span>GPS</span>
-      </NavLink>
+      {gpsEnabled && (
+        <NavLink to="/gps" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          {Icons.crosshair}
+          <span>GPS</span>
+        </NavLink>
+      )}
       <NavLink to="/history" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
         {Icons.clock}
         <span>History</span>
@@ -394,6 +402,7 @@ function IndividualRoundBottomNav() {
 function Layout({ onShowLeagueSelector }) {
   const { leagueId, isAdmin, saveStatus, leagueSettings, switchLeague, isIndividualRound, leaveLeague } = useLeague()
   const [moreOpen, setMoreOpen] = useState(false)
+  const gpsEnabled = !!leagueSettings?.gpsEnabled
 
   const handleExitRound = () => {
     leaveLeague()
@@ -416,13 +425,13 @@ function Layout({ onShowLeagueSelector }) {
           </div>
         </header>
 
-        <IndividualRoundTabs />
+        <IndividualRoundTabs gpsEnabled={gpsEnabled} />
 
         <main className="content">
           <Outlet />
         </main>
 
-        <IndividualRoundBottomNav />
+        <IndividualRoundBottomNav gpsEnabled={gpsEnabled} />
       </div>
     )
   }
@@ -443,14 +452,14 @@ function Layout({ onShowLeagueSelector }) {
         </div>
       </header>
 
-      <DesktopTabs />
+      <DesktopTabs gpsEnabled={gpsEnabled} />
       <NextRoundBanner leagueSettings={leagueSettings} />
 
       <main className="content">
         <Outlet />
       </main>
 
-      <BottomNav moreOpen={moreOpen} setMoreOpen={setMoreOpen} />
+      <BottomNav moreOpen={moreOpen} setMoreOpen={setMoreOpen} gpsEnabled={gpsEnabled} />
     </div>
   )
 }

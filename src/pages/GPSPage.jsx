@@ -10,7 +10,19 @@ import {
 } from '../utils/gpsCalculations'
 
 export default function GPSPage() {
-  const { courseMapping } = useLeague()
+  const { courseMapping, leagueSettings } = useLeague()
+
+  if (!leagueSettings?.gpsEnabled) {
+    return (
+      <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>&#8982;</div>
+        <h2 style={{ marginBottom: '8px' }}>GPS Disabled</h2>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+          GPS yardage tracking is not currently enabled for this league.
+        </p>
+      </div>
+    )
+  }
 
   // GPS state
   const [position, setPosition] = useState(null)
