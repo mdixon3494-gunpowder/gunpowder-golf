@@ -3,7 +3,7 @@
  * Implements golf handicap system with support for multiple scopes and tee configurations
  */
 
-import { GUNPOWDER_SCORECARD } from '../lib/courseData'
+import { GUNPOWDER_SCORECARD, getHoleInfo, getTotalPar } from '../lib/courseData'
 
 // Default tee configuration based on Gunpowder course ratings
 export const DEFAULT_COURSE_TEES = {
@@ -35,7 +35,7 @@ export const DEFAULT_HANDICAP_SETTINGS = {
   // GHIN override
   allowGhinOverride: false,
   // Max hole score for handicap calculation
-  maxHoleScoreMode: 'none',    // 'none' | 'fixed'
+  maxHoleScoreMode: 'net_double_bogey',    // 'net_double_bogey' | 'fixed' | 'none'
   maxHoleScoreFixed: 10,
   // 9-hole round support
   allow9HoleRounds: false,
@@ -128,12 +128,15 @@ export function calculateDifferential(score, courseRating, slopeRating) {
 /**
  * Apply max hole score cap to per-hole scores and return adjusted total
  * @param {Object} scores - Per-hole scores object { 1: 5, 2: 8, ... }
- * @param {String} mode - 'none' or 'fixed'
+ * @param {String} mode - 'net_double_bogey', 'fixed', or 'none'
  * @param {Number} fixedMax - Maximum score per hole when mode is 'fixed'
+ * @param {Number|null} courseHandicap - Course handicap (needed for 'net_double_bogey')
  * @returns {Number|null} Adjusted total, or null if no per-hole scores
  */
-export function applyMaxHoleScore(scores, mode, fixedMax = 10) {
+export function applyMaxHoleScore(scores, mode, fixedMax = 10, courseHandicap = null) {
   if (mode === 'none' || !scores) return null
+  if (mode === 'net_double_bogey' && courseHandicap == null) return null
+
   let total = 0
   let hasScores = false
   for (let h = 1; h <= 18; h++) {
@@ -142,9 +145,49 @@ export function applyMaxHoleScore(scores, mode, fixedMax = 10) {
     const score = parseInt(val)
     if (isNaN(score)) continue
     hasScores = true
-    total += mode === 'fixed' ? Math.min(score, fixedMax) : score
+
+    if (mode === 'net_double_bogey') {
+      const holeInfo = getHoleInfo(h)
+      if (!holeInfo) { total += score; continue }
+      // Calculate strokes received on this hole
+      let strokes = 0
+      let remaining = Math.round(courseHandicap)
+      while (remaining > 18) { strokes++; remaining -= 18 }
+      if (remaining > 0 && holeInfo.hcp <= remaining) strokes++
+      const maxForHole = holeInfo.par + 2 + strokes
+      total += Math.min(score, maxForHole)
+    } else {
+      total += mode === 'fixed' ? Math.min(score, fixedMax) : score
+    }
   }
   return hasScores ? total : null
+}
+
+/**
+ * Calculate Net Double Bogey max for a specific hole
+ * @param {Number} holeNumber - 1-18
+ * @param {Number} playerHandicap - Player's handicap index
+ * @param {String} teeKey - 'blue', 'gold', 'red'
+ * @param {Object} courseTees - Course tee configs
+ * @returns {Number|null} Max score for that hole, or null if can't calculate
+ */
+export function getNetDoubleBogeyMax(holeNumber, playerHandicap, teeKey = 'blue', courseTees = DEFAULT_COURSE_TEES) {
+  if (playerHandicap == null) return null
+  const holeInfo = getHoleInfo(holeNumber)
+  if (!holeInfo) return null
+
+  const tee = courseTees?.[teeKey]
+  const slope = tee?.slopeRating || 113
+  const rating = tee?.courseRating || 63.5
+  const coursePar = getTotalPar()
+  const courseHandicap = Math.round(playerHandicap * (slope / 113) + (rating - coursePar))
+
+  let strokes = 0
+  let remaining = Math.round(courseHandicap)
+  while (remaining > 18) { strokes++; remaining -= 18 }
+  if (remaining > 0 && holeInfo.hcp <= remaining) strokes++
+
+  return holeInfo.par + 2 + strokes
 }
 
 /**
@@ -232,7 +275,7 @@ function makeCombinedRound(r1, r2) {
  * Uses best 40% of most recent 20 rounds (minimum 3 rounds required)
  * Optionally filters out rounds that fall within a freeze period
  */
-export function calculateHandicap(rounds, courseTees = DEFAULT_COURSE_TEES, maxHandicap = 54, handicapSettings = null) {
+export function calculateHandicap(rounds, courseTees = DEFAULT_COURSE_TEES, maxHandicap = 54, handicapSettings = null, playerHandicap = null) {
   // Filter valid rounds (must have a score > 0)
   let validRounds = rounds.filter(r => {
     const score = r.score || r.total || r.totalScore
@@ -262,14 +305,6 @@ export function calculateHandicap(rounds, courseTees = DEFAULT_COURSE_TEES, maxH
   const differentials = validRounds.map(r => {
     let score = r.score || r.total || r.totalScore
 
-    // Apply max hole score cap if round has per-hole scores
-    if (maxMode !== 'none' && r.scores) {
-      const adjustedTotal = applyMaxHoleScore(r.scores, maxMode, maxFixed)
-      if (adjustedTotal !== null) {
-        score = adjustedTotal
-      }
-    }
-
     // Get rating/slope - check for tee first, then explicit values, then defaults
     let rating, slope
     if (r.tee && courseTees?.[r.tee]) {
@@ -279,6 +314,20 @@ export function calculateHandicap(rounds, courseTees = DEFAULT_COURSE_TEES, maxH
       // External round with explicit rating/slope, or use defaults
       rating = r.courseRating || 63.5
       slope = r.slopeRating || 100
+    }
+
+    // Apply max hole score cap if round has per-hole scores
+    if (maxMode !== 'none' && r.scores) {
+      // For net_double_bogey, compute course handicap from player's handicap index
+      let courseHandicap = null
+      if (maxMode === 'net_double_bogey' && playerHandicap != null) {
+        const coursePar = getTotalPar()
+        courseHandicap = Math.round(playerHandicap * (slope / 113) + (rating - coursePar))
+      }
+      const adjustedTotal = applyMaxHoleScore(r.scores, maxMode, maxFixed, courseHandicap)
+      if (adjustedTotal !== null) {
+        score = adjustedTotal
+      }
     }
 
     return calculateDifferential(score, rating, slope)
@@ -371,7 +420,11 @@ export function getRoundsByScope(player, scope, leagueId = null) {
  */
 export function getPlayerHandicapForScope(player, scope, leagueId = null, courseTees = DEFAULT_COURSE_TEES, maxHandicap = 54, handicapSettings = null) {
   const rounds = getRoundsByScope(player, scope, leagueId)
-  return calculateHandicap(rounds, courseTees, maxHandicap, handicapSettings)
+  // Force net_double_bogey for 'true' scope (WHS standard)
+  const effectiveSettings = scope === 'true'
+    ? { ...handicapSettings, maxHoleScoreMode: 'net_double_bogey' }
+    : handicapSettings
+  return calculateHandicap(rounds, courseTees, maxHandicap, effectiveSettings, player.handicap)
 }
 
 /**
@@ -431,7 +484,11 @@ export function getEffectiveHandicap(player, handicapSettings, leagueId = null, 
     return player.handicap
   }
 
-  return calculateHandicap(rounds, courseTees, maxHandicap, settings)
+  // Force net_double_bogey for 'true' scope (WHS standard)
+  const effectiveSettings = handicapScope === 'true'
+    ? { ...settings, maxHoleScoreMode: 'net_double_bogey' }
+    : settings
+  return calculateHandicap(rounds, courseTees, maxHandicap, effectiveSettings, player.handicap)
 }
 
 /**

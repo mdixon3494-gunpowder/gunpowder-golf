@@ -10,7 +10,8 @@ import {
   recalculatePlayerHandicaps,
   DEFAULT_COURSE_TEES,
   shouldUpdateHandicaps,
-  isDateInFreezePeriod
+  isDateInFreezePeriod,
+  getNetDoubleBogeyMax
 } from '../utils/handicapCalculation'
 
 // Calculate team score for a 9-hole range
@@ -458,7 +459,7 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
 }
 
 // Score Entry Component - Legacy Style
-function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound }) {
+function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings }) {
   const [activeInput, setActiveInput] = useState(null)
   const [keypadValue, setKeypadValue] = useState('')
   const [isFirstKeypress, setIsFirstKeypress] = useState(true)
@@ -513,8 +514,22 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
     return getTrackedPlayerIds(selectedTeam.id).has(playerId)
   }
 
-  // Calculate max score for a player
-  const getMaxScore = (player, par) => {
+  // Calculate max score for a player on a specific hole
+  const getMaxScore = (player, par, holeNumber) => {
+    const maxMode = handicapSettings?.maxHoleScoreMode || 'net_double_bogey'
+
+    // Net Double Bogey (WHS): par + 2 + handicap strokes received
+    if (maxMode === 'net_double_bogey' && holeNumber) {
+      const ndbMax = getNetDoubleBogeyMax(holeNumber, player.handicap, player.tee || 'blue')
+      if (ndbMax != null) return ndbMax
+    }
+
+    // Fixed max from settings
+    if (maxMode === 'fixed') {
+      return handicapSettings?.maxHoleScoreFixed || 10
+    }
+
+    // Fallback: skill-based max
     const fullPlayer = players?.find(p => p.id === player.id)
     if (fullPlayer?.avgTotal && fullPlayer.avgTotal > 0) {
       return fullPlayer.avgTotal <= 82 ? par + 2 : par + 3
@@ -1005,7 +1020,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 GUNPOWDER_SCORECARD.front9.forEach(h => {
                   const score = player.scores[h.hole]
                   if (score && score !== 'X') frontTotal += parseInt(score) || 0
-                  else if (score === 'X') frontTotal += getMaxScore(player, h.par)
+                  else if (score === 'X') frontTotal += getMaxScore(player, h.par, h.hole)
                 })
 
                 return (
@@ -1031,7 +1046,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       const score = player.scores[hole.hole]
                       const hasScore = score !== undefined && score !== null && score !== ''
                       const numScore = parseInt(score)
-                      const maxScore = getMaxScore(player, hole.par)
+                      const maxScore = getMaxScore(player, hole.par, hole.hole)
                       const isCapped = hasScore && !isNaN(numScore) && numScore > maxScore
                       const effectiveScore = hasScore && score !== 'X' ? Math.min(numScore, maxScore) : null
                       const scoreToPar = effectiveScore !== null ? effectiveScore - hole.par : null
@@ -1135,7 +1150,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                 GUNPOWDER_SCORECARD.back9.forEach(h => {
                   const score = player.scores[h.hole]
                   if (score && score !== 'X') backTotal += parseInt(score) || 0
-                  else if (score === 'X') backTotal += getMaxScore(player, h.par)
+                  else if (score === 'X') backTotal += getMaxScore(player, h.par, h.hole)
                 })
 
                 return (
@@ -1161,7 +1176,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       const score = player.scores[hole.hole]
                       const hasScore = score !== undefined && score !== null && score !== ''
                       const numScore = parseInt(score)
-                      const maxScore = getMaxScore(player, hole.par)
+                      const maxScore = getMaxScore(player, hole.par, hole.hole)
                       const isCapped = hasScore && !isNaN(numScore) && numScore > maxScore
                       const effectiveScore = hasScore && score !== 'X' ? Math.min(numScore, maxScore) : null
                       const scoreToPar = effectiveScore !== null ? effectiveScore - hole.par : null
@@ -6388,8 +6403,22 @@ function LivePage() {
         worse: 0
       }
 
-      // Get max score based on player's average or skill rating
-      const getMaxScore = (par) => {
+      // Get max score based on handicap settings or player's skill
+      const getMaxScore = (par, holeNumber) => {
+        const maxMode = handicapSettings?.maxHoleScoreMode || 'net_double_bogey'
+
+        // Net Double Bogey (WHS): par + 2 + handicap strokes received
+        if (maxMode === 'net_double_bogey' && holeNumber) {
+          const ndbMax = getNetDoubleBogeyMax(holeNumber, player.handicap, player.defaultTee || 'blue')
+          if (ndbMax != null) return ndbMax
+        }
+
+        // Fixed max from settings
+        if (maxMode === 'fixed') {
+          return handicapSettings?.maxHoleScoreFixed || 10
+        }
+
+        // Fallback: skill-based max
         if (player.avgTotal && player.avgTotal > 0) {
           return player.avgTotal <= 82 ? par + 2 : par + 3
         }
@@ -6403,8 +6432,8 @@ function LivePage() {
           let effectiveScore
 
           if (scoreVal === 'X' || scoreVal === 'x') {
-            // X score - use max score based on player's handicap/skill
-            effectiveScore = getMaxScore(holeInfo.par)
+            // X score - use max score based on handicap settings
+            effectiveScore = getMaxScore(holeInfo.par, holeInfo.hole)
           } else {
             effectiveScore = parseInt(scoreVal)
             if (isNaN(effectiveScore)) return
@@ -6947,6 +6976,7 @@ function LivePage() {
           onUpdateGreenie={updateGreenie}
           isQuickSkins={effectiveQuickSkinsMode}
           isIndividualRound={isIndividualRound}
+          handicapSettings={handicapSettings}
         />
       )}
       {subTab === 'greenies' && (

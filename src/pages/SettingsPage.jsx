@@ -2124,61 +2124,99 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
             Max Hole Score (for Handicap)
           </label>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-            <button
-              onClick={() => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreMode: 'none' })}
-              disabled={!isAdmin}
-              style={{
-                flex: 1,
-                padding: '12px',
-                borderRadius: '6px',
-                border: (settings.maxHoleScoreMode || 'none') === 'none' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
-                background: (settings.maxHoleScoreMode || 'none') === 'none' ? 'var(--color-success-light)' : 'var(--color-surface)',
-                fontWeight: (settings.maxHoleScoreMode || 'none') === 'none' ? '600' : 'normal',
-                cursor: isAdmin ? 'pointer' : 'not-allowed',
-                opacity: isAdmin ? 1 : 0.7
-              }}
-            >
-              No Max
-            </button>
-            <button
-              onClick={() => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreMode: 'fixed' })}
-              disabled={!isAdmin}
-              style={{
-                flex: 1,
-                padding: '12px',
-                borderRadius: '6px',
-                border: settings.maxHoleScoreMode === 'fixed' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
-                background: settings.maxHoleScoreMode === 'fixed' ? 'var(--color-success-light)' : 'var(--color-surface)',
-                fontWeight: settings.maxHoleScoreMode === 'fixed' ? '600' : 'normal',
-                cursor: isAdmin ? 'pointer' : 'not-allowed',
-                opacity: isAdmin ? 1 : 0.7
-              }}
-            >
-              Fixed Max
-            </button>
-          </div>
-          {settings.maxHoleScoreMode === 'fixed' && (
-            <div style={{ marginTop: '8px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
-                Max Score Per Hole
-              </label>
-              <input
-                type="number"
-                value={settings.maxHoleScoreFixed ?? 10}
-                onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreFixed: parseInt(e.target.value) || 10 })}
-                disabled={!isAdmin}
-                min="5"
-                max="15"
-                style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
-              />
+          {settings.handicapScope === 'true' ? (
+            <div style={{
+              padding: '12px',
+              background: 'var(--color-surface-sunken)',
+              borderRadius: '6px',
+              fontSize: '13px',
+              color: 'var(--color-text-secondary)'
+            }}>
+              True handicap always uses <strong>Net Double Bogey (WHS)</strong>: max score per hole = par + 2 + handicap strokes received on that hole.
             </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreMode: 'net_double_bogey' })}
+                  disabled={!isAdmin}
+                  style={{
+                    flex: 1,
+                    minWidth: '90px',
+                    padding: '10px 8px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    border: (settings.maxHoleScoreMode || 'net_double_bogey') === 'net_double_bogey' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                    background: (settings.maxHoleScoreMode || 'net_double_bogey') === 'net_double_bogey' ? 'var(--color-success-light)' : 'var(--color-surface)',
+                    fontWeight: (settings.maxHoleScoreMode || 'net_double_bogey') === 'net_double_bogey' ? '600' : 'normal',
+                    cursor: isAdmin ? 'pointer' : 'not-allowed',
+                    opacity: isAdmin ? 1 : 0.7
+                  }}
+                >
+                  Net Dbl Bogey
+                </button>
+                <button
+                  onClick={() => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreMode: 'fixed' })}
+                  disabled={!isAdmin}
+                  style={{
+                    flex: 1,
+                    minWidth: '90px',
+                    padding: '10px 8px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    border: settings.maxHoleScoreMode === 'fixed' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                    background: settings.maxHoleScoreMode === 'fixed' ? 'var(--color-success-light)' : 'var(--color-surface)',
+                    fontWeight: settings.maxHoleScoreMode === 'fixed' ? '600' : 'normal',
+                    cursor: isAdmin ? 'pointer' : 'not-allowed',
+                    opacity: isAdmin ? 1 : 0.7
+                  }}
+                >
+                  Fixed Max
+                </button>
+                <button
+                  onClick={() => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreMode: 'none' })}
+                  disabled={!isAdmin}
+                  style={{
+                    flex: 1,
+                    minWidth: '90px',
+                    padding: '10px 8px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    border: settings.maxHoleScoreMode === 'none' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                    background: settings.maxHoleScoreMode === 'none' ? 'var(--color-success-light)' : 'var(--color-surface)',
+                    fontWeight: settings.maxHoleScoreMode === 'none' ? '600' : 'normal',
+                    cursor: isAdmin ? 'pointer' : 'not-allowed',
+                    opacity: isAdmin ? 1 : 0.7
+                  }}
+                >
+                  No Max
+                </button>
+              </div>
+              {settings.maxHoleScoreMode === 'fixed' && (
+                <div style={{ marginTop: '8px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                    Max Score Per Hole
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.maxHoleScoreFixed ?? 10}
+                    onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, maxHoleScoreFixed: parseInt(e.target.value) || 10 })}
+                    disabled={!isAdmin}
+                    min="5"
+                    max="15"
+                    style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
+                  />
+                </div>
+              )}
+              <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '8px' }}>
+                {(settings.maxHoleScoreMode || 'net_double_bogey') === 'net_double_bogey'
+                  ? 'WHS standard: max score per hole = par + 2 + handicap strokes received.'
+                  : settings.maxHoleScoreMode === 'fixed'
+                    ? `Hole scores above ${settings.maxHoleScoreFixed ?? 10} are capped for handicap calculation. Actual scores are preserved.`
+                    : 'No cap on individual hole scores for handicap calculation.'}
+              </p>
+            </>
           )}
-          <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '8px' }}>
-            {settings.maxHoleScoreMode === 'fixed'
-              ? `Hole scores above ${settings.maxHoleScoreFixed ?? 10} are capped for handicap calculation only. Actual scores are preserved.`
-              : 'No cap on individual hole scores for handicap calculation.'}
-          </p>
         </div>
       )}
 
