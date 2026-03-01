@@ -87,9 +87,9 @@ function AppContent() {
   if (authLoading) {
     return (
       <div className="app-container">
-        <div className="content" style={{ textAlign: 'center', padding: '60px' }}>
-          <div style={{ fontSize: '24px', marginBottom: '10px' }}>Loading...</div>
-          <div style={{ color: '#666' }}>Initializing</div>
+        <div className="page-loading" style={{ minHeight: '100vh' }}>
+          <div className="spinner" />
+          <p className="text-secondary">Initializing</p>
         </div>
       </div>
     )
@@ -117,9 +117,9 @@ function AppContent() {
   if (leagueLoading) {
     return (
       <div className="app-container">
-        <div className="content" style={{ textAlign: 'center', padding: '60px' }}>
-          <div style={{ fontSize: '24px', marginBottom: '10px' }}>Loading...</div>
-          <div style={{ color: '#666' }}>Connecting to league data</div>
+        <div className="page-loading" style={{ minHeight: '100vh' }}>
+          <div className="spinner" />
+          <p className="text-secondary">Connecting to league data</p>
         </div>
       </div>
     )

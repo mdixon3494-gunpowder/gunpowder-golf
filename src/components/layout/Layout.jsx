@@ -1,46 +1,99 @@
 import { useState, useEffect, useRef } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { useLeague } from '../../context/LeagueContext'
 import { useAuth } from '../../context/AuthContext'
 import { getLeaguesForProfile } from '../../lib/leagueService'
 
+/* ================================
+   INLINE SVG ICONS (no deps)
+   ================================ */
+const Icons = {
+  play: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  people: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  clipboard: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+    </svg>
+  ),
+  crosshair: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><line x1="22" y1="12" x2="18" y2="12" /><line x1="6" y1="12" x2="2" y2="12" /><line x1="12" y1="6" x2="12" y2="2" /><line x1="12" y1="22" x2="12" y2="18" />
+    </svg>
+  ),
+  more: (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" />
+    </svg>
+  ),
+  users: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+    </svg>
+  ),
+  clock: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  grid: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+    </svg>
+  ),
+  settings: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  ),
+  chevronDown: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  ),
+  arrowLeft: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+      <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+    </svg>
+  ),
+}
+
+/* ================================
+   SAVE INDICATOR (dot style)
+   ================================ */
 function SaveIndicator({ status }) {
   if (status === 'saving') {
-    return (
-      <div className="save-indicator">
-        <div className="spinner-tiny" />
-        <span>Saving...</span>
-      </div>
-    )
+    return <div className="save-dot saving" title="Saving..." />
   }
-
   if (status === 'error') {
-    return (
-      <div className="save-indicator" style={{ color: '#e74c3c' }}>
-        <span>Save failed</span>
-      </div>
-    )
+    return <div className="save-dot error" title="Save failed" />
   }
-
   return null
 }
 
+/* ================================
+   NEXT ROUND BANNER
+   ================================ */
 function NextRoundBanner({ leagueSettings }) {
   const nextRoundDate = leagueSettings?.nextRoundDate
   const nextRoundTime = leagueSettings?.nextRoundTime
   const nextRoundMessage = leagueSettings?.nextRoundMessage
 
-  // Show banner if any field is set
   if (!nextRoundDate && !nextRoundTime && !nextRoundMessage) return null
 
-  // Format the date for display
   const formatDate = (dateStr) => {
     if (!dateStr) return ''
     const date = new Date(dateStr + 'T00:00:00')
     return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
   }
 
-  // Format time for display (convert 24h to 12h)
   const formatTime = (timeStr) => {
     if (!timeStr) return ''
     const [hours, minutes] = timeStr.split(':')
@@ -53,20 +106,15 @@ function NextRoundBanner({ leagueSettings }) {
   const hasDateOrTime = nextRoundDate || nextRoundTime
 
   return (
-    <div style={{
-      background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
-      color: 'white',
-      padding: '12px 20px',
-      textAlign: 'center'
-    }}>
+    <div className="next-round-banner">
       {hasDateOrTime && (
-        <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: nextRoundMessage ? '4px' : '0' }}>
+        <div className="next-round-banner-title">
           Next Round: {formatDate(nextRoundDate)}
           {nextRoundTime && ` at ${formatTime(nextRoundTime)}`}
         </div>
       )}
       {nextRoundMessage && (
-        <div style={{ fontSize: hasDateOrTime ? '13px' : '16px', opacity: hasDateOrTime ? 0.9 : 1, fontWeight: hasDateOrTime ? 'normal' : 'bold' }}>
+        <div className={hasDateOrTime ? 'next-round-banner-message' : 'next-round-banner-title'}>
           {nextRoundMessage}
         </div>
       )}
@@ -74,6 +122,9 @@ function NextRoundBanner({ leagueSettings }) {
   )
 }
 
+/* ================================
+   LEAGUE SWITCHER
+   ================================ */
 function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin }) {
   const { isAuthenticated, profile } = useAuth()
   const [leagues, setLeagues] = useState([])
@@ -88,7 +139,6 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
     }).catch(() => {})
   }, [isAuthenticated, profile?.id, leagueId])
 
-  // Close dropdown on outside click
   useEffect(() => {
     if (!isOpen) return
     const handleClick = (e) => {
@@ -100,7 +150,6 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
     return () => document.removeEventListener('mousedown', handleClick)
   }, [isOpen])
 
-  // Hide test leagues unless user is an admin, and always hide casual/individual games
   const visibleLeagues = leagues.filter(m => {
     if (!isAdmin && m.leagues?.is_test) return false
     if (m.leagues?.type === 'casual' || m.leagues?.type === 'individual') return false
@@ -110,47 +159,8 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
   const currentMembership = leagues.find(m => m.league_id === leagueId)
   const currentLeagueName = currentMembership?.leagues?.name
 
-  const copyLeagueCode = () => {
-    navigator.clipboard.writeText(leagueId)
-    alert('League code copied to clipboard!')
-  }
+  const displayName = currentLeagueName || 'League'
 
-  // If not authenticated or has 1 or fewer leagues, show simple code display
-  if (!isAuthenticated || otherLeagues.length === 0) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px'
-      }}>
-        {currentLeagueName && (
-          <span style={{ fontSize: '14px', opacity: 0.9 }}>{currentLeagueName}</span>
-        )}
-        {!currentLeagueName && (
-          <span style={{ fontSize: '14px', opacity: 0.9 }}>League Code:</span>
-        )}
-        <button
-          onClick={copyLeagueCode}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: 'none',
-            padding: '5px 15px',
-            borderRadius: '5px',
-            color: 'white',
-            fontWeight: 'bold',
-            letterSpacing: '2px',
-            cursor: 'pointer',
-            fontSize: '16px'
-          }}
-        >
-          {leagueId}
-        </button>
-      </div>
-    )
-  }
-
-  // Multi-league dropdown
   const handleSwitch = async (newLeagueId) => {
     setSwitching(true)
     setIsOpen(false)
@@ -158,117 +168,61 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
     setSwitching(false)
   }
 
+  // Simple display — no dropdown needed
+  if (!isAuthenticated || otherLeagues.length === 0) {
+    return (
+      <div className="header-left">
+        <span className="league-switcher-name">{displayName}</span>
+      </div>
+    )
+  }
+
+  // Multi-league dropdown
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
+    <div ref={dropdownRef} className="header-left" style={{ position: 'relative' }}>
       <button
+        className="league-switcher-btn"
         onClick={() => setIsOpen(!isOpen)}
         disabled={switching}
-        style={{
-          background: 'rgba(255,255,255,0.2)',
-          border: 'none',
-          padding: '6px 14px',
-          borderRadius: '6px',
-          color: 'white',
-          cursor: 'pointer',
-          fontSize: '14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}
       >
-        {switching ? (
-          <span>Switching...</span>
-        ) : (
-          <>
-            <span style={{ fontWeight: '600' }}>
-              {currentLeagueName || leagueId}
-            </span>
-            <span style={{ fontSize: '11px', opacity: 0.7 }}>{leagueId}</span>
-            <span style={{ fontSize: '10px' }}>{isOpen ? '\u25B2' : '\u25BC'}</span>
-          </>
-        )}
+        <span className="league-switcher-name">
+          {switching ? 'Switching...' : displayName}
+        </span>
+        {!switching && <span className="league-switcher-chevron">{Icons.chevronDown}</span>}
       </button>
 
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginTop: '6px',
-          background: 'white',
-          borderRadius: '10px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          minWidth: '220px',
-          zIndex: 1000,
-          overflow: 'hidden'
-        }}>
+        <div className="league-switcher-dropdown">
           {otherLeagues.map((membership) => {
             const league = membership.leagues
             if (!league) return null
 
-            const roleColor = membership.role === 'owner'
-              ? '#27ae60'
-              : membership.role === 'admin'
-                ? '#f39c12'
-                : '#3498db'
+            const roleLabel = membership.role === 'owner' ? 'Owner'
+              : membership.role === 'admin' ? 'Admin'
+              : 'Player'
+            const badgeClass = membership.role === 'owner' ? 'badge-primary'
+              : membership.role === 'admin' ? 'badge-orange'
+              : 'badge-blue'
 
             return (
               <button
                 key={league.id}
+                className="league-switcher-option"
                 onClick={() => handleSwitch(league.id)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: 'none',
-                  background: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  borderBottom: '1px solid #f0f0f0'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
               >
-                <div style={{ fontWeight: '600', color: '#333', fontSize: '14px' }}>
+                <div className="league-switcher-option-name">
                   {league.name || league.id}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
-                  <span style={{
-                    background: roleColor,
-                    color: 'white',
-                    padding: '1px 6px',
-                    borderRadius: '8px',
-                    fontSize: '10px',
-                    fontWeight: '600'
-                  }}>
-                    {membership.role === 'owner' ? 'Owner' : membership.role === 'admin' ? 'Admin' : 'Player'}
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#999' }}>{league.id}</span>
+                <div className="league-switcher-option-meta">
+                  <span className={`badge ${badgeClass}`}>{roleLabel}</span>
+                  <span className="text-xs text-tertiary">{league.id}</span>
                 </div>
               </button>
             )
           })}
-
           <button
-            onClick={() => {
-              setIsOpen(false)
-              onShowLeagueSelector()
-            }}
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '12px 16px',
-              border: 'none',
-              background: 'none',
-              cursor: 'pointer',
-              textAlign: 'center',
-              color: '#27ae60',
-              fontWeight: '600',
-              fontSize: '14px'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.background = '#f0fff4'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+            className="league-switcher-all"
+            onClick={() => { setIsOpen(false); onShowLeagueSelector() }}
           >
             All Leagues
           </button>
@@ -278,178 +232,225 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
   )
 }
 
+/* ================================
+   BOTTOM NAV (mobile)
+   ================================ */
+function BottomNav({ moreOpen, setMoreOpen }) {
+  const location = useLocation()
+
+  // Pages shown in the More sheet
+  const morePages = [
+    { to: '/players', label: 'Players', icon: Icons.users },
+    { to: '/history', label: 'History', icon: Icons.clock },
+    { to: '/scorecard', label: 'Scorecard', icon: Icons.grid },
+    { to: '/settings', label: 'Settings', icon: Icons.settings },
+  ]
+
+  const isMoreActive = morePages.some(p => location.pathname.startsWith(p.to))
+
+  return (
+    <>
+      <nav className="bottom-nav">
+        <NavLink to="/live" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          {Icons.play}
+          <span>Live</span>
+        </NavLink>
+        <NavLink to="/teams" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          {Icons.people}
+          <span>Teams</span>
+        </NavLink>
+        <NavLink to="/generate" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          {Icons.clipboard}
+          <span>Check-In</span>
+        </NavLink>
+        <NavLink to="/gps" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+          {Icons.crosshair}
+          <span>GPS</span>
+        </NavLink>
+        <button
+          className={`bottom-nav-item ${isMoreActive || moreOpen ? 'active' : ''}`}
+          onClick={() => setMoreOpen(true)}
+        >
+          {Icons.more}
+          <span>More</span>
+        </button>
+      </nav>
+
+      {/* More bottom sheet */}
+      {moreOpen && (
+        <>
+          <div className="bottom-sheet-overlay" onClick={() => setMoreOpen(false)} />
+          <div className="bottom-sheet">
+            <div className="bottom-sheet-handle" />
+            <div className="bottom-sheet-grid">
+              {morePages.map(page => (
+                <NavLink
+                  key={page.to}
+                  to={page.to}
+                  className={({ isActive }) => `bottom-sheet-item ${isActive ? 'active' : ''}`}
+                  onClick={() => setMoreOpen(false)}
+                >
+                  {page.icon}
+                  {page.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  )
+}
+
+/* ================================
+   DESKTOP TABS
+   ================================ */
+function DesktopTabs() {
+  return (
+    <nav className="tabs">
+      <NavLink to="/players" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Players
+      </NavLink>
+      <NavLink to="/generate" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Check-In
+      </NavLink>
+      <NavLink to="/teams" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Teams
+      </NavLink>
+      <NavLink to="/live" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Live
+      </NavLink>
+      <NavLink to="/gps" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        GPS
+      </NavLink>
+      <NavLink to="/history" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        History
+      </NavLink>
+      <NavLink to="/scorecard" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Scorecard
+      </NavLink>
+      <NavLink to="/settings" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Settings
+      </NavLink>
+    </nav>
+  )
+}
+
+/* ================================
+   INDIVIDUAL ROUND LAYOUT
+   ================================ */
+function IndividualRoundTabs() {
+  return (
+    <nav className="tabs">
+      <NavLink to="/live" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Scoring
+      </NavLink>
+      <NavLink to="/scorecard" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Scorecard
+      </NavLink>
+      <NavLink to="/gps" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        GPS
+      </NavLink>
+      <NavLink to="/history" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        History
+      </NavLink>
+      <NavLink to="/settings" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Settings
+      </NavLink>
+    </nav>
+  )
+}
+
+function IndividualRoundBottomNav() {
+  return (
+    <nav className="bottom-nav">
+      <NavLink to="/live" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+        {Icons.play}
+        <span>Scoring</span>
+      </NavLink>
+      <NavLink to="/scorecard" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+        {Icons.grid}
+        <span>Scorecard</span>
+      </NavLink>
+      <NavLink to="/gps" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+        {Icons.crosshair}
+        <span>GPS</span>
+      </NavLink>
+      <NavLink to="/history" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+        {Icons.clock}
+        <span>History</span>
+      </NavLink>
+      <NavLink to="/settings" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+        {Icons.settings}
+        <span>Settings</span>
+      </NavLink>
+    </nav>
+  )
+}
+
+/* ================================
+   MAIN LAYOUT
+   ================================ */
 function Layout({ onShowLeagueSelector }) {
   const { leagueId, isAdmin, saveStatus, leagueSettings, switchLeague, isIndividualRound, leaveLeague } = useLeague()
+  const [moreOpen, setMoreOpen] = useState(false)
 
   const handleExitRound = () => {
     leaveLeague()
     onShowLeagueSelector()
   }
 
+  // ---- Individual Round layout ----
   if (isIndividualRound) {
     return (
       <div className="app-container">
         <header className="header">
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            maxWidth: '600px',
-            margin: '0 auto',
-            padding: '0 10px'
-          }}>
-            <button
-              onClick={handleExitRound}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                color: 'white',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '600'
-              }}
-            >
-              Exit Round
+          <div className="header-left">
+            <button className="btn-ghost" onClick={handleExitRound} style={{ padding: '8px' }}>
+              {Icons.arrowLeft}
             </button>
-            <h1 style={{ fontSize: '18px', margin: 0 }}>Individual Round</h1>
-            <div style={{ width: '80px' }} />
+            <h1>Individual Round</h1>
           </div>
-          <SaveIndicator status={saveStatus} />
+          <div className="header-right">
+            <SaveIndicator status={saveStatus} />
+          </div>
         </header>
 
-        <nav className="tabs">
-          <NavLink
-            to="/live"
-            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-          >
-            Scoring
-          </NavLink>
-          <NavLink
-            to="/scorecard"
-            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-          >
-            Scorecard
-          </NavLink>
-          <NavLink
-            to="/gps"
-            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-          >
-            GPS
-          </NavLink>
-          <NavLink
-            to="/history"
-            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-          >
-            History
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-          >
-            Settings
-          </NavLink>
-        </nav>
+        <IndividualRoundTabs />
 
         <main className="content">
           <Outlet />
         </main>
+
+        <IndividualRoundBottomNav />
       </div>
     )
   }
 
+  // ---- Main league layout ----
   return (
     <div className="app-container">
       <header className="header">
-        <h1>Gunpowder Big Boy's Golf</h1>
-        {leagueId && (
-          <div style={{
-            marginTop: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px'
-          }}>
-            <LeagueSwitcher
-              leagueId={leagueId}
-              onShowLeagueSelector={onShowLeagueSelector}
-              switchLeague={switchLeague}
-              isAdmin={isAdmin}
-            />
-            {isAdmin && (
-              <span style={{
-                background: '#f39c12',
-                padding: '3px 8px',
-                borderRadius: '4px',
-                fontSize: '11px',
-                fontWeight: 'bold'
-              }}>
-                ADMIN
-              </span>
-            )}
-          </div>
-        )}
-        <SaveIndicator status={saveStatus} />
+        <LeagueSwitcher
+          leagueId={leagueId}
+          onShowLeagueSelector={onShowLeagueSelector}
+          switchLeague={switchLeague}
+          isAdmin={isAdmin}
+        />
+        <div className="header-right">
+          {isAdmin && <span className="badge badge-admin">Admin</span>}
+          <SaveIndicator status={saveStatus} />
+        </div>
       </header>
 
-      <nav className="tabs">
-        <NavLink
-          to="/players"
-          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-        >
-          Players
-        </NavLink>
-        <NavLink
-          to="/generate"
-          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-        >
-          Check-In
-        </NavLink>
-        <NavLink
-          to="/teams"
-          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-        >
-          Teams
-        </NavLink>
-        <NavLink
-          to="/live"
-          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-        >
-          Live
-        </NavLink>
-        <NavLink
-          to="/gps"
-          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-        >
-          GPS
-        </NavLink>
-        <NavLink
-          to="/history"
-          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-        >
-          History
-        </NavLink>
-        <NavLink
-          to="/scorecard"
-          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-        >
-          Scorecard
-        </NavLink>
-        <NavLink
-          to="/settings"
-          className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}
-        >
-          Settings
-        </NavLink>
-      </nav>
-
+      <DesktopTabs />
       <NextRoundBanner leagueSettings={leagueSettings} />
 
       <main className="content">
         <Outlet />
       </main>
+
+      <BottomNav moreOpen={moreOpen} setMoreOpen={setMoreOpen} />
     </div>
   )
 }
