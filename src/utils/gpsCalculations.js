@@ -142,7 +142,7 @@ export function watchPosition(onUpdate, onError, options = {}) {
   const defaultOptions = {
     enableHighAccuracy: true,
     timeout: 10000,
-    maximumAge: 1000
+    maximumAge: 0
   }
 
   return navigator.geolocation.watchPosition(
@@ -169,6 +169,78 @@ export function watchPosition(onUpdate, onError, options = {}) {
       onError(new Error(message))
     },
     { ...defaultOptions, ...options }
+  )
+}
+
+/**
+ * Watch position with accuracy filtering
+ * Only delivers readings that meet the accuracy threshold.
+ * Before a good reading is found, delivers improving readings so the UI isn't blank.
+ * After a good reading is found, only delivers readings that meet the threshold.
+ * @param {function} onUpdate - Callback with { lat, lng, accuracy }
+ * @param {function} onError - Error callback
+ * @param {object} options - { accuracyThreshold (meters), ...geolocation options }
+ * @returns {number} Watch ID for clearing with clearPositionWatch()
+ */
+export function watchPositionFiltered(onUpdate, onError, options = {}) {
+  const {
+    accuracyThreshold = 5,
+    ...geoOptions
+  } = options
+
+  if (!navigator.geolocation) {
+    onError(new Error('Geolocation is not supported by this browser'))
+    return null
+  }
+
+  let bestAccuracy = Infinity
+  let hasGoodReading = false
+
+  const defaultOptions = {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0
+  }
+
+  return navigator.geolocation.watchPosition(
+    (position) => {
+      const reading = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy
+      }
+
+      const meetsThreshold = reading.accuracy <= accuracyThreshold
+
+      if (meetsThreshold) {
+        hasGoodReading = true
+        bestAccuracy = Math.min(bestAccuracy, reading.accuracy)
+        onUpdate(reading)
+      } else if (!hasGoodReading) {
+        // No good reading yet — deliver if this is the best so far
+        if (reading.accuracy < bestAccuracy) {
+          bestAccuracy = reading.accuracy
+          onUpdate(reading)
+        }
+      }
+      // Once we've had good readings, skip poor ones
+    },
+    (error) => {
+      let message = 'Unable to get location'
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          message = 'Location permission denied'
+          break
+        case error.POSITION_UNAVAILABLE:
+          message = 'Location information unavailable'
+          break
+        case error.TIMEOUT:
+          message = 'Location request timed out'
+          break
+      }
+      onError(new Error(message))
+    },
+    { ...defaultOptions, ...geoOptions }
   )
 }
 

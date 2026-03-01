@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  watchPosition,
+  watchPositionFiltered,
   clearPositionWatch,
   calculateGreenYardages,
   formatAccuracy,
@@ -21,9 +21,9 @@ export default function SimpleView({ selectedHole, onHoleChange, onClose, course
     ? calculateGreenYardages(position, currentHoleData)
     : { front: null, center: null, back: null }
 
-  // Start continuous GPS watching
+  // Start continuous GPS watching with accuracy filtering
   useEffect(() => {
-    watchIdRef.current = watchPosition(
+    watchIdRef.current = watchPositionFiltered(
       (pos) => {
         setPosition(pos)
         setGpsError(null)

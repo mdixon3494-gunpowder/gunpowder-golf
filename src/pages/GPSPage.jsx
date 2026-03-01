@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useLeague } from '../context/LeagueContext'
 import SimpleView from '../components/gps/SimpleView'
 import {
-  getCurrentPosition,
+  watchPositionFiltered,
+  clearPositionWatch,
   calculateGreenYardages,
   formatAccuracy,
   getAccuracyColor
@@ -14,7 +15,7 @@ export default function GPSPage() {
   // GPS state
   const [position, setPosition] = useState(null)
   const [gpsError, setGpsError] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [acquiring, setAcquiring] = useState(true)
   const [lastUpdated, setLastUpdated] = useState(null)
 
   // UI state
@@ -23,11 +24,8 @@ export default function GPSPage() {
     return saved ? parseInt(saved, 10) : 1
   })
   const [showSimpleView, setShowSimpleView] = useState(false)
-  const [autoRefresh, setAutoRefresh] = useState(() => {
-    return localStorage.getItem('gps_auto_refresh') !== 'false'
-  })
 
-  const autoRefreshInterval = useRef(null)
+  const watchIdRef = useRef(null)
 
   // Get current hole data
   const currentHoleData = courseMapping?.holes?.find(h => h.number === selectedHole)
@@ -40,53 +38,45 @@ export default function GPSPage() {
     ? calculateGreenYardages(position, currentHoleData)
     : { front: null, center: null, back: null }
 
-  // Refresh GPS position
-  const refreshPosition = useCallback(async () => {
-    setLoading(true)
-    setGpsError(null)
-
-    try {
-      const pos = await getCurrentPosition()
-      setPosition(pos)
-      setLastUpdated(new Date())
-    } catch (error) {
-      setGpsError(error.message)
-    } finally {
-      setLoading(false)
+  // Start/restart the filtered position watch
+  const startWatch = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      clearPositionWatch(watchIdRef.current)
     }
+    setGpsError(null)
+    setAcquiring(true)
+
+    watchIdRef.current = watchPositionFiltered(
+      (pos) => {
+        setPosition(pos)
+        setLastUpdated(new Date())
+        setAcquiring(false)
+        setGpsError(null)
+      },
+      (error) => {
+        setGpsError(error.message)
+      }
+    )
   }, [])
 
-  // Initial GPS request on mount
+  // Start watching on mount, stop when SimpleView is shown or unmount
   useEffect(() => {
-    refreshPosition()
-  }, [refreshPosition])
-
-  // Auto-refresh every 5 seconds when enabled
-  useEffect(() => {
-    if (autoRefresh && !showSimpleView) {
-      autoRefreshInterval.current = setInterval(refreshPosition, 5000)
-    } else {
-      if (autoRefreshInterval.current) {
-        clearInterval(autoRefreshInterval.current)
-        autoRefreshInterval.current = null
-      }
+    if (!showSimpleView) {
+      startWatch()
     }
 
     return () => {
-      if (autoRefreshInterval.current) {
-        clearInterval(autoRefreshInterval.current)
+      if (watchIdRef.current !== null) {
+        clearPositionWatch(watchIdRef.current)
+        watchIdRef.current = null
       }
     }
-  }, [autoRefresh, showSimpleView, refreshPosition])
+  }, [startWatch, showSimpleView])
 
   // Save preferences to localStorage
   useEffect(() => {
     localStorage.setItem('gps_selected_hole', selectedHole.toString())
   }, [selectedHole])
-
-  useEffect(() => {
-    localStorage.setItem('gps_auto_refresh', autoRefresh.toString())
-  }, [autoRefresh])
 
   // Handle hole navigation
   const goToPrevHole = () => {
@@ -194,7 +184,7 @@ export default function GPSPage() {
             <div className="yardage-item yardage-center-item">
               <span className="yardage-label">Center</span>
               <span className="yardage-value yardage-center">
-                {loading ? '...' : (yardages.center ?? '--')}
+                {acquiring ? '...' : (yardages.center ?? '--')}
               </span>
             </div>
             {yardages.back !== null && (
@@ -230,20 +220,10 @@ export default function GPSPage() {
       <div className="gps-controls">
         <button
           className="btn btn-primary"
-          onClick={refreshPosition}
-          disabled={loading}
+          onClick={startWatch}
         >
-          {loading ? 'Refreshing...' : 'Refresh GPS'}
+          {acquiring ? 'Acquiring...' : 'Reset GPS'}
         </button>
-
-        <label className="gps-toggle">
-          <input
-            type="checkbox"
-            checked={autoRefresh}
-            onChange={(e) => setAutoRefresh(e.target.checked)}
-          />
-          <span>Auto-refresh (5s)</span>
-        </label>
       </div>
 
       {/* Course Info */}
