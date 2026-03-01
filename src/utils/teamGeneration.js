@@ -182,39 +182,9 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
 
   // Sort all remaining players by handicap for flight assignment
   const sortedPlayers = [...remainingPlayers].sort((a, b) => getPlayerHandicap(a) - getPlayerHandicap(b))
+  const numFlights = 4 // Always 4 flights for A-B-C-D system
 
-  // Calculate how many new teams we need (excluding incomplete manual teams that will be filled)
-  const playersForNewTeams = remainingPlayers.length - incompleteManualTeams.reduce(
-    (sum, mt) => sum + Math.min(4 - mt.players.length, remainingPlayers.length), 0
-  )
-
-  // Estimate team structure
-  const totalNewPlayers = remainingPlayers.length
-  const incompleteTeamSpots = incompleteManualTeams.reduce((sum, mt) => sum + (4 - mt.players.length), 0)
-  const playersAfterFillingIncomplete = Math.max(0, totalNewPlayers - incompleteTeamSpots)
-
-  const numFoursomes = Math.floor(playersAfterFillingIncomplete / 4)
-  const remainder = playersAfterFillingIncomplete % 4
-
-  let newTeamSizes = []
-  if (remainder === 0) {
-    newTeamSizes = new Array(numFoursomes).fill(4)
-  } else if (remainder === 3) {
-    newTeamSizes = new Array(numFoursomes).fill(4).concat([3])
-  } else if (remainder === 2) {
-    newTeamSizes = new Array(Math.max(0, numFoursomes - 1)).fill(4).concat([3, 3])
-  } else if (remainder === 1) {
-    newTeamSizes = new Array(Math.max(0, numFoursomes - 2)).fill(4).concat([3, 3, 3])
-  }
-
-  // Determine number of flights based on team size
-  const allTeamSizes = [
-    ...incompleteManualTeams.map(() => 4), // Incomplete teams target 4
-    ...newTeamSizes
-  ]
-  const numFlights = allTeamSizes.length > 0 ? Math.max(...allTeamSizes, 4) : 4
-
-  // Process pairing requests
+  // === Phase 1: Process pairing requests (before team size calculation) ===
   const paired = new Set()
   const pairsWithFlightInfo = []
 
@@ -243,7 +213,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
   const sameFlightPairs = pairsWithFlightInfo.filter(p => p.isSameFlight)
   const diffFlightPairs = pairsWithFlightInfo.filter(p => !p.isSameFlight)
 
-  // Try to combine complementary same-flight pairs
+  // Try to combine complementary same-flight pairs into complete foursomes
   const combinedTeams = []
   const remainingSameFlightPairs = []
 
@@ -276,7 +246,47 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     }
   }
 
-  // Build team objects for filling
+  // Add combined pair teams (already complete foursomes)
+  for (const ct of combinedTeams) {
+    finalTeams.push(ct.players)
+  }
+
+  // Count uncombined pairing teams that need fill slots
+  const uncombinedPairTeams = [...remainingSameFlightPairs, ...diffFlightPairs]
+  const combinedPlayerCount = combinedTeams.reduce((sum, ct) => sum + ct.players.length, 0)
+
+  // === Phase 2: Calculate team sizes for all remaining players ===
+  // Subtract players already placed in combined teams
+  const playersForTeamSizing = remainingPlayers.length - combinedPlayerCount
+  const incompleteTeamSpots = incompleteManualTeams.reduce((sum, mt) => sum + (4 - mt.players.length), 0)
+  const playersAfterFillingIncomplete = Math.max(0, playersForTeamSizing - incompleteTeamSpots)
+
+  const numFoursomes = Math.floor(playersAfterFillingIncomplete / 4)
+  const remainder = playersAfterFillingIncomplete % 4
+
+  // Calculate ideal team sizes for ALL remaining players (pairing teams + new teams)
+  let allTeamSizes = []
+  if (remainder === 0) {
+    allTeamSizes = new Array(numFoursomes).fill(4)
+  } else if (remainder === 3) {
+    allTeamSizes = new Array(numFoursomes).fill(4).concat([3])
+  } else if (remainder === 2) {
+    allTeamSizes = new Array(Math.max(0, numFoursomes - 1)).fill(4).concat([3, 3])
+  } else if (remainder === 1) {
+    allTeamSizes = new Array(Math.max(0, numFoursomes - 2)).fill(4).concat([3, 3, 3])
+  }
+
+  // Pairing teams consume slots from allTeamSizes (prefer larger slots for pairs
+  // since they already have 2 players and benefit from a higher target)
+  allTeamSizes.sort((a, b) => b - a)
+  const pairingTeamSizes = []
+  for (let i = 0; i < uncombinedPairTeams.length; i++) {
+    pairingTeamSizes.push(allTeamSizes.length > 0 ? allTeamSizes.shift() : 4)
+  }
+  // Remaining sizes are for new empty teams
+  const newTeamSizes = allTeamSizes
+
+  // === Phase 3: Build team objects for filling ===
   const teamsToFill = []
 
   // Add incomplete manual teams
@@ -288,33 +298,28 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     })
   }
 
-  // Add combined pair teams (already complete)
-  for (const ct of combinedTeams) {
-    finalTeams.push(ct.players)
-  }
-
-  // Add remaining same-flight pairs as teams needing fill
+  // Add remaining same-flight pairs as teams needing fill (with consumed slot sizes)
+  let pairSizeIdx = 0
   for (const pair of remainingSameFlightPairs) {
     teamsToFill.push({
       players: [...pair.players],
-      targetSize: 4,
+      targetSize: pairingTeamSizes[pairSizeIdx++] || 4,
       needsMirror: pair.mirrorFlight,
       mirrorCount: 2
     })
   }
 
-  // Add different-flight pairs as teams needing fill
+  // Add different-flight pairs as teams needing fill (with consumed slot sizes)
   for (const pair of diffFlightPairs) {
     teamsToFill.push({
       players: [...pair.players],
-      targetSize: 4,
+      targetSize: pairingTeamSizes[pairSizeIdx++] || 4,
       filledFlights: pair.flights
     })
   }
 
   // Add empty teams for remaining structure
   for (const size of newTeamSizes) {
-    // Only add if we have players that aren't in pairs or manual teams
     teamsToFill.push({
       players: [],
       targetSize: size
@@ -420,6 +425,36 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     if (!added) {
       // Create a new team
       finalTeams.push([player])
+    }
+  }
+
+  // Enforce minimum team size of 3 for generated teams
+  // Redistribute players from undersized teams into other teams
+  const manualTeamIds = new Set(completeManualTeams.map((_, i) => i))
+  let needsRecheck = true
+  while (needsRecheck) {
+    needsRecheck = false
+    for (let i = finalTeams.length - 1; i >= 0; i--) {
+      if (finalTeams[i].length < 3 && !manualTeamIds.has(i)) {
+        // Move players from this undersized team to other teams that have room
+        const playersToRedistribute = finalTeams.splice(i, 1)[0]
+        for (const player of playersToRedistribute) {
+          // Find the smallest team that can absorb a player
+          let bestTeamIdx = -1
+          let bestSize = Infinity
+          for (let j = 0; j < finalTeams.length; j++) {
+            if (finalTeams[j].length < bestSize) {
+              bestSize = finalTeams[j].length
+              bestTeamIdx = j
+            }
+          }
+          if (bestTeamIdx >= 0) {
+            finalTeams[bestTeamIdx].push(player)
+          }
+        }
+        needsRecheck = true
+        break // restart loop since indices shifted
+      }
     }
   }
 
