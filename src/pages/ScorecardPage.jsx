@@ -8,8 +8,8 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
 
   return (
     <div style={{
-      background: 'white',
-      borderRadius: '10px',
+      background: 'var(--color-surface)',
+      borderRadius: 'var(--radius-md)',
       overflow: 'hidden',
       marginBottom: '20px',
       boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
@@ -26,12 +26,12 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#f8f9fa' }}>
+            <tr style={{ background: 'var(--color-surface-sunken)' }}>
               <th style={{
                 padding: '10px 12px',
                 textAlign: 'center',
                 fontWeight: '600',
-                borderBottom: '2px solid #e0e0e0',
+                borderBottom: '2px solid var(--color-border)',
                 minWidth: '70px'
               }}>
                 Hole
@@ -41,7 +41,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                   padding: '10px 12px',
                   textAlign: 'center',
                   fontWeight: '600',
-                  borderBottom: '2px solid #e0e0e0',
+                  borderBottom: '2px solid var(--color-border)',
                   minWidth: '45px'
                 }}>
                   {hole.hole}
@@ -51,7 +51,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 padding: '10px 12px',
                 textAlign: 'center',
                 fontWeight: '600',
-                borderBottom: '2px solid #e0e0e0',
+                borderBottom: '2px solid var(--color-border)',
                 background: outBgColor,
                 minWidth: '55px'
               }}>
@@ -66,7 +66,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 padding: '10px 12px',
                 textAlign: 'center',
                 fontWeight: '600',
-                background: '#f8f9fa'
+                background: 'var(--color-surface-sunken)'
               }}>
                 Par
               </td>
@@ -75,7 +75,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                   padding: '10px 12px',
                   textAlign: 'center',
                   fontWeight: 'bold',
-                  color: hole.par === 3 ? '#e74c3c' : hole.par === 5 ? '#3498db' : '#333'
+                  color: hole.par === 3 ? 'var(--color-danger)' : hole.par === 5 ? 'var(--color-info)' : 'var(--color-text-primary)'
                 }}>
                   {hole.par}
                 </td>
@@ -91,12 +91,12 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
             </tr>
 
             {/* Gold Tees */}
-            <tr style={{ background: '#fffde7' }}>
+            <tr style={{ background: 'var(--color-warning-light)' }}>
               <td style={{
                 padding: '8px 12px',
                 textAlign: 'center',
                 fontWeight: '600',
-                color: '#f9a825'
+                color: 'var(--color-accent-gold)'
               }}>
                 Gold
               </td>
@@ -104,7 +104,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 <td key={hole.hole} style={{
                   padding: '8px 12px',
                   textAlign: 'center',
-                  color: '#666',
+                  color: 'var(--color-text-secondary)',
                   fontSize: '13px'
                 }}>
                   {hole.gold}
@@ -114,7 +114,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 padding: '8px 12px',
                 textAlign: 'center',
                 fontWeight: 'bold',
-                background: '#fff8e1',
+                background: 'var(--color-warning-light)',
                 fontSize: '13px'
               }}>
                 {totalGold}
@@ -122,12 +122,12 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
             </tr>
 
             {/* Blue Tees */}
-            <tr style={{ background: '#e3f2fd' }}>
+            <tr style={{ background: 'var(--color-info-light)' }}>
               <td style={{
                 padding: '8px 12px',
                 textAlign: 'center',
                 fontWeight: '600',
-                color: '#1976d2'
+                color: 'var(--color-info-dark)'
               }}>
                 Blue
               </td>
@@ -135,7 +135,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 <td key={hole.hole} style={{
                   padding: '8px 12px',
                   textAlign: 'center',
-                  color: '#666',
+                  color: 'var(--color-text-secondary)',
                   fontSize: '13px'
                 }}>
                   {hole.blue}
@@ -145,7 +145,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 padding: '8px 12px',
                 textAlign: 'center',
                 fontWeight: 'bold',
-                background: '#bbdefb',
+                background: 'var(--color-info-light-border)',
                 fontSize: '13px'
               }}>
                 {totalBlue}
@@ -153,12 +153,12 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
             </tr>
 
             {/* Red Tees */}
-            <tr style={{ background: '#ffebee' }}>
+            <tr style={{ background: 'var(--color-danger-light)' }}>
               <td style={{
                 padding: '8px 12px',
                 textAlign: 'center',
                 fontWeight: '600',
-                color: '#c62828'
+                color: 'var(--color-danger-dark)'
               }}>
                 Red
               </td>
@@ -166,7 +166,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 <td key={hole.hole} style={{
                   padding: '8px 12px',
                   textAlign: 'center',
-                  color: '#666',
+                  color: 'var(--color-text-secondary)',
                   fontSize: '13px'
                 }}>
                   {hole.red}
@@ -176,7 +176,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 padding: '8px 12px',
                 textAlign: 'center',
                 fontWeight: 'bold',
-                background: '#ffcdd2',
+                background: 'var(--color-danger-light)',
                 fontSize: '13px'
               }}>
                 {totalRed}
@@ -184,12 +184,12 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
             </tr>
 
             {/* Handicap Row */}
-            <tr style={{ background: '#f5f5f5' }}>
+            <tr style={{ background: 'var(--color-surface-sunken)' }}>
               <td style={{
                 padding: '8px 12px',
                 textAlign: 'center',
                 fontWeight: '600',
-                color: '#666'
+                color: 'var(--color-text-secondary)'
               }}>
                 HCP
               </td>
@@ -197,7 +197,7 @@ function NineHoleTable({ holes, title, headerColor, outLabel, outBgColor }) {
                 <td key={hole.hole} style={{
                   padding: '8px 12px',
                   textAlign: 'center',
-                  color: '#999',
+                  color: 'var(--color-text-tertiary)',
                   fontSize: '12px'
                 }}>
                   {hole.hcp}
@@ -230,10 +230,10 @@ function CourseTotals() {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+      background: 'var(--color-border-dark)',
       color: 'white',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px'
     }}>
       {/* Total Par */}
@@ -298,12 +298,12 @@ function Par3Summary() {
 
   return (
     <div style={{
-      background: '#e8f5e9',
+      background: 'var(--color-success-light)',
       padding: '20px',
-      borderRadius: '10px',
-      border: '2px solid #27ae60'
+      borderRadius: 'var(--radius-md)',
+      border: '2px solid var(--color-success)'
     }}>
-      <h3 style={{ marginBottom: '15px', color: '#27ae60' }}>Par 3 Holes (Greenie Holes)</h3>
+      <h3 style={{ marginBottom: '15px', color: 'var(--color-success)' }}>Par 3 Holes (Greenie Holes)</h3>
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
@@ -311,18 +311,18 @@ function Par3Summary() {
       }}>
         {par3Holes.map(hole => (
           <div key={hole.hole} style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '12px',
             borderRadius: '8px',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#27ae60' }}>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-success)' }}>
               Hole {hole.hole}
             </div>
-            <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>
+            <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
               {hole.blue} yds (Blue)
             </div>
-            <div style={{ fontSize: '12px', color: '#999' }}>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)' }}>
               HCP: {hole.hcp}
             </div>
           </div>
@@ -340,17 +340,17 @@ function ScorecardPage() {
       <NineHoleTable
         holes={GUNPOWDER_SCORECARD.front9}
         title="Front 9"
-        headerColor="linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)"
+        headerColor="var(--color-success)"
         outLabel="OUT"
-        outBgColor="#e8f5e9"
+        outBgColor="var(--color-success-light)"
       />
 
       <NineHoleTable
         holes={GUNPOWDER_SCORECARD.back9}
         title="Back 9"
-        headerColor="linear-gradient(135deg, #e67e22 0%, #f39c12 100%)"
+        headerColor="var(--color-back9)"
         outLabel="IN"
-        outBgColor="#fff3e0"
+        outBgColor="var(--color-skins-light)"
       />
 
       <CourseTotals />

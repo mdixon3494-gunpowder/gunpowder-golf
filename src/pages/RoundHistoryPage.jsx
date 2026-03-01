@@ -51,8 +51,8 @@ function RoundHistoryPage({ profile, onBack }) {
   }
 
   const getTeeColor = (tee) => {
-    const colors = { gold: '#f9a825', blue: '#3498db', red: '#e74c3c' }
-    return colors[tee] || '#3498db'
+    const colors = { gold: 'var(--color-accent-gold)', blue: 'var(--color-info)', red: 'var(--color-danger)' }
+    return colors[tee] || 'var(--color-info)'
   }
 
   const allHoles = [...GUNPOWDER_SCORECARD.front9, ...GUNPOWDER_SCORECARD.back9]
@@ -93,7 +93,7 @@ function RoundHistoryPage({ profile, onBack }) {
             style={{
               background: 'none',
               border: 'none',
-              color: '#3498db',
+              color: 'var(--color-info)',
               fontSize: '15px',
               cursor: 'pointer',
               padding: '8px 0',
@@ -105,7 +105,7 @@ function RoundHistoryPage({ profile, onBack }) {
           </button>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '60px', color: '#888' }}>
+            <div style={{ textAlign: 'center', padding: '60px', color: 'var(--color-text-tertiary)' }}>
               <div className="spinner-tiny" style={{ margin: '0 auto 10px' }} />
               Loading rounds...
             </div>
@@ -113,7 +113,7 @@ function RoundHistoryPage({ profile, onBack }) {
             <div style={{
               textAlign: 'center',
               padding: '60px 20px',
-              color: '#888'
+              color: 'var(--color-text-tertiary)'
             }}>
               <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }}>&#9971;</div>
               <div style={{ fontSize: '16px', marginBottom: '8px', fontWeight: '600' }}>
@@ -133,38 +133,38 @@ function RoundHistoryPage({ profile, onBack }) {
                 marginBottom: '20px'
               }}>
                 <div style={{
-                  background: 'white',
+                  background: 'var(--color-surface)',
                   padding: '16px 12px',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e0e0e0'
+                  border: '1px solid var(--color-border)'
                 }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3498db' }}>{totalRounds}</div>
-                  <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Rounds</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-info)' }}>{totalRounds}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>Rounds</div>
                 </div>
                 <div style={{
-                  background: 'white',
+                  background: 'var(--color-surface)',
                   padding: '16px 12px',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e0e0e0'
+                  border: '1px solid var(--color-border)'
                 }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#27ae60' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-success)' }}>
                     {averageScore || '--'}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Avg (18h)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>Avg (18h)</div>
                 </div>
                 <div style={{
-                  background: 'white',
+                  background: 'var(--color-surface)',
                   padding: '16px 12px',
                   borderRadius: '12px',
                   textAlign: 'center',
-                  border: '1px solid #e0e0e0'
+                  border: '1px solid var(--color-border)'
                 }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f39c12' }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-skins)' }}>
                     {bestRound ? bestRound.total_score : '--'}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Best (18h)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>Best (18h)</div>
                 </div>
               </div>
 
@@ -180,9 +180,9 @@ function RoundHistoryPage({ profile, onBack }) {
                     <div
                       key={round.id}
                       style={{
-                        background: 'white',
+                        background: 'var(--color-surface)',
                         borderRadius: '12px',
-                        border: '1px solid #e0e0e0',
+                        border: '1px solid var(--color-border)',
                         overflow: 'hidden'
                       }}
                     >
@@ -200,7 +200,7 @@ function RoundHistoryPage({ profile, onBack }) {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
+                            <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-text-primary)' }}>
                               {formatDate(round.date)}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -214,28 +214,28 @@ function RoundHistoryPage({ profile, onBack }) {
                               }}>
                                 {getTeeLabel(tee)}
                               </span>
-                              <span style={{ fontSize: '12px', color: '#888' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--color-text-tertiary)' }}>
                                 {round.holes_played === 9 ? `9 holes (${startingHole === 1 ? 'Front' : 'Back'})` : '18 holes'}
                               </span>
                             </div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#333' }}>
+                            <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>
                               {round.total_score || '--'}
                             </div>
                             <div style={{
                               fontSize: '13px',
                               fontWeight: '600',
-                              color: round.total_score && round.total_score > roundPar ? '#e74c3c'
-                                : round.total_score && round.total_score < roundPar ? '#27ae60'
-                                : '#888'
+                              color: round.total_score && round.total_score > roundPar ? 'var(--color-danger)'
+                                : round.total_score && round.total_score < roundPar ? 'var(--color-success)'
+                                : 'var(--color-text-tertiary)'
                             }}>
                               {formatVsPar(round.total_score, roundPar)}
                             </div>
                           </div>
                         </div>
                         {round.holes_played !== 9 && round.front_nine && round.back_nine && (
-                          <div style={{ fontSize: '12px', color: '#888', marginTop: '6px' }}>
+                          <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '6px' }}>
                             Front: {round.front_nine} | Back: {round.back_nine}
                           </div>
                         )}
@@ -243,22 +243,22 @@ function RoundHistoryPage({ profile, onBack }) {
 
                       {/* Expanded hole-by-hole scores */}
                       {isExpanded && round.scores && (
-                        <div style={{ borderTop: '1px solid #e0e0e0', padding: '12px' }}>
+                        <div style={{ borderTop: '1px solid var(--color-border)', padding: '12px' }}>
                           {/* Front 9 */}
                           {(round.holes_played !== 9 || startingHole === 1) && (
                             <div style={{ overflowX: 'auto', marginBottom: round.holes_played !== 9 ? '10px' : '0' }}>
                               <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '300px' }}>
                                 <thead>
-                                  <tr style={{ background: '#27ae60', color: 'white' }}>
+                                  <tr style={{ background: 'var(--color-success)', color: 'white' }}>
                                     <th style={{ padding: '5px 3px', textAlign: 'left', minWidth: '35px' }}>Hole</th>
                                     {GUNPOWDER_SCORECARD.front9.map(h => (
                                       <th key={h.hole} style={{ padding: '5px 2px', textAlign: 'center', minWidth: '22px' }}>{h.hole}</th>
                                     ))}
-                                    <th style={{ padding: '5px 3px', textAlign: 'center', background: '#229954' }}>OUT</th>
+                                    <th style={{ padding: '5px 3px', textAlign: 'center', background: 'var(--color-success-dark)' }}>OUT</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr style={{ background: '#f0f0f0' }}>
+                                  <tr style={{ background: 'var(--color-surface-sunken)' }}>
                                     <td style={{ padding: '4px 3px', fontWeight: 'bold', fontSize: '10px' }}>Par</td>
                                     {GUNPOWDER_SCORECARD.front9.map(h => (
                                       <td key={h.hole} style={{ padding: '4px 2px', textAlign: 'center', fontSize: '10px' }}>{h.par}</td>
@@ -279,20 +279,20 @@ function RoundHistoryPage({ profile, onBack }) {
                                             minWidth: '20px',
                                             height: '20px',
                                             borderRadius: diff !== null && diff <= -1 ? '50%' : '0',
-                                            border: diff !== null && diff <= -2 ? '2px double #f39c12'
-                                              : diff === -1 ? '2px solid #27ae60' : 'none',
-                                            background: diff !== null && diff <= -2 ? '#fff8e1'
-                                              : diff === -1 ? '#e8f5e9' : 'transparent',
+                                            border: diff !== null && diff <= -2 ? '2px double var(--color-skins)'
+                                              : diff === -1 ? '2px solid var(--color-success)' : 'none',
+                                            background: diff !== null && diff <= -2 ? 'var(--color-warning-light)'
+                                              : diff === -1 ? 'var(--color-success-light)' : 'transparent',
                                             fontWeight: 'bold',
                                             fontSize: '11px',
-                                            color: '#333'
+                                            color: 'var(--color-text-primary)'
                                           }}>
                                             {score || '-'}
                                           </div>
                                         </td>
                                       )
                                     })}
-                                    <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', fontSize: '11px', background: '#e8f5e9' }}>
+                                    <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', fontSize: '11px', background: 'var(--color-success-light)' }}>
                                       {round.front_nine || '--'}
                                     </td>
                                   </tr>
@@ -306,16 +306,16 @@ function RoundHistoryPage({ profile, onBack }) {
                             <div style={{ overflowX: 'auto' }}>
                               <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '300px' }}>
                                 <thead>
-                                  <tr style={{ background: '#ef6c00', color: 'white' }}>
+                                  <tr style={{ background: 'var(--color-back9)', color: 'white' }}>
                                     <th style={{ padding: '5px 3px', textAlign: 'left', minWidth: '35px' }}>Hole</th>
                                     {GUNPOWDER_SCORECARD.back9.map(h => (
                                       <th key={h.hole} style={{ padding: '5px 2px', textAlign: 'center', minWidth: '22px' }}>{h.hole}</th>
                                     ))}
-                                    <th style={{ padding: '5px 3px', textAlign: 'center', background: '#e65100' }}>IN</th>
+                                    <th style={{ padding: '5px 3px', textAlign: 'center', background: 'var(--color-back9-dark)' }}>IN</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  <tr style={{ background: '#f0f0f0' }}>
+                                  <tr style={{ background: 'var(--color-surface-sunken)' }}>
                                     <td style={{ padding: '4px 3px', fontWeight: 'bold', fontSize: '10px' }}>Par</td>
                                     {GUNPOWDER_SCORECARD.back9.map(h => (
                                       <td key={h.hole} style={{ padding: '4px 2px', textAlign: 'center', fontSize: '10px' }}>{h.par}</td>
@@ -336,20 +336,20 @@ function RoundHistoryPage({ profile, onBack }) {
                                             minWidth: '20px',
                                             height: '20px',
                                             borderRadius: diff !== null && diff <= -1 ? '50%' : '0',
-                                            border: diff !== null && diff <= -2 ? '2px double #f39c12'
-                                              : diff === -1 ? '2px solid #27ae60' : 'none',
-                                            background: diff !== null && diff <= -2 ? '#fff8e1'
-                                              : diff === -1 ? '#e8f5e9' : 'transparent',
+                                            border: diff !== null && diff <= -2 ? '2px double var(--color-skins)'
+                                              : diff === -1 ? '2px solid var(--color-success)' : 'none',
+                                            background: diff !== null && diff <= -2 ? 'var(--color-warning-light)'
+                                              : diff === -1 ? 'var(--color-success-light)' : 'transparent',
                                             fontWeight: 'bold',
                                             fontSize: '11px',
-                                            color: '#333'
+                                            color: 'var(--color-text-primary)'
                                           }}>
                                             {score || '-'}
                                           </div>
                                         </td>
                                       )
                                     })}
-                                    <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', fontSize: '11px', background: '#fff3e0' }}>
+                                    <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', fontSize: '11px', background: 'var(--color-skins-light)' }}>
                                       {round.back_nine || '--'}
                                     </td>
                                   </tr>

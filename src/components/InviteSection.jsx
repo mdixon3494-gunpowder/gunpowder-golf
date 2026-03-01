@@ -42,26 +42,26 @@ function InviteSection({ leagueId }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>Invite Players</h3>
 
       {/* League Code */}
       <div style={{
-        background: '#f8f9fa',
+        background: 'var(--color-surface-sunken)',
         padding: '12px 15px',
-        borderRadius: '8px',
+        borderRadius: 'var(--radius-sm)',
         marginBottom: '12px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
         <div>
-          <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>League Code</div>
+          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginBottom: '2px' }}>League Code</div>
           <div style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '2px' }}>{leagueId}</div>
         </div>
         <button
@@ -69,12 +69,12 @@ function InviteSection({ leagueId }) {
           style={{
             padding: '8px 16px',
             borderRadius: '6px',
-            border: '1px solid #ddd',
-            background: copied === 'code' ? '#e8f5e9' : 'white',
+            border: '1px solid var(--color-border)',
+            background: copied === 'code' ? 'var(--color-success-light)' : 'var(--color-surface)',
             cursor: 'pointer',
             fontSize: '13px',
             fontWeight: '500',
-            color: copied === 'code' ? '#27ae60' : '#333'
+            color: copied === 'code' ? 'var(--color-success)' : 'var(--color-text-primary)'
           }}
         >
           {copied === 'code' ? 'Copied!' : 'Copy'}
@@ -83,9 +83,9 @@ function InviteSection({ leagueId }) {
 
       {/* Invite Link */}
       <div style={{
-        background: '#f8f9fa',
+        background: 'var(--color-surface-sunken)',
         padding: '12px 15px',
-        borderRadius: '8px',
+        borderRadius: 'var(--radius-sm)',
         marginBottom: '16px',
         display: 'flex',
         justifyContent: 'space-between',
@@ -93,10 +93,10 @@ function InviteSection({ leagueId }) {
         gap: '10px'
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>Invite Link</div>
+          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginBottom: '2px' }}>Invite Link</div>
           <div style={{
             fontSize: '12px',
-            color: '#333',
+            color: 'var(--color-text-primary)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap'
@@ -109,13 +109,13 @@ function InviteSection({ leagueId }) {
           style={{
             padding: '8px 16px',
             borderRadius: '6px',
-            border: '1px solid #ddd',
-            background: copied === 'link' ? '#e8f5e9' : 'white',
+            border: '1px solid var(--color-border)',
+            background: copied === 'link' ? 'var(--color-success-light)' : 'var(--color-surface)',
             cursor: 'pointer',
             fontSize: '13px',
             fontWeight: '500',
             flexShrink: 0,
-            color: copied === 'link' ? '#27ae60' : '#333'
+            color: copied === 'link' ? 'var(--color-success)' : 'var(--color-text-primary)'
           }}
         >
           {copied === 'link' ? 'Copied!' : 'Copy'}
@@ -128,7 +128,7 @@ function InviteSection({ leagueId }) {
           <img
             src={qrDataUrl}
             alt="Invite QR Code"
-            style={{ borderRadius: '8px', border: '1px solid #e0e0e0' }}
+            style={{ borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}
           />
           <div style={{ marginTop: '10px' }}>
             <button
@@ -136,11 +136,11 @@ function InviteSection({ leagueId }) {
               style={{
                 padding: '8px 20px',
                 borderRadius: '6px',
-                border: '1px solid #ddd',
-                background: 'white',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
                 cursor: 'pointer',
                 fontSize: '13px',
-                color: '#333'
+                color: 'var(--color-text-primary)'
               }}
             >
               Download QR Code

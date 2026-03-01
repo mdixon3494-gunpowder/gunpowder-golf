@@ -14,10 +14,10 @@ const ROLE_LABELS = {
 }
 
 const ROLE_COLORS = {
-  owner: '#9b59b6',
-  co_owner: '#2980b9',
-  admin: '#27ae60',
-  player: '#666'
+  owner: 'var(--color-accent-purple)',
+  co_owner: 'var(--color-info)',
+  admin: 'var(--color-success)',
+  player: 'var(--color-text-secondary)'
 }
 
 function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
@@ -106,37 +106,37 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
   if (loading) {
     return (
       <div style={{
-        background: 'white',
+        background: 'var(--color-surface)',
         padding: '20px',
-        borderRadius: '10px',
+        borderRadius: 'var(--radius-md)',
         marginBottom: '20px',
-        border: '1px solid #e0e0e0'
+        border: '1px solid var(--color-border)'
       }}>
         <h3>Members</h3>
-        <div style={{ color: '#999', textAlign: 'center', padding: '20px' }}>Loading members...</div>
+        <div style={{ color: 'var(--color-text-tertiary)', textAlign: 'center', padding: '20px' }}>Loading members...</div>
       </div>
     )
   }
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '4px' }}>Members</h3>
-      <p style={{ color: '#666', fontSize: '12px', marginBottom: '15px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
         {members.length} member{members.length !== 1 ? 's' : ''}
       </p>
 
       {error && (
         <div style={{
-          background: '#ffebee',
-          color: '#c62828',
+          background: 'var(--color-danger-light)',
+          color: 'var(--color-danger-dark)',
           padding: '10px',
-          borderRadius: '8px',
+          borderRadius: 'var(--radius-sm)',
           marginBottom: '12px',
           fontSize: '13px'
         }}>
@@ -157,7 +157,7 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
             gap: '12px',
             padding: '12px',
             borderRadius: '8px',
-            background: isCurrentUser ? '#f0f8f0' : '#f8f9fa',
+            background: isCurrentUser ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
             marginBottom: '8px'
           }}>
             {/* Avatar */}
@@ -165,13 +165,13 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
               width: '36px',
               height: '36px',
               borderRadius: '50%',
-              background: avatar ? 'none' : '#ddd',
+              background: avatar ? 'none' : 'var(--color-border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '14px',
               fontWeight: '600',
-              color: '#666',
+              color: 'var(--color-text-secondary)',
               overflow: 'hidden',
               flexShrink: 0
             }}>
@@ -192,7 +192,7 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                 whiteSpace: 'nowrap'
               }}>
                 {name}
-                {isCurrentUser && <span style={{ fontSize: '11px', color: '#999', marginLeft: '6px' }}>(you)</span>}
+                {isCurrentUser && <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginLeft: '6px' }}>(you)</span>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                 <span style={{
@@ -201,14 +201,14 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                   borderRadius: '10px',
                   fontSize: '11px',
                   fontWeight: '600',
-                  background: `${ROLE_COLORS[member.role]}15`,
+                  background: 'var(--color-surface-sunken)',
                   color: ROLE_COLORS[member.role],
-                  border: `1px solid ${ROLE_COLORS[member.role]}30`
+                  border: `1px solid var(--color-border-light)`
                 }}>
                   {ROLE_LABELS[member.role]}
                 </span>
                 {member.joined_at && (
-                  <span style={{ fontSize: '11px', color: '#999' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>
                     Joined {new Date(member.joined_at).toLocaleDateString()}
                   </span>
                 )}
@@ -226,9 +226,9 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                   style={{
                     padding: '4px 6px',
                     borderRadius: '6px',
-                    border: '1px solid #ddd',
+                    border: '1px solid var(--color-border)',
                     fontSize: '12px',
-                    background: 'white',
+                    background: 'var(--color-surface)',
                     cursor: 'pointer'
                   }}
                 >
@@ -245,9 +245,9 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                   style={{
                     padding: '4px 8px',
                     borderRadius: '6px',
-                    border: '1px solid #ffcdd2',
-                    background: '#fff5f5',
-                    color: '#c62828',
+                    border: '1px solid var(--color-danger-border)',
+                    background: 'var(--color-danger-light)',
+                    color: 'var(--color-danger-dark)',
                     cursor: 'pointer',
                     fontSize: '12px'
                   }}
@@ -263,16 +263,16 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
       {/* Remove Confirmation Modal */}
       {showRemoveConfirm && (
         <div style={{
-          background: '#fff3e0',
+          background: 'var(--color-skins-light)',
           padding: '15px',
-          borderRadius: '8px',
+          borderRadius: 'var(--radius-sm)',
           marginTop: '12px',
-          border: '1px solid #ffcc80'
+          border: '1px solid var(--color-skins)'
         }}>
           <p style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>
             Remove this member?
           </p>
-          <p style={{ color: '#666', fontSize: '13px', marginBottom: '12px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
             They will lose access and need to rejoin the league.
           </p>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -285,7 +285,7 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                 padding: '8px 16px',
                 borderRadius: '6px',
                 border: 'none',
-                background: '#e74c3c',
+                background: 'var(--color-danger)',
                 color: 'white',
                 cursor: 'pointer',
                 fontSize: '13px',
@@ -298,9 +298,9 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
               onClick={() => setShowRemoveConfirm(null)}
               style={{
                 padding: '8px 16px',
-                borderRadius: '6px',
-                border: '1px solid #ddd',
-                background: 'white',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
                 cursor: 'pointer',
                 fontSize: '13px'
               }}
@@ -316,26 +316,26 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
         <div style={{
           marginTop: '16px',
           paddingTop: '16px',
-          borderTop: '1px solid #e0e0e0'
+          borderTop: '1px solid var(--color-border)'
         }}>
-          <h4 style={{ fontSize: '14px', marginBottom: '8px', color: '#666' }}>Transfer Ownership</h4>
-          <p style={{ fontSize: '12px', color: '#999', marginBottom: '10px' }}>
+          <h4 style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--color-text-secondary)' }}>Transfer Ownership</h4>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginBottom: '10px' }}>
             Transfer league ownership to a co-owner or admin. You will become a co-owner.
           </p>
 
           {showTransferConfirm ? (
             <div style={{
-              background: '#fce4ec',
+              background: 'var(--color-danger-light)',
               padding: '15px',
-              borderRadius: '8px',
-              border: '1px solid #ef9a9a'
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--color-danger-border)'
             }}>
               <p style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>
                 Transfer ownership to {
                   (members.find(m => m.profile_id === showTransferConfirm)?.profiles?.display_name) || 'this member'
                 }?
               </p>
-              <p style={{ color: '#666', fontSize: '13px', marginBottom: '12px' }}>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
                 This action cannot be easily undone. You will become a co-owner.
               </p>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -349,7 +349,7 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                     padding: '8px 16px',
                     borderRadius: '6px',
                     border: 'none',
-                    background: '#9b59b6',
+                    background: 'var(--color-accent-purple)',
                     color: 'white',
                     cursor: 'pointer',
                     fontSize: '13px',
@@ -362,9 +362,9 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                   onClick={() => setShowTransferConfirm(null)}
                   style={{
                     padding: '8px 16px',
-                    borderRadius: '6px',
-                    border: '1px solid #ddd',
-                    background: 'white',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-border)',
+                    background: 'var(--color-surface)',
                     cursor: 'pointer',
                     fontSize: '13px'
                   }}
@@ -382,9 +382,9 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                   style={{
                     padding: '6px 14px',
                     borderRadius: '6px',
-                    border: '1px solid #ce93d8',
-                    background: '#f3e5f5',
-                    color: '#6a1b9a',
+                    border: '1px solid var(--color-accent-purple)',
+                    background: 'var(--color-surface-sunken)',
+                    color: 'var(--color-accent-purple)',
                     cursor: 'pointer',
                     fontSize: '12px'
                   }}

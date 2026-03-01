@@ -20,14 +20,14 @@ function PendingApprovalList({ leagueId, pendingRequests, onUpdate }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '2px solid #ff9800'
+      border: '2px solid var(--color-warning)'
     }}>
-      <h3 style={{ marginBottom: '4px', color: '#e65100' }}>Pending Join Requests</h3>
-      <p style={{ color: '#666', fontSize: '12px', marginBottom: '15px' }}>
+      <h3 style={{ marginBottom: '4px', color: 'var(--color-warning-dark)' }}>Pending Join Requests</h3>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
         {pendingRequests.length} request{pendingRequests.length !== 1 ? 's' : ''} waiting for approval
       </p>
 
@@ -38,16 +38,16 @@ function PendingApprovalList({ leagueId, pendingRequests, onUpdate }) {
           justifyContent: 'space-between',
           padding: '12px',
           borderRadius: '8px',
-          background: '#fff8e1',
+          background: 'var(--color-warning-light)',
           marginBottom: '8px'
         }}>
           <div>
             <div style={{ fontWeight: '600', fontSize: '14px' }}>{request.name || 'Unknown'}</div>
             {request.email && (
-              <div style={{ fontSize: '12px', color: '#666' }}>{request.email}</div>
+              <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{request.email}</div>
             )}
             {request.requestedAt && (
-              <div style={{ fontSize: '11px', color: '#999' }}>
+              <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>
                 {new Date(request.requestedAt).toLocaleDateString()}
               </div>
             )}
@@ -59,7 +59,7 @@ function PendingApprovalList({ leagueId, pendingRequests, onUpdate }) {
                 padding: '6px 14px',
                 borderRadius: '6px',
                 border: 'none',
-                background: '#27ae60',
+                background: 'var(--color-success)',
                 color: 'white',
                 cursor: 'pointer',
                 fontSize: '12px',
@@ -73,11 +73,11 @@ function PendingApprovalList({ leagueId, pendingRequests, onUpdate }) {
               style={{
                 padding: '6px 14px',
                 borderRadius: '6px',
-                border: '1px solid #ddd',
-                background: 'white',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
                 cursor: 'pointer',
                 fontSize: '12px',
-                color: '#666'
+                color: 'var(--color-text-secondary)'
               }}
             >
               Reject

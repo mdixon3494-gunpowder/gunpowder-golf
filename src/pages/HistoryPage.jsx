@@ -105,14 +105,14 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
 
   return (
     <div style={{
-      background: 'white',
-      borderRadius: '10px',
+      background: 'var(--color-surface)',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '15px',
       overflow: 'hidden',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <div style={{
-        background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+        background: 'var(--color-border-dark)',
         color: 'white',
         padding: '15px',
         display: 'flex',
@@ -132,7 +132,7 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
             <div style={{
               fontSize: '18px',
               fontWeight: 'bold',
-              color: winner.totalScore < 0 ? '#2ecc71' : winner.totalScore > 0 ? '#e74c3c' : '#fff'
+              color: winner.totalScore < 0 ? 'var(--color-success)' : winner.totalScore > 0 ? 'var(--color-danger)' : 'var(--color-surface)'
             }}>
               {formatRelativeToPar(winner.totalScore)}
             </div>
@@ -150,17 +150,17 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '10px',
-              background: idx === 0 ? '#fff8e1' : (idx % 2 === 0 ? '#f8f9fa' : 'white'),
-              borderRadius: '6px',
+              background: idx === 0 ? 'var(--color-warning-light)' : (idx % 2 === 0 ? 'var(--color-surface-sunken)' : 'var(--color-surface)'),
+              borderRadius: 'var(--radius-sm)',
               marginBottom: '6px',
-              border: idx === 0 ? '1px solid #f9a825' : 'none'
+              border: idx === 0 ? '1px solid var(--color-accent-gold)' : 'none'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{
                   width: '24px',
                   height: '24px',
                   borderRadius: '50%',
-                  background: idx === 0 ? '#f9a825' : '#95a5a6',
+                  background: idx === 0 ? 'var(--color-accent-gold)' : 'var(--color-text-tertiary)',
                   color: 'white',
                   display: 'flex',
                   alignItems: 'center',
@@ -179,7 +179,7 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
                         borderRadius: '4px',
                         fontSize: '10px',
                         fontWeight: '600',
-                        background: badge.type === 'win' ? '#27ae60' : '#3498db',
+                        background: badge.type === 'win' ? 'var(--color-success)' : 'var(--color-info)',
                         color: 'white'
                       }}>
                         {badge.type === 'win' ? '✓' : '≈'} {badge.label}
@@ -189,15 +189,15 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
                 )}
               </div>
               <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#666' }}>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                   F9: {formatRelativeToPar(team.front9Score)}
                 </span>
-                <span style={{ fontSize: '12px', color: '#666' }}>
+                <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                   B9: {formatRelativeToPar(team.back9Score)}
                 </span>
                 <span style={{
                   fontWeight: 'bold',
-                  color: team.totalScore < 0 ? '#27ae60' : team.totalScore > 0 ? '#e74c3c' : '#333'
+                  color: team.totalScore < 0 ? 'var(--color-success)' : team.totalScore > 0 ? 'var(--color-danger)' : 'var(--color-text-primary)'
                 }}>
                   {formatRelativeToPar(team.totalScore)}
                 </span>
@@ -219,7 +219,7 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
             <button
               className="btn btn-secondary"
               onClick={() => onDelete(round)}
-              style={{ background: '#e74c3c', color: 'white' }}
+              style={{ background: 'var(--color-danger)', color: 'white' }}
             >
               Delete
             </button>
@@ -238,18 +238,18 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
   const totalGreeniePayouts = Object.values(settlement.greeniePayouts).reduce((sum, amt) => sum + amt, 0)
 
   return (
-    <div style={{ background: 'white', borderRadius: '10px' }}>
-      <h3 style={{ marginBottom: '15px', color: '#27ae60' }}>Treasurer's Settlement Guide</h3>
+    <div style={{ background: 'var(--color-surface)', borderRadius: 'var(--radius-md)' }}>
+      <h3 style={{ marginBottom: '15px', color: 'var(--color-success)' }}>Treasurer's Settlement Guide</h3>
 
       {/* Entry Fee Summary */}
-      <div style={{ background: '#e3f2fd', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '2px solid #2196f3' }}>
-        <div style={{ fontWeight: '700', marginBottom: '8px', color: '#1565c0' }}>Entry Fee Per Player: ${perPlayerEntry.toFixed(2)}</div>
-        <div style={{ fontSize: '11px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+      <div style={{ background: 'var(--color-info-light)', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '2px solid var(--color-info)' }}>
+        <div style={{ fontWeight: '700', marginBottom: '8px', color: 'var(--color-info-dark)' }}>Entry Fee Per Player: ${perPlayerEntry.toFixed(2)}</div>
+        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           <span>Team: ${(format.front9 + format.back9 + (settlement.format === 'matchPlay' ? format.overall : 0)).toFixed(2)}</span>
           <span>Greenies: ${(4 * format.greeniePerHole).toFixed(2)}</span>
           {settlement.hio.enabled && <span>HIO: ${format.holeInOne.toFixed(2)}</span>}
         </div>
-        <div style={{ fontSize: '11px', color: '#666', marginTop: '6px' }}>
+        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '6px' }}>
           {settlement.totalPlayers} players × ${perPlayerEntry.toFixed(2)} = <strong>${(settlement.totalPlayers * perPlayerEntry).toFixed(2)}</strong> total collected
         </div>
       </div>
@@ -257,7 +257,7 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
       {/* Step 1: Collect from Teams */}
       <div style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>1</span>
+          <span style={{ background: 'var(--color-info-dark)', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>1</span>
           Collect From Each Team
         </h4>
         {settlement.teamSettlements.map(team => {
@@ -269,35 +269,35 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
 
           return (
             <div key={team.teamId} style={{
-              background: '#f8f9fa',
+              background: 'var(--color-surface-sunken)',
               padding: '12px',
               borderRadius: '8px',
               marginBottom: '10px',
-              border: '1px solid #ddd'
+              border: '1px solid var(--color-border)'
             }}>
               <div style={{ fontWeight: '700', marginBottom: '8px', fontSize: '15px' }}>
-                {team.teamName} <span style={{ fontWeight: 'normal', fontSize: '12px', color: '#666' }}>({team.teamSize} players)</span>
+                {team.teamName} <span style={{ fontWeight: 'normal', fontSize: '12px', color: 'var(--color-text-secondary)' }}>({team.teamSize} players)</span>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px', fontSize: '12px' }}>
-                <div style={{ background: '#ffebee', padding: '8px', borderRadius: '6px' }}>
-                  <div style={{ color: '#c62828', fontWeight: '600' }}>Team Owes</div>
+                <div style={{ background: 'var(--color-danger-light)', padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ color: 'var(--color-danger-dark)', fontWeight: '600' }}>Team Owes</div>
                   <div style={{ fontSize: '18px', fontWeight: '700' }}>${teamOwes.toFixed(2)}</div>
-                  <div style={{ fontSize: '10px', color: '#666' }}>${(teamOwes / team.teamSize).toFixed(2)}/player</div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>${(teamOwes / team.teamSize).toFixed(2)}/player</div>
                 </div>
-                <div style={{ background: '#e8f5e9', padding: '8px', borderRadius: '6px' }}>
-                  <div style={{ color: '#2e7d32', fontWeight: '600' }}>Team Wins</div>
+                <div style={{ background: 'var(--color-success-light)', padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ color: 'var(--color-success-dark)', fontWeight: '600' }}>Team Wins</div>
                   <div style={{ fontSize: '18px', fontWeight: '700' }}>${teamWins.toFixed(2)}</div>
-                  <div style={{ fontSize: '10px', color: '#666' }}>${(teamWins / team.teamSize).toFixed(2)}/player</div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)' }}>${(teamWins / team.teamSize).toFixed(2)}/player</div>
                 </div>
               </div>
 
               {/* Show what they won */}
               {(team.wins.length > 0 || team.ties?.length > 0) && (
-                <div style={{ fontSize: '11px', marginBottom: '10px', padding: '6px', background: '#e8f5e9', borderRadius: '4px' }}>
-                  {team.wins.length > 0 && <span style={{ color: '#2e7d32' }}>✓ Won: {team.wins.join(', ')}</span>}
+                <div style={{ fontSize: '11px', marginBottom: '10px', padding: '6px', background: 'var(--color-success-light)', borderRadius: '4px' }}>
+                  {team.wins.length > 0 && <span style={{ color: 'var(--color-success-dark)' }}>✓ Won: {team.wins.join(', ')}</span>}
                   {team.ties?.length > 0 && team.ties.map((tie, i) => (
-                    <span key={i} style={{ color: '#1565c0', marginLeft: team.wins.length > 0 ? '8px' : '0' }}>
+                    <span key={i} style={{ color: 'var(--color-info-dark)', marginLeft: team.wins.length > 0 ? '8px' : '0' }}>
                       ≈ Tied: {tie.category} ({tie.numTeams} teams)
                     </span>
                   ))}
@@ -305,43 +305,43 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
               )}
 
               {/* Settlement Options */}
-              <div style={{ background: '#fff8e1', padding: '10px', borderRadius: '6px', border: '1px solid #f9a825' }}>
-                <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px', color: '#f57f17' }}>Settlement Options:</div>
+              <div style={{ background: 'var(--color-warning-light)', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-accent-gold)' }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px', color: 'var(--color-skins-dark)' }}>Settlement Options:</div>
 
                 {winsMore ? (
                   <>
-                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                       <strong>Option A:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: '#2e7d32', fontWeight: '600' }}>+${(netAmount / team.teamSize).toFixed(2)} net</span>
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: 'var(--color-success-dark)', fontWeight: '600' }}>+${(netAmount / team.teamSize).toFixed(2)} net</span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                       <strong>Option B:</strong> Captain collects $0, gets back ${netAmount.toFixed(2)} net
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                        Each player pays $0, gets back <span style={{ color: '#2e7d32', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)}</span>
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                        Each player pays $0, gets back <span style={{ color: 'var(--color-success-dark)', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)}</span>
                       </div>
                     </div>
                   </>
                 ) : owesMore ? (
                   <>
-                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', marginBottom: '6px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                       <strong>Option A:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: '#c62828', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)} net</span>
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                        Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ color: 'var(--color-danger-dark)', fontWeight: '600' }}>${(netAmount / team.teamSize).toFixed(2)} net</span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '12px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                       <strong>Option B:</strong> Captain collects ${Math.abs(netAmount).toFixed(2)} net, gets back $0
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                        Each player pays <span style={{ color: '#c62828', fontWeight: '600' }}>${(Math.abs(netAmount) / team.teamSize).toFixed(2)}</span>, gets back $0
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                        Each player pays <span style={{ color: 'var(--color-danger-dark)', fontWeight: '600' }}>${(Math.abs(netAmount) / team.teamSize).toFixed(2)}</span>, gets back $0
                       </div>
                     </div>
                   </>
                 ) : (
-                  <div style={{ fontSize: '12px', padding: '6px', background: 'white', borderRadius: '4px' }}>
+                  <div style={{ fontSize: '12px', padding: '6px', background: 'var(--color-surface)', borderRadius: '4px' }}>
                     <strong>Break Even:</strong> Captain collects ${teamOwes.toFixed(2)}, gets back ${teamWins.toFixed(2)}
-                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                       Each player pays ${(teamOwes / team.teamSize).toFixed(2)}, gets back ${(teamWins / team.teamSize).toFixed(2)} = <span style={{ fontWeight: '600' }}>$0 net</span>
                     </div>
                   </div>
@@ -355,26 +355,26 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
       {/* Step 2: Pay Greenie Winners */}
       <div style={{ marginBottom: '20px' }}>
         <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>2</span>
+          <span style={{ background: 'var(--color-info-dark)', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>2</span>
           Pay Greenie Winners
         </h4>
-        <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
+        <div style={{ background: 'var(--color-surface-sunken)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
             {[4, 8, 12, 17].map(hole => {
               const result = settlement.greenieResults[hole]
               const winnerPlayer = result?.winner ? round.teams.flatMap(t => t.players).find(p => String(p.id) === String(result.winner)) : null
               return (
                 <div key={hole} style={{
-                  background: result?.isFinal ? (result.winner ? '#e8f5e9' : '#fff3e0') : '#f5f5f5',
+                  background: result?.isFinal ? (result.winner ? 'var(--color-success-light)' : 'var(--color-skins-light)') : 'var(--color-surface-sunken)',
                   padding: '8px',
                   borderRadius: '6px',
                   textAlign: 'center',
-                  border: result?.isFinal ? (result.winner ? '2px solid #27ae60' : '2px solid #f39c12') : '1px solid #ddd'
+                  border: result?.isFinal ? (result.winner ? '2px solid var(--color-success)' : '2px solid var(--color-skins)') : '1px solid var(--color-border)'
                 }}>
-                  <div style={{ fontSize: '11px', color: '#666' }}>Hole {hole}</div>
-                  <div style={{ fontWeight: '700', color: '#27ae60' }}>${result?.pot?.toFixed(2) || '0.00'}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Hole {hole}</div>
+                  <div style={{ fontWeight: '700', color: 'var(--color-success)' }}>${result?.pot?.toFixed(2) || '0.00'}</div>
                   {result?.isFinal && (
-                    <div style={{ fontSize: '10px', marginTop: '4px', color: result.winner ? '#2e7d32' : '#e67e22' }}>
+                    <div style={{ fontSize: '10px', marginTop: '4px', color: result.winner ? 'var(--color-success-dark)' : 'var(--color-skins-dark)' }}>
                       {result.winner ? `${winnerPlayer?.name || result.winnerName || 'Unknown'}` : 'No winner'}
                     </div>
                   )}
@@ -384,25 +384,25 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
           </div>
 
           {Object.keys(settlement.greeniePayouts).length > 0 ? (
-            <div style={{ borderTop: '1px solid #ddd', paddingTop: '10px' }}>
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '10px' }}>
               <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '12px' }}>Pay to individuals:</div>
               {Object.entries(settlement.greeniePayouts).map(([playerId, amount]) => {
                 const player = round.teams.flatMap(t => t.players).find(p => String(p.id) === String(playerId))
                 return (
-                  <div key={playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#e8f5e9', borderRadius: '4px', marginBottom: '4px' }}>
+                  <div key={playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: 'var(--color-success-light)', borderRadius: '4px', marginBottom: '4px' }}>
                     <span style={{ fontWeight: '500' }}>{player?.name || 'Unknown'}</span>
-                    <span style={{ color: '#2e7d32', fontWeight: '700' }}>${amount.toFixed(2)}</span>
+                    <span style={{ color: 'var(--color-success-dark)', fontWeight: '700' }}>${amount.toFixed(2)}</span>
                   </div>
                 )
               })}
               {settlement.carryoverRemaining > 0 && (
-                <div style={{ marginTop: '8px', color: '#e67e22', fontSize: '11px' }}>
+                <div style={{ marginTop: '8px', color: 'var(--color-skins-dark)', fontSize: '11px' }}>
                   ${settlement.carryoverRemaining.toFixed(2)} carrying over (waiting for final greenie)
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ color: '#666', fontSize: '12px', fontStyle: 'italic' }}>
+            <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', fontStyle: 'italic' }}>
               No greenie winners recorded
             </div>
           )}
@@ -413,16 +413,16 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
       {settlement.hio.enabled && (
         <div style={{ marginBottom: '20px' }}>
           <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ background: '#1565c0', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>3</span>
+            <span style={{ background: 'var(--color-info-dark)', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>3</span>
             Hole-in-One Pot
           </h4>
-          <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', border: '2px solid #f39c12' }}>
+          <div style={{ background: 'var(--color-skins-light)', padding: '12px', borderRadius: '8px', border: '2px solid var(--color-skins)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: '600' }}>Add to HIO Pot</div>
-                <div style={{ fontSize: '11px', color: '#666' }}>{settlement.hio.eligibleCount} eligible players × ${format.holeInOne.toFixed(2)}</div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{settlement.hio.eligibleCount} eligible players × ${format.holeInOne.toFixed(2)}</div>
               </div>
-              <div style={{ fontSize: '24px', fontWeight: '700', color: '#f57f17' }}>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--color-skins-dark)' }}>
                 ${settlement.hio.contribution.toFixed(2)}
               </div>
             </div>
@@ -431,7 +431,7 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
       )}
 
       {/* Verification */}
-      <div style={{ background: '#f5f5f5', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
+      <div style={{ background: 'var(--color-surface-sunken)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
         <h4 style={{ fontSize: '13px', marginBottom: '10px' }}>✓ Verification</h4>
         <div style={{ fontSize: '11px', display: 'grid', gap: '4px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -453,14 +453,14 @@ function MoneySettlement({ round, settlement, payoutFormats }) {
             </div>
           )}
           {settlement.carryoverRemaining > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e67e22' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-skins-dark)' }}>
               <span>Greenie Carryover (pending):</span>
               <span>${settlement.carryoverRemaining.toFixed(2)}</span>
             </div>
           )}
-          <div style={{ borderTop: '1px solid #ddd', paddingTop: '6px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}>
+          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '6px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}>
             <span>Remaining (should be $0):</span>
-            <span style={{ color: Math.abs((settlement.totalPlayers * perPlayerEntry) - settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0) - totalGreeniePayouts - (settlement.hio.enabled ? settlement.hio.contribution : 0) - settlement.carryoverRemaining) < 0.01 ? '#2e7d32' : '#c62828' }}>
+            <span style={{ color: Math.abs((settlement.totalPlayers * perPlayerEntry) - settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0) - totalGreeniePayouts - (settlement.hio.enabled ? settlement.hio.contribution : 0) - settlement.carryoverRemaining) < 0.01 ? 'var(--color-success-dark)' : 'var(--color-danger-dark)' }}>
               ${((settlement.totalPlayers * perPlayerEntry) - settlement.teamSettlements.reduce((sum, t) => sum + t.winnings, 0) - totalGreeniePayouts - (settlement.hio.enabled ? settlement.hio.contribution : 0) - settlement.carryoverRemaining).toFixed(2)}
             </span>
           </div>
@@ -655,7 +655,7 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
 
   if (skinsPlayers.length < 2) {
     return (
-      <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
+      <div style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-secondary)' }}>
         No skins match data available for this round.
       </div>
     )
@@ -664,9 +664,9 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
   return (
     <div>
       {/* Skins Header */}
-      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+      <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
         <div style={{
-          background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+          background: 'var(--color-skins)',
           color: 'white',
           padding: '12px 15px',
           fontSize: '16px',
@@ -682,7 +682,7 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
         </div>
 
         {/* Settings Summary */}
-        <div style={{ padding: '10px 15px', background: '#fff8e1', fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ padding: '10px 15px', background: 'var(--color-warning-light)', fontSize: '12px', color: 'var(--color-text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
           {skinsMatch.settings.carryovers && <span>Carryovers</span>}
           {skinsMatch.settings.carryovers && skinsMatch.settings.wrapUnwonSkins && <span>Wrap to {skinsMatch.settings.wrapTo === 'front' ? 'Front 9' : 'Back 9'}</span>}
           {skinsMatch.settings.parOrBetterRequired && <span>Par or Better</span>}
@@ -694,7 +694,7 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
             if (s.eagleMultiplier > 1) parts.push(`Eagle ×${s.eagleMultiplier}`)
             if (s.doubleEagleMultiplier > 1) parts.push(`Dbl Eagle ×${s.doubleEagleMultiplier}`)
             if (s.holeInOneMultiplier > 1) parts.push(`HIO ×${s.holeInOneMultiplier}`)
-            return parts.length > 0 ? <span style={{ color: '#9c27b0' }}>{parts.join(', ')}</span> : null
+            return parts.length > 0 ? <span style={{ color: 'var(--color-accent-purple)' }}>{parts.join(', ')}</span> : null
           })()}
         </div>
       </div>
@@ -708,9 +708,9 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
             style={{
               padding: '8px 16px',
               borderRadius: '20px',
-              border: skinsView === view ? '2px solid #f39c12' : '1px solid #ddd',
-              background: skinsView === view ? '#f39c12' : 'white',
-              color: skinsView === view ? 'white' : '#333',
+              border: skinsView === view ? '2px solid var(--color-skins)' : '1px solid var(--color-border)',
+              background: skinsView === view ? 'var(--color-skins)' : 'var(--color-surface)',
+              color: skinsView === view ? 'white' : 'var(--color-text-primary)',
               fontSize: '12px',
               fontWeight: skinsView === view ? '600' : 'normal',
               cursor: 'pointer'
@@ -722,38 +722,38 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
       </div>
 
       {/* Skins Scoreboard Table */}
-      <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
+      <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', minWidth: skinsView === 'overall' ? '600px' : '400px' }}>
             <thead>
-              <tr style={{ background: '#f39c12', color: 'white' }}>
-                <th style={{ padding: '8px 6px', textAlign: 'left', position: 'sticky', left: 0, background: '#f39c12', zIndex: 1, minWidth: '70px' }}>Player</th>
+              <tr style={{ background: 'var(--color-skins)', color: 'white' }}>
+                <th style={{ padding: '8px 6px', textAlign: 'left', position: 'sticky', left: 0, background: 'var(--color-skins)', zIndex: 1, minWidth: '70px' }}>Player</th>
                 {displayHoles.map(h => (
                   <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
                 ))}
-                <th style={{ padding: '8px 6px', textAlign: 'center', background: '#e67e22', minWidth: '40px' }}>Skins</th>
+                <th style={{ padding: '8px 6px', textAlign: 'center', background: 'var(--color-skins-dark)', minWidth: '40px' }}>Skins</th>
               </tr>
-              <tr style={{ background: '#ffe0b2' }}>
-                <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: '#ffe0b2', zIndex: 1 }}>Par</td>
+              <tr style={{ background: 'var(--color-skins-light)' }}>
+                <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: 'var(--color-skins-light)', zIndex: 1 }}>Par</td>
                 {displayHoles.map(h => (
                   <td key={h.hole} style={{ padding: '4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
                 ))}
-                <td style={{ background: '#ffcc80' }}></td>
+                <td style={{ background: 'var(--color-skins-light)' }}></td>
               </tr>
             </thead>
             <tbody>
               {skinsPlayers.map((player, idx) => {
                 const pSummary = playerSummary[String(player.id)] || { skinsWon: 0 }
                 return (
-                  <tr key={player.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                  <tr key={player.id} style={{ background: idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)' }}>
                     <td style={{
                       padding: '8px 6px',
                       fontWeight: '600',
                       position: 'sticky',
                       left: 0,
-                      background: idx % 2 === 0 ? '#fff' : '#f9f9f9',
+                      background: idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)',
                       zIndex: 1,
-                      borderRight: '1px solid #eee',
+                      borderRight: '1px solid var(--color-border-light)',
                       whiteSpace: 'nowrap'
                     }}>
                       {player.name.split(' ')[0]}
@@ -768,15 +768,15 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
                       let isCarryoverWin = false
 
                       if (holeResult.winner === player.id) {
-                        bgColor = '#d4edda'
-                        borderColor = '#28a745'
+                        bgColor = 'var(--color-success-light)'
+                        borderColor = 'var(--color-success)'
                       } else {
                         for (const [otherHole, otherResult] of Object.entries(skinsResults)) {
                           if (otherResult.winner === player.id &&
                               otherResult.carryoverFromHoles &&
                               otherResult.carryoverFromHoles.includes(h.hole)) {
-                            bgColor = '#e8f5e9'
-                            borderColor = '#81c784'
+                            bgColor = 'var(--color-success-light)'
+                            borderColor = 'var(--color-success-border)'
                             isCarryoverWin = true
                             break
                           }
@@ -795,8 +795,8 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
                         }
                         if (!claimedViaCarryover) {
                           isPushedHole = true
-                          bgColor = '#ffebee'
-                          borderColor = '#ef9a9a'
+                          bgColor = 'var(--color-danger-light)'
+                          borderColor = 'var(--color-danger-border)'
                         }
                       }
 
@@ -805,19 +805,19 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
                           padding: '4px',
                           textAlign: 'center',
                           background: isCarryoverWin
-                            ? `repeating-linear-gradient(45deg, ${bgColor}, ${bgColor} 3px, #c8e6c9 3px, #c8e6c9 6px)`
+                            ? `repeating-linear-gradient(45deg, ${bgColor}, ${bgColor} 3px, var(--color-success-border) 3px, var(--color-success-border) 6px)`
                             : bgColor,
                           border: borderColor !== 'transparent' ? `2px solid ${borderColor}` : 'none',
                           borderRadius: '4px'
                         }}>
                           {hasScore ? (score === 'X' ? 'X' : score) : '-'}
                           {holeResult.winner === player.id && holeResult.skinValue > 1 && (
-                            <div style={{ fontSize: '8px', color: '#9c27b0', fontWeight: '700', marginTop: '1px' }}>
+                            <div style={{ fontSize: '8px', color: 'var(--color-accent-purple)', fontWeight: '700', marginTop: '1px' }}>
                               ×{holeResult.skinValue}
                             </div>
                           )}
                           {holeResult.winner === player.id && holeResult.carryoverCount > 0 && (
-                            <div style={{ fontSize: '8px', color: '#2e7d32', marginTop: '1px' }}>
+                            <div style={{ fontSize: '8px', color: 'var(--color-success-dark)', marginTop: '1px' }}>
                               +{holeResult.carryoverCount}
                             </div>
                           )}
@@ -829,14 +829,14 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
                       textAlign: 'center',
                       fontWeight: '700',
                       fontSize: '14px',
-                      background: pSummary.skinsWon > 0 ? '#fff3e0' : '#f5f5f5',
-                      color: pSummary.skinsWon > 0 ? '#e65100' : '#999'
+                      background: pSummary.skinsWon > 0 ? 'var(--color-skins-light)' : 'var(--color-surface-sunken)',
+                      color: pSummary.skinsWon > 0 ? 'var(--color-back9-dark)' : 'var(--color-text-tertiary)'
                     }}>
                       {(() => {
                         const s = skinsMatch.settings
                         const hasMultipliers = s.birdieDoubleEagleTriple || s.birdieMultiplier > 1 || s.eagleMultiplier > 1 || s.doubleEagleMultiplier > 1 || s.holeInOneMultiplier > 1
                         return hasMultipliers && pSummary.totalValue !== pSummary.skinsWon
-                          ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: '#9c27b0' }}>({pSummary.skinsWon})</span></span>
+                          ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: 'var(--color-accent-purple)' }}>({pSummary.skinsWon})</span></span>
                           : pSummary.skinsWon
                       })()}
                     </td>
@@ -848,22 +848,22 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
         </div>
 
         {/* Legend */}
-        <div style={{ padding: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '11px' }}>
+        <div style={{ padding: '10px', borderTop: '1px solid var(--color-border-light)', display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '11px' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '14px', height: '14px', background: '#ffebee', border: '2px solid #ef9a9a', borderRadius: '3px' }}></span> Push
+            <span style={{ width: '14px', height: '14px', background: 'var(--color-danger-light)', border: '2px solid var(--color-danger-border)', borderRadius: '3px' }}></span> Push
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '14px', height: '14px', background: '#d4edda', border: '2px solid #28a745', borderRadius: '3px' }}></span> Won Outright
+            <span style={{ width: '14px', height: '14px', background: 'var(--color-success-light)', border: '2px solid var(--color-success)', borderRadius: '3px' }}></span> Won Outright
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, #e8f5e9, #e8f5e9 3px, #c8e6c9 3px, #c8e6c9 6px)', border: '2px solid #81c784', borderRadius: '3px' }}></span> Won w/ Carryover
+            <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, var(--color-success-light), var(--color-success-light) 3px, var(--color-success-border) 3px, var(--color-success-border) 6px)', border: '2px solid var(--color-success-border)', borderRadius: '3px' }}></span> Won w/ Carryover
           </span>
           {(() => {
             const s = skinsMatch.settings
             if (s.birdieDoubleEagleTriple) {
               return (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ color: '#9c27b0', fontWeight: '700' }}>×2/×3</span> Birdie/Eagle
+                  <span style={{ color: 'var(--color-accent-purple)', fontWeight: '700' }}>×2/×3</span> Birdie/Eagle
                 </span>
               )
             }
@@ -875,7 +875,7 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
             if (parts.length > 0) {
               return (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ color: '#9c27b0', fontWeight: '700' }}>{parts.join(', ')}</span>
+                  <span style={{ color: 'var(--color-accent-purple)', fontWeight: '700' }}>{parts.join(', ')}</span>
                 </span>
               )
             }
@@ -886,9 +886,9 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
 
       {/* Payout Summary */}
       {totalSkinsWon > 0 && (
-        <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden' }}>
           <div style={{
-            background: '#27ae60',
+            background: 'var(--color-success)',
             color: 'white',
             padding: '10px 15px',
             fontWeight: '600',
@@ -907,17 +907,17 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
                     display: 'flex',
                     justifyContent: 'space-between',
                     padding: '8px 10px',
-                    borderBottom: '1px solid #eee'
+                    borderBottom: '1px solid var(--color-border-light)'
                   }}>
                     <span>
                       <strong>{player.name}</strong>
-                      <span style={{ color: '#666', fontSize: '12px', marginLeft: '8px' }}>
+                      <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginLeft: '8px' }}>
                         ({summary.skinsWon || 0} skins)
                       </span>
                     </span>
                     <span style={{
                       fontWeight: '700',
-                      color: netAmount > 0 ? '#27ae60' : netAmount < 0 ? '#e74c3c' : '#666'
+                      color: netAmount > 0 ? 'var(--color-success)' : netAmount < 0 ? 'var(--color-danger)' : 'var(--color-text-secondary)'
                     }}>
                       {netAmount >= 0 ? '+' : ''}${netAmount.toFixed(2)}
                     </span>
@@ -928,11 +928,11 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
 
           {/* Who Owes Who */}
           <div style={{
-            borderTop: '2px solid #27ae60',
+            borderTop: '2px solid var(--color-success)',
             padding: '10px 15px',
-            background: '#f8fff8'
+            background: 'var(--color-success-light)'
           }}>
-            <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: '#27ae60' }}>
+            <div style={{ fontWeight: '600', marginBottom: '10px', fontSize: '13px', color: 'var(--color-success)' }}>
               Who Owes Who
             </div>
             {(() => {
@@ -961,7 +961,7 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
               }
 
               if (settlements.length === 0) {
-                return <div style={{ color: '#666', fontSize: '12px' }}>Everyone is even!</div>
+                return <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>Everyone is even!</div>
               }
 
               const paidSettlements = skinsMatch.paidSettlements || {}
@@ -994,21 +994,21 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
                     alignItems: 'center',
                     marginBottom: '10px',
                     padding: '6px 10px',
-                    background: remainingCount === 0 ? '#d4edda' : '#fff3cd',
+                    background: remainingCount === 0 ? 'var(--color-success-light)' : 'var(--color-warning-light)',
                     borderRadius: '6px',
                     fontSize: '12px'
                   }}>
                     <span>
                       {remainingCount === 0 ? (
-                        <span style={{ color: '#27ae60', fontWeight: '600' }}>✓ All payments complete!</span>
+                        <span style={{ color: 'var(--color-success)', fontWeight: '600' }}>✓ All payments complete!</span>
                       ) : (
-                        <span style={{ color: '#856404' }}>
+                        <span style={{ color: 'var(--color-warning-dark)' }}>
                           <strong>{remainingCount}</strong> payment{remainingCount !== 1 ? 's' : ''} remaining
                         </span>
                       )}
                     </span>
                     {paidCount > 0 && (
-                      <span style={{ color: '#666' }}>
+                      <span style={{ color: 'var(--color-text-secondary)' }}>
                         {paidCount} of {settlements.length} paid
                       </span>
                     )}
@@ -1021,7 +1021,7 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
                         display: 'flex',
                         alignItems: 'center',
                         padding: '6px 0',
-                        borderBottom: idx < sortedSettlements.length - 1 ? '1px solid #e8f5e9' : 'none',
+                        borderBottom: idx < sortedSettlements.length - 1 ? '1px solid var(--color-success-light)' : 'none',
                         fontSize: '13px',
                         opacity: isPaid ? 0.75 : 1
                       }}>
@@ -1034,22 +1034,22 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
                           />
                         </label>
                         <span style={{
-                          color: '#e74c3c',
+                          color: 'var(--color-danger)',
                           textDecoration: isPaid ? 'line-through' : 'none'
                         }}>{s.from}</span>
-                        <span style={{ margin: '0 8px', color: '#666' }}>owes</span>
+                        <span style={{ margin: '0 8px', color: 'var(--color-text-secondary)' }}>owes</span>
                         <span style={{
-                          color: '#27ae60',
+                          color: 'var(--color-success)',
                           textDecoration: isPaid ? 'line-through' : 'none'
                         }}>{s.to}</span>
                         <span style={{
                           marginLeft: 'auto',
                           fontWeight: '700',
-                          color: isPaid ? '#999' : '#27ae60',
+                          color: isPaid ? 'var(--color-text-tertiary)' : 'var(--color-success)',
                           textDecoration: isPaid ? 'line-through' : 'none'
                         }}>${s.amount.toFixed(2)}</span>
                         {isPaid && (
-                          <span style={{ marginLeft: '8px', color: '#27ae60', fontSize: '11px', fontWeight: '600' }}>
+                          <span style={{ marginLeft: '8px', color: 'var(--color-success)', fontSize: '11px', fontWeight: '600' }}>
                             ✓ PAID
                           </span>
                         )}
@@ -1092,14 +1092,14 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
     const numScore = parseInt(score)
     const diff = numScore - par
     if (diff <= -2) return {
-      background: '#fff8e1',
-      border: '2px double #f39c12',
+      background: 'var(--color-warning-light)',
+      border: '2px double var(--color-skins)',
       borderRadius: '50%',
       fontWeight: '700'
     } // Eagle or better
     if (diff === -1) return {
-      background: '#e8f5e9',
-      border: '2px solid #27ae60',
+      background: 'var(--color-success-light)',
+      border: '2px solid var(--color-success)',
       borderRadius: '50%',
       fontWeight: '600'
     } // Birdie
@@ -1113,19 +1113,19 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: '95%', width: '900px', maxHeight: '90vh', overflowY: 'auto', padding: 0 }}
       >
-        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%)' }}>
+        <div className="modal-header" style={{ background: 'var(--color-primary-dark)' }}>
           <h3 style={{ color: 'white', margin: 0 }}>{formattedDate}</h3>
           <button className="modal-close" onClick={onClose} style={{ color: 'white' }}>&times;</button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '2px solid #e0e0e0' }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid var(--color-border)' }}>
           <button
             onClick={() => setActiveTab('scorecard')}
             style={{
               flex: 1, padding: '12px', border: 'none', cursor: 'pointer',
-              background: activeTab === 'scorecard' ? '#1a472a' : '#f8f9fa',
-              color: activeTab === 'scorecard' ? 'white' : '#333',
+              background: activeTab === 'scorecard' ? 'var(--color-primary-dark)' : 'var(--color-surface-sunken)',
+              color: activeTab === 'scorecard' ? 'white' : 'var(--color-text-primary)',
               fontWeight: '600'
             }}
           >
@@ -1135,8 +1135,8 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
             onClick={() => setActiveTab('money')}
             style={{
               flex: 1, padding: '12px', border: 'none', cursor: 'pointer',
-              background: activeTab === 'money' ? '#1a472a' : '#f8f9fa',
-              color: activeTab === 'money' ? 'white' : '#333',
+              background: activeTab === 'money' ? 'var(--color-primary-dark)' : 'var(--color-surface-sunken)',
+              color: activeTab === 'money' ? 'white' : 'var(--color-text-primary)',
               fontWeight: '600'
             }}
           >
@@ -1147,8 +1147,8 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
               onClick={() => setActiveTab('skins')}
               style={{
                 flex: 1, padding: '12px', border: 'none', cursor: 'pointer',
-                background: activeTab === 'skins' ? '#f39c12' : '#f8f9fa',
-                color: activeTab === 'skins' ? 'white' : '#333',
+                background: activeTab === 'skins' ? 'var(--color-skins)' : 'var(--color-surface-sunken)',
+                color: activeTab === 'skins' ? 'white' : 'var(--color-text-primary)',
                 fontWeight: '600'
               }}
             >
@@ -1182,7 +1182,7 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                   <div key={team.id || teamIdx} style={{ marginBottom: '25px' }}>
                     {/* Team Header */}
                     <div style={{
-                      background: teamIdx === 0 ? 'linear-gradient(135deg, #f9a825 0%, #f57c00 100%)' : 'linear-gradient(135deg, #607d8b 0%, #455a64 100%)',
+                      background: teamIdx === 0 ? 'var(--color-accent-gold)' : 'var(--color-text-secondary)',
                       color: 'white',
                       padding: '10px 15px',
                       borderRadius: '8px 8px 0 0',
@@ -1197,7 +1197,7 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                         {badges.map((badge, i) => (
                           <span key={i} style={{
                             padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '600',
-                            background: badge.type === 'win' ? '#27ae60' : '#3498db', color: 'white'
+                            background: badge.type === 'win' ? 'var(--color-success)' : 'var(--color-info)', color: 'white'
                           }}>
                             {badge.type === 'win' ? '✓' : '≈'} {badge.label}
                           </span>
@@ -1221,23 +1221,23 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                     </div>
 
                     {/* Scorecard Table */}
-                    <div style={{ overflowX: 'auto', border: '1px solid #e0e0e0', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
+                    <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderTop: 'none', borderRadius: '0 0 8px 8px' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', minWidth: '700px' }}>
                         {/* Front 9 */}
                         <thead>
-                          <tr style={{ background: '#1a472a', color: 'white' }}>
+                          <tr style={{ background: 'var(--color-primary-dark)', color: 'white' }}>
                             <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: '600', minWidth: '80px' }}>HOLE</th>
                             {front9Holes.map(h => (
                               <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center', minWidth: '32px' }}>{h.hole}</th>
                             ))}
-                            <th style={{ padding: '8px 6px', textAlign: 'center', background: '#0d2818', minWidth: '40px' }}>OUT</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'center', background: 'var(--color-primary-dark)', minWidth: '40px' }}>OUT</th>
                           </tr>
-                          <tr style={{ background: '#2d5a3d', color: 'white' }}>
+                          <tr style={{ background: 'var(--color-primary-dark)', color: 'white' }}>
                             <td style={{ padding: '6px', fontWeight: '600' }}>PAR</td>
                             {front9Holes.map(h => (
                               <td key={h.hole} style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
                             ))}
-                            <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#1a3d2a' }}>
+                            <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: 'var(--color-primary-dark)' }}>
                               {front9Holes.reduce((sum, h) => sum + h.par, 0)}
                             </td>
                           </tr>
@@ -1250,10 +1250,10 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                               if (s && s !== 'X') front9Total += parseInt(s)
                             })
                             return (
-                              <tr key={player.id} style={{ background: pIdx % 2 === 0 ? '#fff' : '#f8f9fa' }}>
-                                <td style={{ padding: '8px 6px', fontWeight: '500', borderRight: '1px solid #e0e0e0' }}>
+                              <tr key={player.id} style={{ background: pIdx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)' }}>
+                                <td style={{ padding: '8px 6px', fontWeight: '500', borderRight: '1px solid var(--color-border)' }}>
                                   {player.name.split(' ')[0]}
-                                  {player.isDNF && <span style={{ color: '#e74c3c', fontSize: '9px', marginLeft: '4px' }}>DNF</span>}
+                                  {player.isDNF && <span style={{ color: 'var(--color-danger)', fontSize: '9px', marginLeft: '4px' }}>DNF</span>}
                                 </td>
                                 {front9Holes.map(h => {
                                   const score = player.scores?.[h.hole]
@@ -1262,7 +1262,7 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                                   return (
                                     <td key={h.hole} style={{
                                       padding: '4px 2px', textAlign: 'center',
-                                      borderRight: '1px solid #eee'
+                                      borderRight: '1px solid var(--color-border-light)'
                                     }}>
                                       {hasStyle ? (
                                         <span style={{
@@ -1281,7 +1281,7 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                                     </td>
                                   )
                                 })}
-                                <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#e8f5e9', borderLeft: '2px solid #1a472a' }}>
+                                <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: 'var(--color-success-light)', borderLeft: '2px solid var(--color-primary-dark)' }}>
                                   {front9Total || '-'}
                                 </td>
                               </tr>
@@ -1291,19 +1291,19 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
 
                         {/* Back 9 */}
                         <thead>
-                          <tr style={{ background: '#1a472a', color: 'white' }}>
+                          <tr style={{ background: 'var(--color-primary-dark)', color: 'white' }}>
                             <th style={{ padding: '8px 6px', textAlign: 'left', fontWeight: '600' }}>HOLE</th>
                             {back9Holes.map(h => (
                               <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center' }}>{h.hole}</th>
                             ))}
-                            <th style={{ padding: '8px 6px', textAlign: 'center', background: '#0d2818' }}>IN</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'center', background: 'var(--color-primary-dark)' }}>IN</th>
                           </tr>
-                          <tr style={{ background: '#2d5a3d', color: 'white' }}>
+                          <tr style={{ background: 'var(--color-primary-dark)', color: 'white' }}>
                             <td style={{ padding: '6px', fontWeight: '600' }}>PAR</td>
                             {back9Holes.map(h => (
                               <td key={h.hole} style={{ padding: '6px 4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
                             ))}
-                            <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#1a3d2a' }}>
+                            <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: 'var(--color-primary-dark)' }}>
                               {back9Holes.reduce((sum, h) => sum + h.par, 0)}
                             </td>
                           </tr>
@@ -1321,8 +1321,8 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                             })
                             const totalScore = front9Total + back9Total
                             return (
-                              <tr key={player.id} style={{ background: pIdx % 2 === 0 ? '#fff' : '#f8f9fa' }}>
-                                <td style={{ padding: '8px 6px', fontWeight: '500', borderRight: '1px solid #e0e0e0' }}>
+                              <tr key={player.id} style={{ background: pIdx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)' }}>
+                                <td style={{ padding: '8px 6px', fontWeight: '500', borderRight: '1px solid var(--color-border)' }}>
                                   {player.name.split(' ')[0]}
                                 </td>
                                 {back9Holes.map(h => {
@@ -1332,7 +1332,7 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                                   return (
                                     <td key={h.hole} style={{
                                       padding: '4px 2px', textAlign: 'center',
-                                      borderRight: '1px solid #eee'
+                                      borderRight: '1px solid var(--color-border-light)'
                                     }}>
                                       {hasStyle ? (
                                         <span style={{
@@ -1351,7 +1351,7 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                                     </td>
                                   )
                                 })}
-                                <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#e8f5e9', borderLeft: '2px solid #1a472a' }}>
+                                <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: 'var(--color-success-light)', borderLeft: '2px solid var(--color-primary-dark)' }}>
                                   {back9Total || '-'}
                                 </td>
                               </tr>
@@ -1375,14 +1375,14 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                         ?.[0]
                       return (
                         <div key={hole} style={{
-                          background: greenie?.playerName ? '#d4edda' : '#f8f9fa',
+                          background: greenie?.playerName ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
                           padding: '12px',
                           borderRadius: '8px',
                           textAlign: 'center',
-                          border: greenie?.playerName ? '2px solid #27ae60' : '1px solid #e0e0e0'
+                          border: greenie?.playerName ? '2px solid var(--color-success)' : '1px solid var(--color-border)'
                         }}>
                           <div style={{ fontWeight: 'bold' }}>Hole {hole}</div>
-                          <div style={{ fontSize: '13px', color: greenie?.playerName ? '#27ae60' : '#999', marginTop: '4px' }}>
+                          <div style={{ fontSize: '13px', color: greenie?.playerName ? 'var(--color-success)' : 'var(--color-text-tertiary)', marginTop: '4px' }}>
                             {greenie?.playerName || 'No winner'}
                           </div>
                         </div>
@@ -1398,8 +1398,8 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                   <span style={{
                     width: '22px',
                     height: '22px',
-                    background: '#fff8e1',
-                    border: '2px double #f39c12',
+                    background: 'var(--color-warning-light)',
+                    border: '2px double var(--color-skins)',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -1412,8 +1412,8 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
                   <span style={{
                     width: '22px',
                     height: '22px',
-                    background: '#e8f5e9',
-                    border: '2px solid #27ae60',
+                    background: 'var(--color-success-light)',
+                    border: '2px solid var(--color-success)',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -1460,7 +1460,7 @@ function DeleteConfirmModal({ round, onConfirm, onCancel }) {
         </div>
         <div className="modal-body" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '48px', marginBottom: '15px' }}>Warning</div>
-          <p style={{ marginBottom: '20px', color: '#666' }}>
+          <p style={{ marginBottom: '20px', color: 'var(--color-text-secondary)' }}>
             This action cannot be undone. All round data will be permanently deleted.
           </p>
           <div className="input-group">
@@ -1616,7 +1616,7 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       borderRadius: '12px',
       marginBottom: '12px',
       boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
@@ -1624,7 +1624,7 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
     }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+        background: 'var(--color-skins)',
         padding: '12px 15px',
         color: 'white',
         display: 'flex',
@@ -1647,17 +1647,17 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
             {combinedWinners.slice(0, 4).map((w, idx) => (
               <div key={idx} style={{
-                background: idx === 0 ? '#fff3cd' : '#f8f9fa',
+                background: idx === 0 ? 'var(--color-warning-light)' : 'var(--color-surface-sunken)',
                 padding: '6px 12px',
                 borderRadius: '6px',
                 fontSize: '13px'
               }}>
                 <span style={{ fontWeight: '600' }}>{w.name}</span>
-                <span style={{ color: '#666', marginLeft: '5px' }}>
+                <span style={{ color: 'var(--color-text-secondary)', marginLeft: '5px' }}>
                   {w.skinsWon > 0 && `${w.skinsWon} ${w.skinsWon === 1 ? 'skin' : 'skins'}`}
                   {w.skinsWon > 0 && w.greeniesWon > 0 && ', '}
                   {w.greeniesWon > 0 && (
-                    <span style={{ color: '#2e7d32' }}>
+                    <span style={{ color: 'var(--color-success-dark)' }}>
                       {w.greeniesWon} {w.greeniesWon === 1 ? 'greenie' : 'greenies'}
                     </span>
                   )}
@@ -1666,7 +1666,7 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
             ))}
           </div>
         ) : (
-          <div style={{ color: '#666', fontSize: '13px', marginBottom: '10px' }}>No skins won</div>
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '10px' }}>No skins won</div>
         )}
 
         {/* Actions */}
@@ -1676,7 +1676,7 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
             style={{
               flex: 1,
               padding: '10px',
-              background: '#f39c12',
+              background: 'var(--color-skins)',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
@@ -1691,9 +1691,9 @@ function QuickSkinsCard({ record, onView, onDelete, isAdmin }) {
               onClick={() => onDelete(record)}
               style={{
                 padding: '10px 16px',
-                background: '#fff',
-                color: '#e74c3c',
-                border: '2px solid #e74c3c',
+                background: 'var(--color-surface)',
+                color: 'var(--color-danger)',
+                border: '2px solid var(--color-danger)',
                 borderRadius: '6px',
                 fontWeight: '600',
                 cursor: 'pointer'
@@ -2189,7 +2189,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
-        <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)', color: 'white' }}>
+        <div className="modal-header" style={{ background: 'var(--color-skins)', color: 'white' }}>
           <div>
             <h3 style={{ margin: 0 }}>Quick Skins Results</h3>
             <div style={{ fontSize: '14px', opacity: 0.9, marginTop: '4px' }}>{formattedDate}</div>
@@ -2199,7 +2199,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
 
         <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           {/* Settings Summary */}
-          <div style={{ background: '#fff8e1', padding: '10px 15px', borderRadius: '8px', marginBottom: '15px', fontSize: '12px', color: '#666' }}>
+          <div style={{ background: 'var(--color-warning-light)', padding: '10px 15px', borderRadius: '8px', marginBottom: '15px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
               <span><strong>${cost}</strong> per skin</span>
               <span><strong>{skinsPlayers.length}</strong> players</span>
@@ -2216,12 +2216,12 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                 if (s.eagleMultiplier > 1) parts.push(`Eagle ×${s.eagleMultiplier}`)
                 if (s.doubleEagleMultiplier > 1) parts.push(`Dbl Eagle ×${s.doubleEagleMultiplier}`)
                 if (s.holeInOneMultiplier > 1) parts.push(`HIO ×${s.holeInOneMultiplier}`)
-                return parts.length > 0 ? <span style={{ color: '#9c27b0' }}>{parts.join(', ')}</span> : null
+                return parts.length > 0 ? <span style={{ color: 'var(--color-accent-purple)' }}>{parts.join(', ')}</span> : null
               })()}
             </div>
             {/* Show player eligibility if participantDetails exists */}
             {skinsMatch.participantDetails && Object.keys(skinsMatch.participantDetails).length > 0 && (
-              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #ffe0b2' }}>
+              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-skins-light)' }}>
                 <div style={{ fontWeight: '600', marginBottom: '5px' }}>Player Eligibility:</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                   {skinsPlayers.map(player => {
@@ -2233,7 +2233,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                     return (
                       <span key={player.id} style={{
                         padding: '2px 8px',
-                        background: isSettled ? '#ffebee' : '#e3f2fd',
+                        background: isSettled ? 'var(--color-danger-light)' : 'var(--color-info-light)',
                         borderRadius: '4px',
                         fontSize: '11px'
                       }}>
@@ -2249,15 +2249,15 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
 
           {/* Settlements History */}
           {skinsMatch.settlements?.length > 0 && (
-            <div style={{ background: '#fff3e0', padding: '10px 15px', borderRadius: '8px', marginBottom: '15px' }}>
-              <div style={{ fontWeight: '600', fontSize: '14px', color: '#e65100', marginBottom: '10px' }}>
+            <div style={{ background: 'var(--color-skins-light)', padding: '10px 15px', borderRadius: '8px', marginBottom: '15px' }}>
+              <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--color-back9-dark)', marginBottom: '10px' }}>
                 Early Settlements
               </div>
               {skinsMatch.settlements.map((settlement, idx) => {
                 const player = skinsPlayers.find(p => String(p.id) === settlement.playerId)
                 return (
                   <div key={idx} style={{
-                    background: 'white',
+                    background: 'var(--color-surface)',
                     padding: '10px',
                     borderRadius: '6px',
                     marginBottom: idx < skinsMatch.settlements.length - 1 ? '8px' : 0,
@@ -2269,17 +2269,17 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                     {settlement.resolvedTransactions?.map((tx, txIdx) => {
                       const otherPlayer = skinsPlayers.find(p => String(p.id) === tx.withPlayerId)
                       return (
-                        <div key={txIdx} style={{ color: '#666', fontSize: '11px', marginLeft: '10px' }}>
+                        <div key={txIdx} style={{ color: 'var(--color-text-secondary)', fontSize: '11px', marginLeft: '10px' }}>
                           {tx.direction === 'owed' ? (
-                            <span>Owed {otherPlayer?.name}: <span style={{ color: '#e74c3c' }}>${tx.amount.toFixed(2)}</span></span>
+                            <span>Owed {otherPlayer?.name}: <span style={{ color: 'var(--color-danger)' }}>${tx.amount.toFixed(2)}</span></span>
                           ) : (
-                            <span>Collected from {otherPlayer?.name}: <span style={{ color: '#27ae60' }}>${tx.amount.toFixed(2)}</span></span>
+                            <span>Collected from {otherPlayer?.name}: <span style={{ color: 'var(--color-success)' }}>${tx.amount.toFixed(2)}</span></span>
                           )}
                         </div>
                       )
                     })}
                     {settlement.carryoverCollection && (
-                      <div style={{ color: '#e65100', fontSize: '11px', marginLeft: '10px', marginTop: '4px' }}>
+                      <div style={{ color: 'var(--color-back9-dark)', fontSize: '11px', marginLeft: '10px', marginTop: '4px' }}>
                         Prepaid ${settlement.carryoverCollection.amount.toFixed(2)} for carryovers
                       </div>
                     )}
@@ -2298,9 +2298,9 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                 style={{
                   padding: '8px 16px',
                   borderRadius: '20px',
-                  border: skinsView === view ? '2px solid #f39c12' : '1px solid #ddd',
-                  background: skinsView === view ? '#f39c12' : 'white',
-                  color: skinsView === view ? 'white' : '#333',
+                  border: skinsView === view ? '2px solid var(--color-skins)' : '1px solid var(--color-border)',
+                  background: skinsView === view ? 'var(--color-skins)' : 'var(--color-surface)',
+                  color: skinsView === view ? 'white' : 'var(--color-text-primary)',
                   fontSize: '12px',
                   fontWeight: skinsView === view ? '600' : 'normal',
                   cursor: 'pointer'
@@ -2312,31 +2312,31 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
           </div>
 
           {/* Skins Scoreboard */}
-          <div style={{ background: 'white', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px', border: '1px solid #eee' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px', border: '1px solid var(--color-border-light)' }}>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', minWidth: skinsView === 'overall' ? '600px' : '400px' }}>
                 <thead>
-                  <tr style={{ background: '#f39c12', color: 'white' }}>
-                    <th style={{ padding: '8px 6px', textAlign: 'left', position: 'sticky', left: 0, background: '#f39c12', zIndex: 1, minWidth: '70px' }}>Player</th>
+                  <tr style={{ background: 'var(--color-skins)', color: 'white' }}>
+                    <th style={{ padding: '8px 6px', textAlign: 'left', position: 'sticky', left: 0, background: 'var(--color-skins)', zIndex: 1, minWidth: '70px' }}>Player</th>
                     {displayHoles.map(h => (
                       <th key={h.hole} style={{ padding: '8px 4px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
                     ))}
-                    <th style={{ padding: '8px 6px', textAlign: 'center', background: '#e67e22', minWidth: '40px' }}>Skins</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'center', background: 'var(--color-skins-dark)', minWidth: '40px' }}>Skins</th>
                   </tr>
-                  <tr style={{ background: '#ffe0b2' }}>
-                    <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: '#ffe0b2', zIndex: 1 }}>Par</td>
+                  <tr style={{ background: 'var(--color-skins-light)' }}>
+                    <td style={{ padding: '4px 6px', fontWeight: '600', position: 'sticky', left: 0, background: 'var(--color-skins-light)', zIndex: 1 }}>Par</td>
                     {displayHoles.map(h => (
                       <td key={h.hole} style={{ padding: '4px', textAlign: 'center', fontWeight: '600' }}>{h.par}</td>
                     ))}
-                    <td style={{ background: '#ffcc80' }}></td>
+                    <td style={{ background: 'var(--color-skins-light)' }}></td>
                   </tr>
                 </thead>
                 <tbody>
                   {skinsPlayers.map((player, idx) => {
                     const pSummary = playerSummary[String(player.id)] || { skinsWon: 0 }
                     return (
-                      <tr key={player.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f9f9f9' }}>
-                        <td style={{ padding: '8px 6px', fontWeight: '600', position: 'sticky', left: 0, background: idx % 2 === 0 ? '#fff' : '#f9f9f9', zIndex: 1, whiteSpace: 'nowrap' }}>
+                      <tr key={player.id} style={{ background: idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)' }}>
+                        <td style={{ padding: '8px 6px', fontWeight: '600', position: 'sticky', left: 0, background: idx % 2 === 0 ? 'var(--color-surface)' : 'var(--color-surface-sunken)', zIndex: 1, whiteSpace: 'nowrap' }}>
                           {player.name.split(' ')[0]}
                         </td>
                         {displayHoles.map(holeInfo => {
@@ -2352,16 +2352,16 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
 
                           // Check if this player won this hole outright
                           if (isWinner) {
-                            bgColor = '#d4edda'  // Solid green for outright win
-                            borderColor = '#28a745'
+                            bgColor = 'var(--color-success-light)'  // Solid green for outright win
+                            borderColor = 'var(--color-success)'
                           } else {
                             // Check if this hole was won via carryover by this player
                             for (const [otherHole, otherResult] of Object.entries(skinsResults)) {
                               if (otherResult.winner === player.id &&
                                   otherResult.carryoverFromHoles &&
                                   otherResult.carryoverFromHoles.includes(h)) {
-                                bgColor = '#e8f5e9'  // Lighter green for carryover win
-                                borderColor = '#81c784'
+                                bgColor = 'var(--color-success-light)'  // Lighter green for carryover win
+                                borderColor = 'var(--color-success-border)'
                                 isCarryoverWin = true
                                 break
                               }
@@ -2379,8 +2379,8 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                               }
                             }
                             if (!claimedViaCarryover) {
-                              bgColor = '#ffebee'  // Light red/pink for pushed hole
-                              borderColor = '#ef9a9a'
+                              bgColor = 'var(--color-danger-light)'  // Light red/pink for pushed hole
+                              borderColor = 'var(--color-danger-border)'
                             }
                           }
 
@@ -2389,7 +2389,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                               padding: '6px 4px',
                               textAlign: 'center',
                               background: isCarryoverWin
-                                ? `repeating-linear-gradient(45deg, ${bgColor}, ${bgColor} 3px, #c8e6c9 3px, #c8e6c9 6px)`
+                                ? `repeating-linear-gradient(45deg, ${bgColor}, ${bgColor} 3px, var(--color-success-border) 3px, var(--color-success-border) 6px)`
                                 : bgColor,
                               border: borderColor !== 'transparent' ? `2px solid ${borderColor}` : 'none',
                               borderRadius: '4px',
@@ -2397,20 +2397,20 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                             }}>
                               {score === 'X' ? 'X' : score || '-'}
                               {isWinner && result.skinValue > 1 && (
-                                <div style={{ fontSize: '8px', color: '#9c27b0', fontWeight: '700', marginTop: '1px' }}>×{result.skinValue}</div>
+                                <div style={{ fontSize: '8px', color: 'var(--color-accent-purple)', fontWeight: '700', marginTop: '1px' }}>×{result.skinValue}</div>
                               )}
                               {isWinner && result.carryoverCount > 0 && (
-                                <div style={{ fontSize: '8px', color: '#2e7d32', marginTop: '1px' }}>+{result.carryoverCount}</div>
+                                <div style={{ fontSize: '8px', color: 'var(--color-success-dark)', marginTop: '1px' }}>+{result.carryoverCount}</div>
                               )}
                             </td>
                           )
                         })}
-                        <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: '#fff3cd' }}>
+                        <td style={{ padding: '6px', textAlign: 'center', fontWeight: '700', background: 'var(--color-warning-light)' }}>
                           {(() => {
                             const s = skinsMatch.settings
                             const hasMultipliers = s.birdieDoubleEagleTriple || s.birdieMultiplier > 1 || s.eagleMultiplier > 1 || s.doubleEagleMultiplier > 1 || s.holeInOneMultiplier > 1
                             return hasMultipliers && pSummary.totalValue !== pSummary.skinsWon
-                              ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: '#9c27b0' }}>({pSummary.skinsWon})</span></span>
+                              ? <span>{pSummary.totalValue} <span style={{ fontSize: '9px', color: 'var(--color-accent-purple)' }}>({pSummary.skinsWon})</span></span>
                               : pSummary.skinsWon
                           })()}
                         </td>
@@ -2421,22 +2421,22 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
               </table>
             </div>
             {/* Legend */}
-            <div style={{ padding: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '11px' }}>
+            <div style={{ padding: '10px', borderTop: '1px solid var(--color-border-light)', display: 'flex', gap: '15px', flexWrap: 'wrap', fontSize: '11px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '14px', height: '14px', background: '#ffebee', border: '2px solid #ef9a9a', borderRadius: '3px' }}></span> Push
+                <span style={{ width: '14px', height: '14px', background: 'var(--color-danger-light)', border: '2px solid var(--color-danger-border)', borderRadius: '3px' }}></span> Push
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '14px', height: '14px', background: '#d4edda', border: '2px solid #28a745', borderRadius: '3px' }}></span> Won
+                <span style={{ width: '14px', height: '14px', background: 'var(--color-success-light)', border: '2px solid var(--color-success)', borderRadius: '3px' }}></span> Won
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, #e8f5e9, #e8f5e9 3px, #c8e6c9 3px, #c8e6c9 6px)', border: '2px solid #81c784', borderRadius: '3px' }}></span> Carryover
+                <span style={{ width: '14px', height: '14px', background: 'repeating-linear-gradient(45deg, var(--color-success-light), var(--color-success-light) 3px, var(--color-success-border) 3px, var(--color-success-border) 6px)', border: '2px solid var(--color-success-border)', borderRadius: '3px' }}></span> Carryover
               </span>
               {(() => {
                 const s = skinsMatch.settings
                 if (s.birdieDoubleEagleTriple) {
                   return (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ color: '#9c27b0', fontWeight: '700' }}>×2/×3</span> Birdie/Eagle
+                      <span style={{ color: 'var(--color-accent-purple)', fontWeight: '700' }}>×2/×3</span> Birdie/Eagle
                     </span>
                   )
                 }
@@ -2448,7 +2448,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                 if (parts.length > 0) {
                   return (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ color: '#9c27b0', fontWeight: '700' }}>{parts.join(', ')}</span>
+                      <span style={{ color: 'var(--color-accent-purple)', fontWeight: '700' }}>{parts.join(', ')}</span>
                     </span>
                   )
                 }
@@ -2458,7 +2458,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
           </div>
 
           {/* Payout Summary */}
-          <div style={{ background: '#f8f9fa', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
+          <div style={{ background: 'var(--color-surface-sunken)', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
             <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Payout Summary</h4>
             <div style={{ display: 'grid', gap: '8px' }}>
               {Object.entries(playerSummary)
@@ -2482,25 +2482,25 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '8px 12px',
-                      background: summary.isSettled ? '#fff8e1' : 'white',
+                      background: summary.isSettled ? 'var(--color-warning-light)' : 'var(--color-surface)',
                       borderRadius: '6px'
                     }}>
                       <span style={{ fontWeight: '600' }}>
                         {summary.name}
-                        <span style={{ fontSize: '11px', color: '#999', fontWeight: 'normal' }}>{holesInfo}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>{holesInfo}</span>
                       </span>
                       <div style={{ display: 'flex', gap: '15px', fontSize: '13px' }}>
-                        <span style={{ color: '#666' }}>
+                        <span style={{ color: 'var(--color-text-secondary)' }}>
                           {summary.skinsWon} skins
                           {greenieNet !== 0 && (
-                            <span style={{ color: greenieNet > 0 ? '#27ae60' : '#e74c3c' }}>
+                            <span style={{ color: greenieNet > 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                               , greenies {greenieNet > 0 ? '+' : ''}${greenieNet.toFixed(0)}
                             </span>
                           )}
                         </span>
                         <span style={{
                           fontWeight: '700',
-                          color: totalNet > 0 ? '#27ae60' : totalNet < 0 ? '#e74c3c' : '#666'
+                          color: totalNet > 0 ? 'var(--color-success)' : totalNet < 0 ? 'var(--color-danger)' : 'var(--color-text-secondary)'
                         }}>
                           {totalNet > 0 ? '+' : ''}${totalNet.toFixed(0)}
                         </span>
@@ -2513,8 +2513,8 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
 
           {/* Greenies Section (if enabled) */}
           {greenieData && (
-            <div style={{ background: '#e8f5e9', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
-              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#2e7d32' }}>Greenies</h4>
+            <div style={{ background: 'var(--color-success-light)', borderRadius: '10px', padding: '15px', marginBottom: '15px' }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--color-success-dark)' }}>Greenies</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '10px' }}>
                 {[4, 8, 12, 17].map(hole => {
                   const result = greenieData.results[hole]
@@ -2538,7 +2538,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
 
                   return (
                     <div key={hole} style={{
-                      background: 'white',
+                      background: 'var(--color-surface)',
                       padding: '8px 12px',
                       borderRadius: '6px',
                       display: 'flex',
@@ -2546,7 +2546,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                       alignItems: 'center'
                     }}>
                       <span style={{ fontWeight: '600' }}>Hole {hole}</span>
-                      <span style={{ color: ultimateWinner ? '#27ae60' : '#666' }}>
+                      <span style={{ color: ultimateWinner ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
                         {ultimateWinner || 'No winner'}
                         {ultimateWinner && (
                           <span style={{ marginLeft: '5px', fontSize: '12px' }}>
@@ -2558,14 +2558,14 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                   )
                 })}
               </div>
-              <div style={{ fontSize: '12px', color: '#666' }}>
+              <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                 ${greenieData.settings.costPerHole}/hole - {greenieData.settings.carryover ? 'Carryovers enabled' : 'No carryovers'}
               </div>
             </div>
           )}
 
           {/* Who Owes Who */}
-          <div style={{ background: 'white', borderRadius: '10px', padding: '15px', border: '1px solid #eee' }}>
+          <div style={{ background: 'var(--color-surface)', borderRadius: '10px', padding: '15px', border: '1px solid var(--color-border-light)' }}>
             <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Who Owes Who</h4>
             {(() => {
               const settlements = []
@@ -2605,7 +2605,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
               }
 
               if (settlements.length === 0) {
-                return <div style={{ color: '#666', textAlign: 'center' }}>No settlements needed</div>
+                return <div style={{ color: 'var(--color-text-secondary)', textAlign: 'center' }}>No settlements needed</div>
               }
 
               const paidSettlements = record.paidSettlements || {}
@@ -2638,21 +2638,21 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                     alignItems: 'center',
                     marginBottom: '10px',
                     padding: '6px 10px',
-                    background: remainingCount === 0 ? '#d4edda' : '#fff3cd',
+                    background: remainingCount === 0 ? 'var(--color-success-light)' : 'var(--color-warning-light)',
                     borderRadius: '6px',
                     fontSize: '12px'
                   }}>
                     <span>
                       {remainingCount === 0 ? (
-                        <span style={{ color: '#27ae60', fontWeight: '600' }}>✓ All payments complete!</span>
+                        <span style={{ color: 'var(--color-success)', fontWeight: '600' }}>✓ All payments complete!</span>
                       ) : (
-                        <span style={{ color: '#856404' }}>
+                        <span style={{ color: 'var(--color-warning-dark)' }}>
                           <strong>{remainingCount}</strong> payment{remainingCount !== 1 ? 's' : ''} remaining
                         </span>
                       )}
                     </span>
                     {paidCount > 0 && (
-                      <span style={{ color: '#666' }}>
+                      <span style={{ color: 'var(--color-text-secondary)' }}>
                         {paidCount} of {settlements.length} paid
                       </span>
                     )}
@@ -2666,7 +2666,7 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '8px 0',
-                        borderBottom: idx < sortedSettlements.length - 1 ? '1px solid #eee' : 'none',
+                        borderBottom: idx < sortedSettlements.length - 1 ? '1px solid var(--color-border-light)' : 'none',
                         opacity: isPaid ? 0.75 : 1
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2683,11 +2683,11 @@ function QuickSkinsDetailModal({ record, onClose, onUpdatePaidSettlements }) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{
                             fontWeight: '700',
-                            color: isPaid ? '#999' : '#e74c3c',
+                            color: isPaid ? 'var(--color-text-tertiary)' : 'var(--color-danger)',
                             textDecoration: isPaid ? 'line-through' : 'none'
                           }}>${s.amount.toFixed(0)}</span>
                           {isPaid && (
-                            <span style={{ color: '#27ae60', fontSize: '11px', fontWeight: '600' }}>✓ PAID</span>
+                            <span style={{ color: 'var(--color-success)', fontSize: '11px', fontWeight: '600' }}>✓ PAID</span>
                           )}
                         </div>
                       </div>
@@ -2796,8 +2796,8 @@ function HistoryPage() {
           style={{
             padding: '10px 20px',
             border: 'none',
-            background: historyType === 'all' ? '#1a472a' : '#e0e0e0',
-            color: historyType === 'all' ? 'white' : '#666',
+            background: historyType === 'all' ? 'var(--color-primary-dark)' : 'var(--color-border)',
+            color: historyType === 'all' ? 'white' : 'var(--color-text-secondary)',
             fontWeight: '600',
             cursor: 'pointer',
             borderRadius: '8px 0 0 8px',
@@ -2811,8 +2811,8 @@ function HistoryPage() {
           style={{
             padding: '10px 20px',
             border: 'none',
-            background: historyType === 'league' ? '#1a472a' : '#e0e0e0',
-            color: historyType === 'league' ? 'white' : '#666',
+            background: historyType === 'league' ? 'var(--color-primary-dark)' : 'var(--color-border)',
+            color: historyType === 'league' ? 'white' : 'var(--color-text-secondary)',
             fontWeight: '600',
             cursor: 'pointer',
             fontSize: '14px'
@@ -2825,8 +2825,8 @@ function HistoryPage() {
           style={{
             padding: '10px 20px',
             border: 'none',
-            background: historyType === 'quickSkins' ? '#f39c12' : '#e0e0e0',
-            color: historyType === 'quickSkins' ? 'white' : '#666',
+            background: historyType === 'quickSkins' ? 'var(--color-skins)' : 'var(--color-border)',
+            color: historyType === 'quickSkins' ? 'white' : 'var(--color-text-secondary)',
             fontWeight: '600',
             cursor: 'pointer',
             borderRadius: '0 8px 8px 0',
@@ -2846,12 +2846,12 @@ function HistoryPage() {
         <>
           {/* Filter Bar - only show for league rounds */}
           {(historyType === 'all' || historyType === 'league') && history.length > 0 && (
-          <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
+          <div style={{ background: 'var(--color-surface-sunken)', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
               <select
                 value={historyFilter}
                 onChange={(e) => setHistoryFilter(e.target.value)}
-                style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '14px' }}
               >
                 <option value="all">All Rounds</option>
                 <option value="year">By Year</option>
@@ -2863,7 +2863,7 @@ function HistoryPage() {
                 <select
                   value={historyFilterYear}
                   onChange={(e) => setHistoryFilterYear(parseInt(e.target.value))}
-                  style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '14px' }}
                 >
                   {availableYears.map(year => (
                     <option key={year} value={year}>{year}</option>
@@ -2877,14 +2877,14 @@ function HistoryPage() {
                     type="date"
                     value={historyFilterStartDate}
                     onChange={(e) => setHistoryFilterStartDate(e.target.value)}
-                    style={{ padding: '8px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                    style={{ padding: '8px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '14px' }}
                   />
-                  <span style={{ color: '#666' }}>to</span>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>to</span>
                   <input
                     type="date"
                     value={historyFilterEndDate}
                     onChange={(e) => setHistoryFilterEndDate(e.target.value)}
-                    style={{ padding: '8px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                    style={{ padding: '8px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '14px' }}
                   />
                 </>
               )}
@@ -2893,7 +2893,7 @@ function HistoryPage() {
                 <select
                   value={historyFilterLastX}
                   onChange={(e) => setHistoryFilterLastX(parseInt(e.target.value))}
-                  style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid #e0e0e0', fontSize: '14px' }}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '14px' }}
                 >
                   <option value="3">Last 3</option>
                   <option value="5">Last 5</option>
@@ -2902,7 +2902,7 @@ function HistoryPage() {
                 </select>
               )}
 
-              <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#666' }}>
+              <span style={{ marginLeft: 'auto', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
                 Showing {filteredHistory.length} of {history.length} league round{history.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -2915,7 +2915,7 @@ function HistoryPage() {
               {historyType === 'all' && history.length > 0 && (
                 <h3 style={{ marginBottom: '15px', marginTop: historyType === 'all' ? '0' : '20px' }}>
                   <span style={{
-                    background: '#1a472a',
+                    background: 'var(--color-primary-dark)',
                     color: 'white',
                     padding: '4px 10px',
                     borderRadius: '6px',
@@ -2947,7 +2947,7 @@ function HistoryPage() {
               {historyType === 'all' && (
                 <h3 style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{
-                    background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+                    background: 'var(--color-skins)',
                     color: 'white',
                     padding: '4px 10px',
                     borderRadius: '6px',
@@ -3014,7 +3014,7 @@ function HistoryPage() {
               <button className="modal-close" onClick={() => setDeletingQuickSkins(null)}>&times;</button>
             </div>
             <div className="modal-body" style={{ textAlign: 'center' }}>
-              <p style={{ marginBottom: '20px', color: '#666' }}>
+              <p style={{ marginBottom: '20px', color: 'var(--color-text-secondary)' }}>
                 This will permanently delete this Quick Skins match record.
               </p>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>

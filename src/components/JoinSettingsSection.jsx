@@ -41,14 +41,14 @@ function JoinSettingsSection({ leagueId }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '4px' }}>Join Settings</h3>
-      <p style={{ color: '#666', fontSize: '12px', marginBottom: '15px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
         Control how new members can join this league.
       </p>
 
@@ -70,14 +70,14 @@ function JoinSettingsSection({ leagueId }) {
                 flex: 1,
                 padding: '12px',
                 borderRadius: '8px',
-                border: visibility === opt.value ? '2px solid #27ae60' : '2px solid #e0e0e0',
-                background: visibility === opt.value ? '#e8f5e9' : 'white',
+                border: visibility === opt.value ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                background: visibility === opt.value ? 'var(--color-success-light)' : 'var(--color-surface)',
                 cursor: 'pointer',
                 textAlign: 'center'
               }}
             >
               <div style={{ fontWeight: '600', fontSize: '14px' }}>{opt.label}</div>
-              <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>{opt.desc}</div>
+              <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>{opt.desc}</div>
             </button>
           ))}
         </div>
@@ -90,8 +90,8 @@ function JoinSettingsSection({ leagueId }) {
         gap: '10px',
         padding: '14px',
         borderRadius: '8px',
-        border: approvalRequired ? '2px solid #ff9800' : '1px solid #e0e0e0',
-        background: approvalRequired ? '#fff8e1' : 'white',
+        border: approvalRequired ? '2px solid var(--color-warning)' : '1px solid var(--color-border)',
+        background: approvalRequired ? 'var(--color-warning-light)' : 'var(--color-surface)',
         cursor: 'pointer'
       }}>
         <input
@@ -103,7 +103,7 @@ function JoinSettingsSection({ leagueId }) {
         />
         <div>
           <div style={{ fontWeight: '600', fontSize: '14px' }}>Require Admin Approval</div>
-          <div style={{ color: '#666', fontSize: '12px', marginTop: '2px' }}>
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginTop: '2px' }}>
             New members who join via code or link must be approved by an admin before they get access.
           </div>
         </div>

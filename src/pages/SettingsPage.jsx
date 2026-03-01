@@ -33,10 +33,10 @@ function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
   if (isAdmin) {
     return (
       <div style={{
-        background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)',
+        background: 'var(--color-success)',
         color: 'white',
         padding: '20px',
-        borderRadius: '10px',
+        borderRadius: 'var(--radius-md)',
         marginBottom: '20px'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -67,14 +67,14 @@ function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>Admin Login</h3>
-      <p style={{ color: '#666', marginBottom: '15px', fontSize: '14px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '14px' }}>
         Enter the admin PIN to access restricted features like editing players, finishing rounds, and managing settings.
       </p>
       <div style={{ display: 'flex', gap: '10px' }}>
@@ -90,8 +90,8 @@ function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
           style={{
             flex: 1,
             padding: '12px',
-            borderRadius: '6px',
-            border: error ? '2px solid #e74c3c' : '1px solid #ddd',
+            borderRadius: 'var(--radius-sm)',
+            border: error ? '2px solid var(--color-danger)' : '1px solid var(--color-border)',
             fontSize: '18px',
             textAlign: 'center',
             letterSpacing: '5px'
@@ -105,7 +105,7 @@ function AdminLoginSection({ isAdmin, onLogin, onLogout }) {
         </button>
       </div>
       {error && (
-        <div style={{ color: '#e74c3c', marginTop: '10px', fontSize: '14px' }}>
+        <div style={{ color: 'var(--color-danger)', marginTop: '10px', fontSize: '14px' }}>
           {error}
         </div>
       )}
@@ -170,10 +170,10 @@ function SiteOwnerAccessSection({
     return (
       <>
         <div style={{
-          background: 'linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%)',
+          background: 'var(--color-accent-purple)',
           color: 'white',
           padding: '20px',
-          borderRadius: '10px',
+          borderRadius: 'var(--radius-md)',
           marginTop: '30px'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
@@ -225,7 +225,7 @@ function SiteOwnerAccessSection({
                     background: viewAsRole === opt.value
                       ? 'rgba(255,255,255,0.9)'
                       : 'rgba(255,255,255,0.15)',
-                    color: viewAsRole === opt.value ? '#8e44ad' : 'white'
+                    color: viewAsRole === opt.value ? 'var(--color-accent-purple)' : 'white'
                   }}
                 >
                   {opt.label}
@@ -239,7 +239,7 @@ function SiteOwnerAccessSection({
             onClick={() => setShowMappingTool(true)}
             style={{
               background: 'rgba(255,255,255,0.9)',
-              color: '#8e44ad',
+              color: 'var(--color-accent-purple)',
               width: '100%',
               fontWeight: '600'
             }}
@@ -265,12 +265,12 @@ function SiteOwnerAccessSection({
       <div
         onClick={handleTripleTap}
         style={{
-          background: '#f8f9fa',
+          background: 'var(--color-surface-sunken)',
           padding: '15px',
-          borderRadius: '10px',
+          borderRadius: 'var(--radius-md)',
           textAlign: 'center',
           fontSize: '13px',
-          color: '#666',
+          color: 'var(--color-text-secondary)',
           cursor: 'default',
           userSelect: 'none'
         }}
@@ -291,7 +291,7 @@ function SiteOwnerAccessSection({
               <button className="close-btn" onClick={() => setShowPinModal(false)}>&times;</button>
             </div>
             <div style={{ padding: '20px' }}>
-              <p style={{ color: '#666', marginBottom: '15px', fontSize: '14px' }}>
+              <p style={{ color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '14px' }}>
                 Enter the Site Owner PIN to access course mapping tools.
               </p>
               <input
@@ -308,7 +308,7 @@ function SiteOwnerAccessSection({
                   width: '100%',
                   padding: '15px',
                   borderRadius: '8px',
-                  border: error ? '2px solid #e74c3c' : '1px solid #ddd',
+                  border: error ? '2px solid var(--color-danger)' : '1px solid var(--color-border)',
                   fontSize: '24px',
                   textAlign: 'center',
                   letterSpacing: '10px',
@@ -317,7 +317,7 @@ function SiteOwnerAccessSection({
                 onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
               />
               {error && (
-                <div style={{ color: '#e74c3c', marginBottom: '15px', fontSize: '14px', textAlign: 'center' }}>
+                <div style={{ color: 'var(--color-danger)', marginBottom: '15px', fontSize: '14px', textAlign: 'center' }}>
                   {error}
                 </div>
               )}
@@ -372,16 +372,16 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>League Information</h3>
 
       <div style={{
-        background: '#f8f9fa',
+        background: 'var(--color-surface-sunken)',
         padding: '15px',
         borderRadius: '8px',
         marginBottom: '15px',
@@ -390,7 +390,7 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
         alignItems: 'center'
       }}>
         <div>
-          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>League Code</div>
+          <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>League Code</div>
           <div style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '3px' }}>{leagueId}</div>
         </div>
         <button
@@ -401,28 +401,28 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
         </button>
       </div>
 
-      <p style={{ color: '#666', fontSize: '13px', marginBottom: '15px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '15px' }}>
         Share this code with others so they can join your league and view live scores.
       </p>
 
       {/* Clone to Test League - Admin only */}
       {isAdmin && (
         <div style={{
-          background: '#e3f2fd',
+          background: 'var(--color-info-light)',
           padding: '15px',
           borderRadius: '8px',
           marginBottom: '15px',
-          border: '1px solid #90caf9'
+          border: '1px solid var(--color-info-light-border)'
         }}>
           <h4 style={{ marginBottom: '10px', fontSize: '14px' }}>Clone to Test League</h4>
-          <p style={{ color: '#666', fontSize: '13px', marginBottom: '10px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '10px' }}>
             Create a copy of this league for testing. All players, history, and settings will be copied.
           </p>
 
           {showCloneForm ? (
             <div>
               <div style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '4px' }}>
                   Test League Code (optional)
                 </label>
                 <input
@@ -442,8 +442,8 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
 
               {cloneStatus.error && (
                 <div style={{
-                  background: '#ffebee',
-                  color: '#c62828',
+                  background: 'var(--color-danger-light)',
+                  color: 'var(--color-danger-dark)',
                   padding: '8px',
                   borderRadius: '4px',
                   marginBottom: '10px',
@@ -455,8 +455,8 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
 
               {cloneStatus.success && (
                 <div style={{
-                  background: '#e8f5e9',
-                  color: '#2e7d32',
+                  background: 'var(--color-success-light)',
+                  color: 'var(--color-success-dark)',
                   padding: '8px',
                   borderRadius: '4px',
                   marginBottom: '10px',
@@ -507,7 +507,7 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
           onClick={onSwitchLeague}
           style={{
             width: '100%',
-            background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+            background: 'var(--color-success)',
             color: 'white',
             fontWeight: '600',
             marginBottom: '10px',
@@ -522,16 +522,16 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
       {isLeagueOwner && onDelete && (
         showDeleteConfirm ? (
           <div style={{
-            background: '#ffebee',
+            background: 'var(--color-danger-light)',
             padding: '15px',
             borderRadius: '8px',
-            border: '1px solid #ef9a9a',
+            border: '1px solid var(--color-danger-border)',
             marginBottom: '10px'
           }}>
-            <p style={{ marginBottom: '10px', fontWeight: '600', color: '#c62828' }}>
+            <p style={{ marginBottom: '10px', fontWeight: '600', color: 'var(--color-danger-dark)' }}>
               Delete this league?
             </p>
-            <p style={{ color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+            <p style={{ color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '13px' }}>
               The league will be hidden from all members. A site owner can restore it later.
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -542,7 +542,7 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
                   setDeleteLoading(false)
                 }}
                 disabled={deleteLoading}
-                style={{ background: '#c62828', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ background: 'var(--color-danger-dark)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 {deleteLoading ? 'Deleting...' : 'Delete League'}
               </button>
@@ -560,12 +560,12 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
             style={{
               width: '100%',
               background: 'none',
-              border: '1px solid #ef9a9a',
-              color: '#c62828',
+              border: '1px solid var(--color-danger-border)',
+              color: 'var(--color-danger-dark)',
               fontSize: '13px',
               cursor: 'pointer',
               padding: '10px',
-              borderRadius: '6px',
+              borderRadius: 'var(--radius-sm)',
               marginBottom: '10px'
             }}
           >
@@ -577,22 +577,22 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
       {/* Leave League - secondary danger action */}
       {showLeaveConfirm ? (
         <div style={{
-          background: '#fff3cd',
+          background: 'var(--color-warning-light)',
           padding: '15px',
           borderRadius: '8px',
-          border: '1px solid #f9a825'
+          border: '1px solid var(--color-warning)'
         }}>
           <p style={{ marginBottom: '15px', fontWeight: '600' }}>
             Leave this league?
           </p>
-          <p style={{ color: '#666', marginBottom: '15px', fontSize: '13px' }}>
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '15px', fontSize: '13px' }}>
             Your membership will be removed. You can rejoin later using the league code.
           </p>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               className="btn"
               onClick={onLeave}
-              style={{ background: '#e74c3c', color: 'white' }}
+              style={{ background: 'var(--color-danger)', color: 'white' }}
             >
               Leave League
             </button>
@@ -611,7 +611,7 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
             width: '100%',
             background: 'none',
             border: 'none',
-            color: '#e74c3c',
+            color: 'var(--color-danger)',
             fontSize: '13px',
             cursor: 'pointer',
             padding: '8px',
@@ -644,17 +644,17 @@ function PayoutSettingsSection({ payoutFormats, onUpdate, isAdmin }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>Payout Formats</h3>
 
       {Object.entries(payoutFormats).map(([key, format]) => (
         <div key={key} style={{
-          background: '#f8f9fa',
+          background: 'var(--color-surface-sunken)',
           padding: '15px',
           borderRadius: '8px',
           marginBottom: '10px'
@@ -721,7 +721,7 @@ function PayoutSettingsSection({ payoutFormats, onUpdate, isAdmin }) {
                   </button>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: '15px', fontSize: '13px', color: '#666', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '15px', fontSize: '13px', color: 'var(--color-text-secondary)', flexWrap: 'wrap' }}>
                 <span>Greenie: ${format.greeniePerHole}/hole</span>
                 <span>Front 9: ${format.front9}</span>
                 <span>Back 9: ${format.back9}</span>
@@ -770,11 +770,11 @@ function HoleInOnePotSection({ holeInOnePot, onUpdate, isAdmin }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '2px solid #f9a825'
+      border: '2px solid var(--color-warning)'
     }}>
       <div style={{
         display: 'flex',
@@ -784,10 +784,10 @@ function HoleInOnePotSection({ holeInOnePot, onUpdate, isAdmin }) {
       }}>
         <h3>Hole-in-One Pot</h3>
         <div style={{
-          background: 'linear-gradient(135deg, #f9a825 0%, #f57c00 100%)',
+          background: 'var(--color-warning)',
           color: 'white',
           padding: '8px 16px',
-          borderRadius: '20px',
+          borderRadius: 'var(--radius-full)',
           fontWeight: 'bold',
           fontSize: '18px'
         }}>
@@ -799,7 +799,7 @@ function HoleInOnePotSection({ holeInOnePot, onUpdate, isAdmin }) {
         <>
           {showAddTransaction ? (
             <div style={{
-              background: '#f8f9fa',
+              background: 'var(--color-surface-sunken)',
               padding: '15px',
               borderRadius: '8px',
               marginBottom: '15px'
@@ -834,7 +834,7 @@ function HoleInOnePotSection({ holeInOnePot, onUpdate, isAdmin }) {
                 <button
                   className="btn"
                   onClick={() => addTransaction('withdrawal')}
-                  style={{ flex: 1, background: '#e74c3c', color: 'white' }}
+                  style={{ flex: 1, background: 'var(--color-danger)', color: 'white' }}
                 >
                   Payout
                 </button>
@@ -868,20 +868,20 @@ function HoleInOnePotSection({ holeInOnePot, onUpdate, isAdmin }) {
                 display: 'flex',
                 justifyContent: 'space-between',
                 padding: '8px 10px',
-                background: tx.amount > 0 ? '#e8f5e9' : '#ffebee',
+                background: tx.amount > 0 ? 'var(--color-success-light)' : 'var(--color-danger-light)',
                 borderRadius: '4px',
                 marginBottom: '4px',
                 fontSize: '13px'
               }}>
                 <div>
                   <span>{tx.description}</span>
-                  <span style={{ color: '#999', marginLeft: '8px', fontSize: '11px' }}>
+                  <span style={{ color: 'var(--color-text-tertiary)', marginLeft: '8px', fontSize: '11px' }}>
                     {new Date(tx.date).toLocaleDateString()}
                   </span>
                 </div>
                 <span style={{
                   fontWeight: '600',
-                  color: tx.amount > 0 ? '#27ae60' : '#e74c3c'
+                  color: tx.amount > 0 ? 'var(--color-success)' : 'var(--color-danger)'
                 }}>
                   {tx.amount > 0 ? '+' : ''}${Math.abs(tx.amount).toFixed(2)}
                 </span>
@@ -997,16 +997,16 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
   return (
     <>
       <div style={{
-        background: liveRound ? '#f5f5f5' : 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+        background: liveRound ? 'var(--color-surface-sunken)' : 'var(--color-skins)',
         padding: '20px',
-        borderRadius: '10px',
+        borderRadius: 'var(--radius-md)',
         marginBottom: '20px',
         opacity: liveRound ? 0.6 : 1
       }}>
-        <h3 style={{ marginBottom: '10px', color: liveRound ? '#666' : 'white' }}>
+        <h3 style={{ marginBottom: '10px', color: liveRound ? 'var(--color-text-secondary)' : 'white' }}>
           Quick Skins Game
         </h3>
-        <p style={{ color: liveRound ? '#999' : 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>
+        <p style={{ color: liveRound ? 'var(--color-text-tertiary)' : 'rgba(255,255,255,0.9)', fontSize: '13px', marginBottom: '15px' }}>
           Start an informal skins match without the full league format.
           Add players, form teams, and track skins - no stats saved.
         </p>
@@ -1018,8 +1018,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
           }}
           disabled={!!liveRound}
           style={{
-            background: liveRound ? '#ccc' : 'white',
-            color: liveRound ? '#666' : '#e67e22',
+            background: liveRound ? 'var(--color-disabled)' : 'var(--color-surface)',
+            color: liveRound ? 'var(--color-text-secondary)' : 'var(--color-skins-dark)',
             fontWeight: '600',
             cursor: liveRound ? 'not-allowed' : 'pointer'
           }}
@@ -1032,7 +1032,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
       {showSetup && (
         <div className="modal-overlay" onClick={() => setShowSetup(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', maxHeight: '90vh', overflow: 'auto' }}>
-            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)' }}>
+            <div className="modal-header" style={{ background: 'var(--color-skins)' }}>
               <h2 style={{ margin: 0, color: 'white' }}>Quick Skins Setup</h2>
               <button className="modal-close" onClick={() => setShowSetup(false)} style={{ color: 'white' }}>&times;</button>
             </div>
@@ -1044,8 +1044,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                     width: '30px',
                     height: '30px',
                     borderRadius: '50%',
-                    background: step >= s ? '#f39c12' : '#e0e0e0',
-                    color: step >= s ? 'white' : '#999',
+                    background: step >= s ? 'var(--color-skins)' : 'var(--color-border)',
+                    color: step >= s ? 'white' : 'var(--color-text-tertiary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1068,7 +1068,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                       <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '13px' }}>
                         Add from League:
                       </label>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', padding: '10px', background: '#f8f9fa', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', padding: '10px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
                         {players.filter(p => p.isActive !== false).map(player => {
                           const isAdded = selectedPlayers.some(sp => sp.id === player.id)
                           return (
@@ -1078,9 +1078,9 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                               style={{
                                 padding: '6px 12px',
                                 borderRadius: '15px',
-                                border: isAdded ? '2px solid #27ae60' : '1px solid #ddd',
-                                background: isAdded ? '#e8f8f5' : 'white',
-                                color: isAdded ? '#27ae60' : '#666',
+                                border: isAdded ? '2px solid var(--color-success)' : '1px solid var(--color-border)',
+                                background: isAdded ? 'var(--color-success-light)' : 'var(--color-surface)',
+                                color: isAdded ? 'var(--color-success)' : 'var(--color-text-secondary)',
                                 fontSize: '12px',
                                 cursor: 'pointer'
                               }}
@@ -1104,7 +1104,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="Enter name..."
-                        style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '2px solid #ddd' }}
+                        style={{ flex: 1, padding: '10px', borderRadius: 'var(--radius-sm)', border: '2px solid var(--color-border)' }}
                         onKeyPress={(e) => e.key === 'Enter' && addGuest()}
                       />
                       <button className="btn btn-secondary" onClick={addGuest} disabled={!guestName.trim()}>
@@ -1119,7 +1119,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                       Players in Game ({selectedPlayers.length}):
                     </label>
                     {selectedPlayers.length === 0 ? (
-                      <p style={{ color: '#999', fontSize: '13px' }}>No players added yet</p>
+                      <p style={{ color: 'var(--color-text-tertiary)', fontSize: '13px' }}>No players added yet</p>
                     ) : (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                         {selectedPlayers.map(player => (
@@ -1128,18 +1128,18 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                             alignItems: 'center',
                             gap: '6px',
                             padding: '6px 10px',
-                            background: player.isGuest ? '#fff3e0' : '#e3f2fd',
+                            background: player.isGuest ? 'var(--color-skins-light)' : 'var(--color-info-light)',
                             borderRadius: '15px',
                             fontSize: '12px'
                           }}>
                             <span>{player.name}</span>
-                            {player.isGuest && <span style={{ color: '#e67e22' }}>(Guest)</span>}
+                            {player.isGuest && <span style={{ color: 'var(--color-skins-dark)' }}>(Guest)</span>}
                             <button
                               onClick={() => setSelectedPlayers(selectedPlayers.filter(p => p.id !== player.id))}
                               style={{
                                 background: 'none',
                                 border: 'none',
-                                color: '#e74c3c',
+                                color: 'var(--color-danger)',
                                 cursor: 'pointer',
                                 padding: '0 2px',
                                 fontSize: '14px'
@@ -1173,7 +1173,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
               {step === 2 && (
                 <>
                   <h3 style={{ marginBottom: '15px' }}>Step 2: Form Teams</h3>
-                  <p style={{ color: '#666', fontSize: '13px', marginBottom: '15px' }}>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '15px' }}>
                     Create teams for the scoring interface. Select players and tap "Create Team".
                   </p>
 
@@ -1199,9 +1199,9 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                               style={{
                                 padding: '8px 14px',
                                 borderRadius: '20px',
-                                border: isSelected ? '2px solid #3498db' : '2px solid #ddd',
-                                background: isSelected ? '#e3f2fd' : 'white',
-                                color: isSelected ? '#3498db' : '#666',
+                                border: isSelected ? '2px solid var(--color-info)' : '2px solid var(--color-border)',
+                                background: isSelected ? 'var(--color-info-light)' : 'var(--color-surface)',
+                                color: isSelected ? 'var(--color-info)' : 'var(--color-text-secondary)',
                                 fontSize: '13px',
                                 fontWeight: isSelected ? '600' : 'normal',
                                 cursor: 'pointer'
@@ -1229,7 +1229,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                       </label>
                       {teams.map((team, idx) => (
                         <div key={idx} style={{
-                          background: '#f0f7ff',
+                          background: 'var(--color-info-light)',
                           padding: '10px 15px',
                           borderRadius: '8px',
                           marginBottom: '8px',
@@ -1243,7 +1243,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                           <button
                             onClick={() => setTeams(teams.filter((_, i) => i !== idx))}
                             style={{
-                              background: '#e74c3c',
+                              background: 'var(--color-danger)',
                               color: 'white',
                               border: 'none',
                               borderRadius: '4px',
@@ -1273,7 +1273,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                     </button>
                   </div>
                   {unassignedPlayers.length > 0 && teams.length > 0 && (
-                    <p style={{ color: '#e67e22', fontSize: '12px', marginTop: '10px', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--color-skins-dark)', fontSize: '12px', marginTop: '10px', textAlign: 'center' }}>
                       All players must be assigned to a team
                     </p>
                   )}
@@ -1295,7 +1295,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                       value={skinsSettings.costPerSkin}
                       onChange={(e) => setSkinsSettings({ ...skinsSettings, costPerSkin: e.target.value })}
                       placeholder="1.00"
-                      style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '16px' }}
+                      style={{ width: '100%', padding: '12px', borderRadius: 'var(--radius-sm)', border: '2px solid var(--color-border)', fontSize: '16px' }}
                     />
                   </div>
 
@@ -1307,8 +1307,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                         onClick={() => setSkinsSettings({ ...skinsSettings, carryovers: true })}
                         style={{
                           flex: 1, padding: '12px', borderRadius: '6px',
-                          border: skinsSettings.carryovers ? '2px solid #f39c12' : '2px solid #ddd',
-                          background: skinsSettings.carryovers ? '#fff8e1' : 'white',
+                          border: skinsSettings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)',
+                          background: skinsSettings.carryovers ? 'var(--color-skins-light)' : 'var(--color-surface)',
                           fontWeight: skinsSettings.carryovers ? '600' : 'normal',
                           cursor: 'pointer'
                         }}
@@ -1317,8 +1317,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                         onClick={() => setSkinsSettings({ ...skinsSettings, carryovers: false })}
                         style={{
                           flex: 1, padding: '12px', borderRadius: '6px',
-                          border: !skinsSettings.carryovers ? '2px solid #f39c12' : '2px solid #ddd',
-                          background: !skinsSettings.carryovers ? '#fff8e1' : 'white',
+                          border: !skinsSettings.carryovers ? '2px solid var(--color-skins)' : '2px solid var(--color-border)',
+                          background: !skinsSettings.carryovers ? 'var(--color-skins-light)' : 'var(--color-surface)',
                           fontWeight: !skinsSettings.carryovers ? '600' : 'normal',
                           cursor: 'pointer'
                         }}
@@ -1333,9 +1333,9 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap Unwon Skins</label>
                         <div style={{ display: 'flex', gap: '10px' }}>
                           <button onClick={() => setSkinsSettings({ ...skinsSettings, wrapUnwonSkins: true })}
-                            style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: skinsSettings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: skinsSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
+                            style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: skinsSettings.wrapUnwonSkins ? 'var(--color-skins-light)' : 'var(--color-surface)', fontWeight: skinsSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>Yes</button>
                           <button onClick={() => setSkinsSettings({ ...skinsSettings, wrapUnwonSkins: false })}
-                            style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !skinsSettings.wrapUnwonSkins ? '2px solid #f39c12' : '2px solid #ddd', background: !skinsSettings.wrapUnwonSkins ? '#fff8e1' : 'white', fontWeight: !skinsSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
+                            style={{ flex: 1, padding: '12px', borderRadius: '6px', border: !skinsSettings.wrapUnwonSkins ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: !skinsSettings.wrapUnwonSkins ? 'var(--color-skins-light)' : 'var(--color-surface)', fontWeight: !skinsSettings.wrapUnwonSkins ? '600' : 'normal', cursor: 'pointer' }}>No</button>
                         </div>
                       </div>
                       {skinsSettings.wrapUnwonSkins && (
@@ -1343,9 +1343,9 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                           <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Wrap To</label>
                           <div style={{ display: 'flex', gap: '10px' }}>
                             <button onClick={() => setSkinsSettings({ ...skinsSettings, wrapTo: 'front' })}
-                              style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapTo === 'front' ? '2px solid #f39c12' : '2px solid #ddd', background: skinsSettings.wrapTo === 'front' ? '#fff8e1' : 'white', fontWeight: skinsSettings.wrapTo === 'front' ? '600' : 'normal', cursor: 'pointer' }}>Front 9</button>
+                              style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapTo === 'front' ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: skinsSettings.wrapTo === 'front' ? 'var(--color-skins-light)' : 'var(--color-surface)', fontWeight: skinsSettings.wrapTo === 'front' ? '600' : 'normal', cursor: 'pointer' }}>Front 9</button>
                             <button onClick={() => setSkinsSettings({ ...skinsSettings, wrapTo: 'back' })}
-                              style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapTo === 'back' ? '2px solid #f39c12' : '2px solid #ddd', background: skinsSettings.wrapTo === 'back' ? '#fff8e1' : 'white', fontWeight: skinsSettings.wrapTo === 'back' ? '600' : 'normal', cursor: 'pointer' }}>Back 9</button>
+                              style={{ flex: 1, padding: '12px', borderRadius: '6px', border: skinsSettings.wrapTo === 'back' ? '2px solid var(--color-skins)' : '2px solid var(--color-border)', background: skinsSettings.wrapTo === 'back' ? 'var(--color-skins-light)' : 'var(--color-surface)', fontWeight: skinsSettings.wrapTo === 'back' ? '600' : 'normal', cursor: 'pointer' }}>Back 9</button>
                           </div>
                         </div>
                       )}
@@ -1353,7 +1353,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                   )}
 
                   {/* Greenies Section */}
-                  <div style={{ marginBottom: '20px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                  <div style={{ marginBottom: '20px', borderTop: '1px solid var(--color-border-light)', paddingTop: '15px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
                       <label style={{ fontWeight: '600', fontSize: '15px' }}>Greenies (Par 3s)</label>
                       <div style={{ display: 'flex', gap: '8px' }}>
@@ -1361,10 +1361,10 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                           onClick={() => setGreenieSettings({ ...greenieSettings, enabled: true })}
                           style={{
                             padding: '6px 16px', borderRadius: '6px',
-                            border: greenieSettings.enabled ? '2px solid #27ae60' : '2px solid #ddd',
-                            background: greenieSettings.enabled ? '#e8f8f5' : 'white',
+                            border: greenieSettings.enabled ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                            background: greenieSettings.enabled ? 'var(--color-success-light)' : 'var(--color-surface)',
                             fontWeight: greenieSettings.enabled ? '600' : 'normal',
-                            color: greenieSettings.enabled ? '#27ae60' : '#666',
+                            color: greenieSettings.enabled ? 'var(--color-success)' : 'var(--color-text-secondary)',
                             cursor: 'pointer', fontSize: '13px'
                           }}
                         >Yes</button>
@@ -1372,10 +1372,10 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                           onClick={() => setGreenieSettings({ ...greenieSettings, enabled: false })}
                           style={{
                             padding: '6px 16px', borderRadius: '6px',
-                            border: !greenieSettings.enabled ? '2px solid #27ae60' : '2px solid #ddd',
-                            background: !greenieSettings.enabled ? '#e8f8f5' : 'white',
+                            border: !greenieSettings.enabled ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                            background: !greenieSettings.enabled ? 'var(--color-success-light)' : 'var(--color-surface)',
                             fontWeight: !greenieSettings.enabled ? '600' : 'normal',
-                            color: !greenieSettings.enabled ? '#27ae60' : '#666',
+                            color: !greenieSettings.enabled ? 'var(--color-success)' : 'var(--color-text-secondary)',
                             cursor: 'pointer', fontSize: '13px'
                           }}
                         >No</button>
@@ -1383,7 +1383,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                     </div>
 
                     {greenieSettings.enabled && (
-                      <div style={{ background: '#f0fff4', padding: '15px', borderRadius: '8px' }}>
+                      <div style={{ background: 'var(--color-success-light)', padding: '15px', borderRadius: '8px' }}>
                         <div style={{ marginBottom: '15px' }}>
                           <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '13px' }}>
                             Cost per Greenie ($)
@@ -1393,7 +1393,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                             value={greenieSettings.costPerGreenie}
                             onChange={(e) => setGreenieSettings({ ...greenieSettings, costPerGreenie: e.target.value })}
                             placeholder="1.00"
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '2px solid #ddd', fontSize: '14px' }}
+                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '2px solid var(--color-border)', fontSize: '14px' }}
                           />
                         </div>
                         <div style={{ marginBottom: '15px' }}>
@@ -1403,8 +1403,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                               onClick={() => setGreenieSettings({ ...greenieSettings, carryovers: true })}
                               style={{
                                 flex: 1, padding: '10px', borderRadius: '6px',
-                                border: greenieSettings.carryovers ? '2px solid #27ae60' : '2px solid #ddd',
-                                background: greenieSettings.carryovers ? '#e8f8f5' : 'white',
+                                border: greenieSettings.carryovers ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                                background: greenieSettings.carryovers ? 'var(--color-success-light)' : 'var(--color-surface)',
                                 fontWeight: greenieSettings.carryovers ? '600' : 'normal',
                                 cursor: 'pointer', fontSize: '13px'
                               }}
@@ -1413,8 +1413,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                               onClick={() => setGreenieSettings({ ...greenieSettings, carryovers: false })}
                               style={{
                                 flex: 1, padding: '10px', borderRadius: '6px',
-                                border: !greenieSettings.carryovers ? '2px solid #27ae60' : '2px solid #ddd',
-                                background: !greenieSettings.carryovers ? '#e8f8f5' : 'white',
+                                border: !greenieSettings.carryovers ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                                background: !greenieSettings.carryovers ? 'var(--color-success-light)' : 'var(--color-surface)',
                                 fontWeight: !greenieSettings.carryovers ? '600' : 'normal',
                                 cursor: 'pointer', fontSize: '13px'
                               }}
@@ -1432,8 +1432,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                                   onClick={() => setGreenieSettings({ ...greenieSettings, wrapUnwonGreenies: true })}
                                   style={{
                                     flex: 1, padding: '10px', borderRadius: '6px',
-                                    border: greenieSettings.wrapUnwonGreenies ? '2px solid #27ae60' : '2px solid #ddd',
-                                    background: greenieSettings.wrapUnwonGreenies ? '#e8f8f5' : 'white',
+                                    border: greenieSettings.wrapUnwonGreenies ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                                    background: greenieSettings.wrapUnwonGreenies ? 'var(--color-success-light)' : 'var(--color-surface)',
                                     fontWeight: greenieSettings.wrapUnwonGreenies ? '600' : 'normal',
                                     cursor: 'pointer', fontSize: '13px'
                                   }}
@@ -1442,8 +1442,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                                   onClick={() => setGreenieSettings({ ...greenieSettings, wrapUnwonGreenies: false })}
                                   style={{
                                     flex: 1, padding: '10px', borderRadius: '6px',
-                                    border: !greenieSettings.wrapUnwonGreenies ? '2px solid #27ae60' : '2px solid #ddd',
-                                    background: !greenieSettings.wrapUnwonGreenies ? '#e8f8f5' : 'white',
+                                    border: !greenieSettings.wrapUnwonGreenies ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                                    background: !greenieSettings.wrapUnwonGreenies ? 'var(--color-success-light)' : 'var(--color-surface)',
                                     fontWeight: !greenieSettings.wrapUnwonGreenies ? '600' : 'normal',
                                     cursor: 'pointer', fontSize: '13px'
                                   }}
@@ -1458,8 +1458,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                                     onClick={() => setGreenieSettings({ ...greenieSettings, wrapTo: 'front' })}
                                     style={{
                                       flex: 1, padding: '10px', borderRadius: '6px',
-                                      border: greenieSettings.wrapTo === 'front' ? '2px solid #27ae60' : '2px solid #ddd',
-                                      background: greenieSettings.wrapTo === 'front' ? '#e8f8f5' : 'white',
+                                      border: greenieSettings.wrapTo === 'front' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                                      background: greenieSettings.wrapTo === 'front' ? 'var(--color-success-light)' : 'var(--color-surface)',
                                       fontWeight: greenieSettings.wrapTo === 'front' ? '600' : 'normal',
                                       cursor: 'pointer', fontSize: '13px'
                                     }}
@@ -1468,8 +1468,8 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                                     onClick={() => setGreenieSettings({ ...greenieSettings, wrapTo: 'back' })}
                                     style={{
                                       flex: 1, padding: '10px', borderRadius: '6px',
-                                      border: greenieSettings.wrapTo === 'back' ? '2px solid #27ae60' : '2px solid #ddd',
-                                      background: greenieSettings.wrapTo === 'back' ? '#e8f8f5' : 'white',
+                                      border: greenieSettings.wrapTo === 'back' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                                      background: greenieSettings.wrapTo === 'back' ? 'var(--color-success-light)' : 'var(--color-surface)',
                                       fontWeight: greenieSettings.wrapTo === 'back' ? '600' : 'normal',
                                       cursor: 'pointer', fontSize: '13px'
                                     }}
@@ -1484,7 +1484,7 @@ function QuickSkinsSection({ players, liveRound, onStartQuickSkins }) {
                   </div>
 
                   {/* Optional rules */}
-                  <div style={{ marginBottom: '20px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                  <div style={{ marginBottom: '20px', borderTop: '1px solid var(--color-border-light)', paddingTop: '15px' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', cursor: 'pointer' }}>
                       <input type="checkbox" checked={skinsSettings.parOrBetterRequired} onChange={(e) => setSkinsSettings({ ...skinsSettings, parOrBetterRequired: e.target.checked })} style={{ width: '18px', height: '18px' }} />
                       <span>Par or better required to win</span>
@@ -1563,10 +1563,10 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
 
     return (
       <div style={{
-        background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+        background: 'var(--color-skins)',
         color: 'white',
         padding: '20px',
-        borderRadius: '10px',
+        borderRadius: 'var(--radius-md)',
         marginBottom: '20px',
         textAlign: 'center'
       }}>
@@ -1587,14 +1587,14 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
 
   return (
     <div style={{
-      background: '#fff3cd',
+      background: 'var(--color-warning-light)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '2px solid #ffc107'
+      border: '2px solid var(--color-warning)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>Next Round Announcement</h3>
-      <p style={{ color: '#666', fontSize: '13px', marginBottom: '15px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '15px' }}>
         Set the next round date and time to display an announcement banner on the Players page.
       </p>
 
@@ -1609,7 +1609,7 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
               width: '100%',
               padding: '10px',
               borderRadius: '6px',
-              border: '1px solid #ddd',
+              border: '1px solid var(--color-border)',
               fontSize: '14px'
             }}
           />
@@ -1624,7 +1624,7 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
               width: '100%',
               padding: '10px',
               borderRadius: '6px',
-              border: '1px solid #ddd',
+              border: '1px solid var(--color-border)',
               fontSize: '14px'
             }}
           />
@@ -1642,7 +1642,7 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
             width: '100%',
             padding: '10px',
             borderRadius: '6px',
-            border: '1px solid #ddd',
+            border: '1px solid var(--color-border)',
             fontSize: '14px',
             resize: 'vertical'
           }}
@@ -1652,7 +1652,7 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
       {/* Preview */}
       {hasAnnouncement && (
         <div style={{
-          background: 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',
+          background: 'var(--color-skins)',
           color: 'white',
           padding: '15px',
           borderRadius: '8px',
@@ -1679,8 +1679,8 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
           onClick={handleClear}
           style={{
             background: 'transparent',
-            border: '1px solid #e74c3c',
-            color: '#e74c3c',
+            border: '1px solid var(--color-danger)',
+            color: 'var(--color-danger)',
             padding: '8px 16px',
             borderRadius: '6px',
             cursor: 'pointer',
@@ -1703,14 +1703,14 @@ function SideGamesSettingsSection({ leagueSettings, onUpdate, isAdmin }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>Side Games</h3>
-      <p style={{ color: '#666', fontSize: '13px', marginBottom: '15px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '15px' }}>
         Enable side games (Skins, Nassau) that run alongside league rounds. Wolf is available in casual games only.
       </p>
 
@@ -1724,9 +1724,9 @@ function SideGamesSettingsSection({ leagueSettings, onUpdate, isAdmin }) {
             cursor: 'pointer',
             marginBottom: sideGames.enabled ? '15px' : '0',
             padding: '12px',
-            background: sideGames.enabled ? '#e8f5e9' : '#f8f9fa',
+            background: sideGames.enabled ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
             borderRadius: '8px',
-            border: sideGames.enabled ? '2px solid #27ae60' : '2px solid #e0e0e0'
+            border: sideGames.enabled ? '2px solid var(--color-success)' : '2px solid var(--color-border)'
           }}>
             <input
               type="checkbox"
@@ -1734,7 +1734,7 @@ function SideGamesSettingsSection({ leagueSettings, onUpdate, isAdmin }) {
               onChange={(e) => updateSideGames({ enabled: e.target.checked })}
               style={{ width: '20px', height: '20px' }}
             />
-            <span style={{ fontWeight: '600', color: sideGames.enabled ? '#27ae60' : '#666' }}>
+            <span style={{ fontWeight: '600', color: sideGames.enabled ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
               Enable Side Games
             </span>
           </label>
@@ -1772,7 +1772,7 @@ function SideGamesSettingsSection({ leagueSettings, onUpdate, isAdmin }) {
                 />
                 <span>Side Nassau</span>
               </label>
-              <div style={{ fontSize: '12px', color: '#999', marginTop: '5px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '5px' }}>
                 Wolf is only available in casual games.
               </div>
             </div>
@@ -1780,18 +1780,18 @@ function SideGamesSettingsSection({ leagueSettings, onUpdate, isAdmin }) {
         </>
       ) : (
         <div style={{
-          background: '#f8f9fa',
+          background: 'var(--color-surface-sunken)',
           padding: '12px 15px',
           borderRadius: '8px',
           fontSize: '14px'
         }}>
           Side Games: <strong>{sideGames.enabled ? 'Enabled' : 'Disabled'}</strong>
           {sideGames.enabled && (
-            <span style={{ marginLeft: '10px', fontSize: '12px', color: '#666' }}>
+            <span style={{ marginLeft: '10px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
               ({[sideGames.allowSkins !== false && 'Skins', sideGames.allowNassau !== false && 'Nassau'].filter(Boolean).join(', ') || 'None selected'})
             </span>
           )}
-          <span style={{ color: '#999', marginLeft: '10px', fontSize: '12px' }}>(Admin only)</span>
+          <span style={{ color: 'var(--color-text-tertiary)', marginLeft: '10px', fontSize: '12px' }}>(Admin only)</span>
         </div>
       )}
     </div>
@@ -1801,11 +1801,11 @@ function SideGamesSettingsSection({ leagueSettings, onUpdate, isAdmin }) {
 function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>Round Settings</h3>
 
@@ -1813,7 +1813,7 @@ function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px' }}>
           Default Starting Hole
         </label>
-        <p style={{ color: '#666', fontSize: '13px', marginBottom: '10px' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '10px' }}>
           Set which hole the round typically starts on. This affects the default leaderboard view.
         </p>
         {isAdmin ? (
@@ -1823,10 +1823,10 @@ function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
               style={{
                 padding: '12px 20px',
                 borderRadius: '8px',
-                border: defaultStartingHole === 1 || defaultStartingHole <= 9 ? '2px solid #27ae60' : '2px solid #ddd',
-                background: defaultStartingHole === 1 || (defaultStartingHole >= 1 && defaultStartingHole <= 9) ? '#e8f5e9' : 'white',
+                border: defaultStartingHole === 1 || defaultStartingHole <= 9 ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                background: defaultStartingHole === 1 || (defaultStartingHole >= 1 && defaultStartingHole <= 9) ? 'var(--color-success-light)' : 'var(--color-surface)',
                 fontWeight: defaultStartingHole >= 1 && defaultStartingHole <= 9 ? '600' : 'normal',
-                color: defaultStartingHole >= 1 && defaultStartingHole <= 9 ? '#27ae60' : '#666',
+                color: defaultStartingHole >= 1 && defaultStartingHole <= 9 ? 'var(--color-success)' : 'var(--color-text-secondary)',
                 cursor: 'pointer',
                 fontSize: '14px'
               }}
@@ -1838,10 +1838,10 @@ function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
               style={{
                 padding: '12px 20px',
                 borderRadius: '8px',
-                border: defaultStartingHole >= 10 ? '2px solid #e67e22' : '2px solid #ddd',
-                background: defaultStartingHole >= 10 ? '#fff3e0' : 'white',
+                border: defaultStartingHole >= 10 ? '2px solid var(--color-skins-dark)' : '2px solid var(--color-border)',
+                background: defaultStartingHole >= 10 ? 'var(--color-skins-light)' : 'var(--color-surface)',
                 fontWeight: defaultStartingHole >= 10 ? '600' : 'normal',
-                color: defaultStartingHole >= 10 ? '#e67e22' : '#666',
+                color: defaultStartingHole >= 10 ? 'var(--color-skins-dark)' : 'var(--color-text-secondary)',
                 cursor: 'pointer',
                 fontSize: '14px'
               }}
@@ -1851,13 +1851,13 @@ function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
           </div>
         ) : (
           <div style={{
-            background: '#f8f9fa',
+            background: 'var(--color-surface-sunken)',
             padding: '12px 15px',
             borderRadius: '8px',
             fontSize: '14px'
           }}>
             Starting on: <strong>{defaultStartingHole >= 10 ? 'Back 9 (Hole 10)' : 'Front 9 (Hole 1)'}</strong>
-            <span style={{ color: '#999', marginLeft: '10px', fontSize: '12px' }}>(Admin only)</span>
+            <span style={{ color: 'var(--color-text-tertiary)', marginLeft: '10px', fontSize: '12px' }}>(Admin only)</span>
           </div>
         )}
       </div>
@@ -1956,20 +1956,20 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
-      <h3 style={{ marginBottom: '15px', color: '#27ae60' }}>Handicap Settings</h3>
+      <h3 style={{ marginBottom: '15px', color: 'var(--color-success)' }}>Handicap Settings</h3>
 
       {/* Handicap Scope */}
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
           Handicap Scope for Team Generation
         </label>
-        <p style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>
+        <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
           Choose which handicap to use when balancing teams
         </p>
         <select
@@ -1980,7 +1980,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
             width: '100%',
             padding: '10px',
             borderRadius: '6px',
-            border: '1px solid #ddd',
+            border: '1px solid var(--color-border)',
             fontSize: '14px'
           }}
         >
@@ -2003,8 +2003,8 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
               flex: 1,
               padding: '12px',
               borderRadius: '6px',
-              border: settings.calculationMode === 'auto' ? '2px solid #27ae60' : '2px solid #ddd',
-              background: settings.calculationMode === 'auto' ? '#e8f5e9' : 'white',
+              border: settings.calculationMode === 'auto' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+              background: settings.calculationMode === 'auto' ? 'var(--color-success-light)' : 'var(--color-surface)',
               fontWeight: settings.calculationMode === 'auto' ? '600' : 'normal',
               cursor: isAdmin ? 'pointer' : 'not-allowed',
               opacity: isAdmin ? 1 : 0.7
@@ -2019,8 +2019,8 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
               flex: 1,
               padding: '12px',
               borderRadius: '6px',
-              border: settings.calculationMode === 'manual' ? '2px solid #27ae60' : '2px solid #ddd',
-              background: settings.calculationMode === 'manual' ? '#e8f5e9' : 'white',
+              border: settings.calculationMode === 'manual' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+              background: settings.calculationMode === 'manual' ? 'var(--color-success-light)' : 'var(--color-surface)',
               fontWeight: settings.calculationMode === 'manual' ? '600' : 'normal',
               cursor: isAdmin ? 'pointer' : 'not-allowed',
               opacity: isAdmin ? 1 : 0.7
@@ -2029,7 +2029,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
             Manual Only
           </button>
         </div>
-        <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+        <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '8px' }}>
           {settings.calculationMode === 'auto'
             ? 'Handicaps auto-calculate after each round (falls back to manual if not enough rounds)'
             : 'Only manually entered handicaps will be used'}
@@ -2049,7 +2049,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
             />
             <span style={{ fontWeight: '600' }}>Allow GHIN Index Override</span>
           </label>
-          <p style={{ fontSize: '12px', color: '#666', marginTop: '6px', marginLeft: '28px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '6px', marginLeft: '28px' }}>
             When enabled, players with an official GHIN index will use that instead of the app-calculated handicap (True scope only).
           </p>
         </div>
@@ -2069,8 +2069,8 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                 flex: 1,
                 padding: '12px',
                 borderRadius: '6px',
-                border: settings.updateMode === 'immediate' ? '2px solid #27ae60' : '2px solid #ddd',
-                background: settings.updateMode === 'immediate' ? '#e8f5e9' : 'white',
+                border: settings.updateMode === 'immediate' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                background: settings.updateMode === 'immediate' ? 'var(--color-success-light)' : 'var(--color-surface)',
                 fontWeight: settings.updateMode === 'immediate' ? '600' : 'normal',
                 cursor: isAdmin ? 'pointer' : 'not-allowed',
                 opacity: isAdmin ? 1 : 0.7
@@ -2085,8 +2085,8 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                 flex: 1,
                 padding: '12px',
                 borderRadius: '6px',
-                border: settings.updateMode === 'monthly' ? '2px solid #27ae60' : '2px solid #ddd',
-                background: settings.updateMode === 'monthly' ? '#e8f5e9' : 'white',
+                border: settings.updateMode === 'monthly' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                background: settings.updateMode === 'monthly' ? 'var(--color-success-light)' : 'var(--color-surface)',
                 fontWeight: settings.updateMode === 'monthly' ? '600' : 'normal',
                 cursor: isAdmin ? 'pointer' : 'not-allowed',
                 opacity: isAdmin ? 1 : 0.7
@@ -2095,7 +2095,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
               Monthly Lock
             </button>
           </div>
-          <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '8px' }}>
             {settings.updateMode === 'immediate'
               ? 'Handicaps update after every round'
               : 'Handicaps are locked at the start of each month. Use the button below to recalculate.'}
@@ -2109,7 +2109,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                 Recalculate & Lock All Handicaps Now
               </button>
               {settings.lastUpdateDate && (
-                <p style={{ fontSize: '11px', color: '#888', marginTop: '5px' }}>
+                <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '5px' }}>
                   Last updated: {new Date(settings.lastUpdateDate).toLocaleDateString()}
                 </p>
               )}
@@ -2132,8 +2132,8 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                 flex: 1,
                 padding: '12px',
                 borderRadius: '6px',
-                border: (settings.maxHoleScoreMode || 'none') === 'none' ? '2px solid #27ae60' : '2px solid #ddd',
-                background: (settings.maxHoleScoreMode || 'none') === 'none' ? '#e8f5e9' : 'white',
+                border: (settings.maxHoleScoreMode || 'none') === 'none' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                background: (settings.maxHoleScoreMode || 'none') === 'none' ? 'var(--color-success-light)' : 'var(--color-surface)',
                 fontWeight: (settings.maxHoleScoreMode || 'none') === 'none' ? '600' : 'normal',
                 cursor: isAdmin ? 'pointer' : 'not-allowed',
                 opacity: isAdmin ? 1 : 0.7
@@ -2148,8 +2148,8 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                 flex: 1,
                 padding: '12px',
                 borderRadius: '6px',
-                border: settings.maxHoleScoreMode === 'fixed' ? '2px solid #27ae60' : '2px solid #ddd',
-                background: settings.maxHoleScoreMode === 'fixed' ? '#e8f5e9' : 'white',
+                border: settings.maxHoleScoreMode === 'fixed' ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                background: settings.maxHoleScoreMode === 'fixed' ? 'var(--color-success-light)' : 'var(--color-surface)',
                 fontWeight: settings.maxHoleScoreMode === 'fixed' ? '600' : 'normal',
                 cursor: isAdmin ? 'pointer' : 'not-allowed',
                 opacity: isAdmin ? 1 : 0.7
@@ -2170,11 +2170,11 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                 disabled={!isAdmin}
                 min="5"
                 max="15"
-                style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                style={{ width: '120px', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
               />
             </div>
           )}
-          <p style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '8px' }}>
             {settings.maxHoleScoreMode === 'fixed'
               ? `Hole scores above ${settings.maxHoleScoreFixed ?? 10} are capped for handicap calculation only. Actual scores are preserved.`
               : 'No cap on individual hole scores for handicap calculation.'}
@@ -2184,7 +2184,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
 
       {/* Freeze Period Settings */}
       {settings.calculationMode === 'auto' && (
-        <div style={{ marginBottom: '20px', padding: '15px', background: settings.freezeEnabled ? '#fff3e0' : '#f8f9fa', borderRadius: '8px' }}>
+        <div style={{ marginBottom: '20px', padding: '15px', background: settings.freezeEnabled ? 'var(--color-skins-light)' : 'var(--color-surface-sunken)', borderRadius: '8px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -2195,7 +2195,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
             />
             <span style={{ fontWeight: '600' }}>Enable Seasonal Freeze Period</span>
           </label>
-          <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
             Rounds played during the freeze period will not count toward handicap calculation.
             Useful for excluding winter rounds when conditions cause inflated scores.
           </p>
@@ -2212,7 +2212,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                       value={settings.freezeStartMonth}
                       onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, freezeStartMonth: parseInt(e.target.value) })}
                       disabled={!isAdmin}
-                      style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                     >
                       {MONTHS.map(m => (
                         <option key={m.value} value={m.value}>{m.label}</option>
@@ -2225,7 +2225,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                       disabled={!isAdmin}
                       min="1"
                       max="31"
-                      style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                     />
                   </div>
                 </div>
@@ -2238,7 +2238,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                       value={settings.freezeEndMonth}
                       onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, freezeEndMonth: parseInt(e.target.value) })}
                       disabled={!isAdmin}
-                      style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      style={{ flex: 2, padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                     >
                       {MONTHS.map(m => (
                         <option key={m.value} value={m.value}>{m.label}</option>
@@ -2251,7 +2251,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                       disabled={!isAdmin}
                       min="1"
                       max="31"
-                      style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      style={{ flex: 1, padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                     />
                   </div>
                 </div>
@@ -2269,8 +2269,8 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                       flex: 1,
                       padding: '10px',
                       borderRadius: '6px',
-                      border: (settings.freezeMode || 'exclude') === 'exclude' ? '2px solid #e67e22' : '2px solid #ddd',
-                      background: (settings.freezeMode || 'exclude') === 'exclude' ? '#fff3e0' : 'white',
+                      border: (settings.freezeMode || 'exclude') === 'exclude' ? '2px solid var(--color-skins-dark)' : '2px solid var(--color-border)',
+                      background: (settings.freezeMode || 'exclude') === 'exclude' ? 'var(--color-skins-light)' : 'var(--color-surface)',
                       fontWeight: (settings.freezeMode || 'exclude') === 'exclude' ? '600' : 'normal',
                       cursor: isAdmin ? 'pointer' : 'not-allowed',
                       fontSize: '13px'
@@ -2285,8 +2285,8 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                       flex: 1,
                       padding: '10px',
                       borderRadius: '6px',
-                      border: settings.freezeMode === 'batch' ? '2px solid #e67e22' : '2px solid #ddd',
-                      background: settings.freezeMode === 'batch' ? '#fff3e0' : 'white',
+                      border: settings.freezeMode === 'batch' ? '2px solid var(--color-skins-dark)' : '2px solid var(--color-border)',
+                      background: settings.freezeMode === 'batch' ? 'var(--color-skins-light)' : 'var(--color-surface)',
                       fontWeight: settings.freezeMode === 'batch' ? '600' : 'normal',
                       cursor: isAdmin ? 'pointer' : 'not-allowed',
                       fontSize: '13px'
@@ -2295,7 +2295,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                     Batch Update
                   </button>
                 </div>
-                <p style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
+                <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '6px' }}>
                   {(settings.freezeMode || 'exclude') === 'exclude'
                     ? "Rounds during the freeze period don't count toward handicap."
                     : 'Rounds during freeze count toward handicap, but recalculation is deferred until freeze ends.'}
@@ -2312,7 +2312,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                       disabled={!isAdmin}
                       min="0"
                       max="10"
-                      style={{ width: '80px', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                      style={{ width: '80px', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                     />
                   </div>
                 )}
@@ -2321,10 +2321,10 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                 <div style={{
                   marginTop: '12px',
                   padding: '10px',
-                  background: '#ffebee',
+                  background: 'var(--color-danger-light)',
                   borderRadius: '6px',
                   fontSize: '13px',
-                  color: '#c62828'
+                  color: 'var(--color-danger-dark)'
                 }}>
                   {(settings.freezeMode || 'exclude') === 'exclude'
                     ? 'Currently in freeze period - rounds played now will not affect handicaps'
@@ -2338,7 +2338,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
 
       {/* Soft/Hard Caps (Sandbagger Protection) */}
       {settings.calculationMode === 'auto' && (
-        <div style={{ marginBottom: '20px', padding: '15px', background: settings.capsEnabled ? '#e8f0fe' : '#f8f9fa', borderRadius: '8px' }}>
+        <div style={{ marginBottom: '20px', padding: '15px', background: settings.capsEnabled ? 'var(--color-info-light)' : 'var(--color-surface-sunken)', borderRadius: '8px' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -2349,7 +2349,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
             />
             <span style={{ fontWeight: '600' }}>Enable Soft/Hard Caps (Sandbagger Protection)</span>
           </label>
-          <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
             Limits how much a player's handicap can rise above their lowest recorded index (rolling 12 months).
             Protects against sandbagging while allowing gradual handicap increases.
           </p>
@@ -2369,9 +2369,9 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                     min="0.5"
                     max="10"
                     step="0.5"
-                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                   />
-                  <p style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                     Soft cap triggers when handicap exceeds low index + this value
                   </p>
                 </div>
@@ -2383,13 +2383,13 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                     value={settings.softCapReduction ?? 0.5}
                     onChange={(e) => isAdmin && onUpdateHandicap({ ...settings, softCapReduction: parseFloat(e.target.value) })}
                     disabled={!isAdmin}
-                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                   >
                     <option value={0.25}>25% of excess</option>
                     <option value={0.5}>50% of excess</option>
                     <option value={0.75}>75% of excess</option>
                   </select>
-                  <p style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                     How much of the increase above the soft cap is kept
                   </p>
                 </div>
@@ -2405,9 +2405,9 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                     min="1"
                     max="15"
                     step="0.5"
-                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                   />
-                  <p style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                     Maximum allowed increase above low index (absolute ceiling)
                   </p>
                 </div>
@@ -2422,19 +2422,19 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                     disabled={!isAdmin}
                     min="1"
                     max="20"
-                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                   />
-                  <p style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                  <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
                     Players with fewer rounds are exempt from caps
                   </p>
                 </div>
               </div>
               <div style={{
                 padding: '10px',
-                background: '#f0f4f8',
+                background: 'var(--color-surface-sunken)',
                 borderRadius: '6px',
                 fontSize: '12px',
-                color: '#555'
+                color: 'var(--color-text-secondary)'
               }}>
                 <strong>How it works:</strong> Each player's lowest handicap index over the past 12 months (their "Low Index") is tracked.
                 If their current handicap rises more than {settings.softCapThreshold ?? 3.0} above their Low Index,
@@ -2459,7 +2459,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
             />
             <span style={{ fontWeight: '600' }}>Enable 9-Hole Round Handicap</span>
           </label>
-          <p style={{ fontSize: '12px', color: '#666', marginTop: '6px', marginLeft: '28px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '6px', marginLeft: '28px' }}>
             Pairs of 9-hole rounds are combined into 18-hole equivalents for handicap calculation.
           </p>
         </div>
@@ -2482,7 +2482,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
               width: '100%',
               padding: '10px',
               borderRadius: '6px',
-              border: '1px solid #ddd'
+              border: '1px solid var(--color-border)'
             }}
           />
         </div>
@@ -2501,14 +2501,14 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
               width: '100%',
               padding: '10px',
               borderRadius: '6px',
-              border: '1px solid #ddd'
+              border: '1px solid var(--color-border)'
             }}
           />
         </div>
       </div>
 
       {/* Course Tees Section */}
-      <div style={{ borderTop: '1px solid #eee', paddingTop: '20px' }}>
+      <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <h4 style={{ margin: 0 }}>Course Tees</h4>
           {isAdmin && (
@@ -2527,7 +2527,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
             <div
               key={key}
               style={{
-                background: '#f8f9fa',
+                background: 'var(--color-surface-sunken)',
                 padding: '8px 12px',
                 borderRadius: '6px',
                 fontSize: '13px'
@@ -2540,7 +2540,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
 
         {/* Tee Editor */}
         {showTeeEditor && isAdmin && (
-          <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '8px' }}>
+          <div style={{ background: 'var(--color-surface-sunken)', padding: '15px', borderRadius: '8px' }}>
             <h5 style={{ marginBottom: '15px' }}>Edit Tees</h5>
 
             {/* Existing Tees */}
@@ -2560,7 +2560,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                   value={tee.name}
                   onChange={(e) => handleUpdateTee(key, 'name', e.target.value)}
                   placeholder="Name"
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                 />
                 <input
                   type="number"
@@ -2568,19 +2568,19 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                   onChange={(e) => handleUpdateTee(key, 'courseRating', e.target.value)}
                   placeholder="Rating"
                   step="0.1"
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                 />
                 <input
                   type="number"
                   value={tee.slopeRating}
                   onChange={(e) => handleUpdateTee(key, 'slopeRating', e.target.value)}
                   placeholder="Slope"
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                 />
                 <button
                   onClick={() => handleDeleteTee(key)}
                   style={{
-                    background: '#e74c3c',
+                    background: 'var(--color-danger)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '4px',
@@ -2594,7 +2594,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
             ))}
 
             {/* Add New Tee */}
-            <div style={{ borderTop: '1px solid #ddd', paddingTop: '15px', marginTop: '15px' }}>
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '15px', marginTop: '15px' }}>
               <h6 style={{ marginBottom: '10px' }}>Add New Tee</h6>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 80px', gap: '10px', marginBottom: '10px' }}>
                 <input
@@ -2602,14 +2602,14 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                   value={newTeeKey}
                   onChange={(e) => setNewTeeKey(e.target.value)}
                   placeholder="Key (e.g. white)"
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                 />
                 <input
                   type="text"
                   value={newTeeName}
                   onChange={(e) => setNewTeeName(e.target.value)}
                   placeholder="Display Name"
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                 />
                 <input
                   type="number"
@@ -2617,14 +2617,14 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
                   onChange={(e) => setNewTeeRating(e.target.value)}
                   placeholder="Rating"
                   step="0.1"
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                 />
                 <input
                   type="number"
                   value={newTeeSlope}
                   onChange={(e) => setNewTeeSlope(e.target.value)}
                   placeholder="Slope"
-                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)' }}
                 />
               </div>
               <button className="btn btn-primary btn-small" onClick={handleAddTee}>
@@ -2646,14 +2646,14 @@ function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
   if (!user) {
     return (
       <div style={{
-        background: '#f8f9fa',
+        background: 'var(--color-surface-sunken)',
         padding: '20px',
-        borderRadius: '10px',
+        borderRadius: 'var(--radius-md)',
         marginBottom: '20px',
-        border: '1px solid #e0e0e0'
+        border: '1px solid var(--color-border)'
       }}>
         <h3 style={{ marginBottom: '10px' }}>Account</h3>
-        <p style={{ color: '#666', fontSize: '14px' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
           Not signed in. Sign in to link your player profile and access your leagues across devices.
         </p>
       </div>
@@ -2683,19 +2683,19 @@ function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
 
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--color-surface)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #e0e0e0'
+      border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>Account</h3>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontWeight: '600' }}>{profile?.display_name || 'No profile'}</div>
-          <div style={{ color: '#666', fontSize: '13px' }}>{user.email}</div>
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: '13px' }}>{user.email}</div>
           {profile && (
-            <div style={{ color: '#999', fontSize: '12px', marginTop: '4px' }}>
+            <div style={{ color: 'var(--color-text-tertiary)', fontSize: '12px', marginTop: '4px' }}>
               Profile ID: {profile.id.slice(0, 8)}...
             </div>
           )}
@@ -2704,7 +2704,7 @@ function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
           onClick={handleSignOut}
           disabled={signingOut}
           style={{
-            background: '#e74c3c',
+            background: 'var(--color-danger)',
             color: 'white',
             border: 'none',
             padding: '10px 20px',
@@ -2719,14 +2719,14 @@ function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
       </div>
 
       {profile && (
-        <div style={{ marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+        <div style={{ marginTop: '15px', borderTop: '1px solid var(--color-border-light)', paddingTop: '15px' }}>
           {!showUnlinkConfirm ? (
             <button
               onClick={() => setShowUnlinkConfirm(true)}
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#e67e22',
+                color: 'var(--color-skins-dark)',
                 cursor: 'pointer',
                 fontSize: '13px',
                 padding: 0,
@@ -2737,12 +2737,12 @@ function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
             </button>
           ) : (
             <div style={{
-              background: '#fff3cd',
+              background: 'var(--color-warning-light)',
               padding: '12px',
               borderRadius: '8px',
-              border: '1px solid #ffc107'
+              border: '1px solid var(--color-warning)'
             }}>
-              <p style={{ fontSize: '13px', marginBottom: '10px', color: '#856404' }}>
+              <p style={{ fontSize: '13px', marginBottom: '10px', color: 'var(--color-warning-dark)' }}>
                 This will unlink <strong>{profile.display_name}</strong> from your account.
                 You'll be taken back to the profile selection screen to choose or create a different one.
               </p>
@@ -2751,7 +2751,7 @@ function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
                   onClick={handleUnlink}
                   disabled={unlinking}
                   style={{
-                    background: '#e67e22',
+                    background: 'var(--color-skins-dark)',
                     color: 'white',
                     border: 'none',
                     padding: '8px 16px',
@@ -2767,8 +2767,8 @@ function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
                 <button
                   onClick={() => setShowUnlinkConfirm(false)}
                   style={{
-                    background: '#f0f0f0',
-                    color: '#333',
+                    background: 'var(--color-border-light)',
+                    color: 'var(--color-text-primary)',
                     border: 'none',
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -2825,14 +2825,14 @@ function MigrationSection({ leagueId, players, onPlayersUpdate }) {
 
   return (
     <div style={{
-      background: '#fff3cd',
+      background: 'var(--color-warning-light)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #ffc107'
+      border: '1px solid var(--color-warning)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>Data Migrations</h3>
-      <p style={{ color: '#666', fontSize: '14px', marginBottom: '15px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '15px' }}>
         Run data migrations to set up profiles and league metadata for multi-league support.
       </p>
 
@@ -2855,16 +2855,16 @@ function MigrationSection({ leagueId, players, onPlayersUpdate }) {
       {pendingCount !== null && (
         <div style={{ marginBottom: '10px', fontSize: '14px' }}>
           {pendingCount === 0
-            ? <span style={{ color: '#27ae60' }}>All migrations have been run.</span>
-            : <span style={{ color: '#e67e22' }}>{pendingCount} pending migration(s)</span>
+            ? <span style={{ color: 'var(--color-success)' }}>All migrations have been run.</span>
+            : <span style={{ color: 'var(--color-skins-dark)' }}>{pendingCount} pending migration(s)</span>
           }
         </div>
       )}
 
       {logs.length > 0 && (
         <div style={{
-          background: '#1a1a2e',
-          color: '#e0e0e0',
+          background: 'var(--color-text-primary)',
+          color: 'var(--color-border)',
           padding: '12px',
           borderRadius: '6px',
           fontSize: '12px',
@@ -2885,7 +2885,7 @@ function MigrationSection({ leagueId, players, onPlayersUpdate }) {
           {results.results.map((r, i) => (
             <div key={i} style={{ marginLeft: '10px', marginTop: '4px' }}>
               {r.success ? '✓' : '✗'} {r.name}
-              {r.error && <span style={{ color: '#e74c3c' }}> - {r.error}</span>}
+              {r.error && <span style={{ color: 'var(--color-danger)' }}> - {r.error}</span>}
             </div>
           ))}
         </div>
@@ -2976,24 +2976,24 @@ function ManageProfilesSection() {
   const tabStyle = (isActive) => ({
     padding: '8px 16px',
     border: 'none',
-    borderBottom: isActive ? '3px solid #3498db' : '3px solid transparent',
+    borderBottom: isActive ? '3px solid var(--color-info)' : '3px solid transparent',
     background: 'none',
     cursor: 'pointer',
     fontWeight: isActive ? '600' : '400',
-    color: isActive ? '#3498db' : '#666',
+    color: isActive ? 'var(--color-info)' : 'var(--color-text-secondary)',
     fontSize: '14px'
   })
 
   return (
     <div style={{
-      background: '#f0f4ff',
+      background: 'var(--color-info-light)',
       padding: '20px',
-      borderRadius: '10px',
+      borderRadius: 'var(--radius-md)',
       marginBottom: '20px',
-      border: '1px solid #b8d4fe'
+      border: '1px solid var(--color-info-light-border)'
     }}>
       <h3 style={{ marginBottom: '10px' }}>Manage Profiles</h3>
-      <p style={{ color: '#666', fontSize: '14px', marginBottom: '15px' }}>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '15px' }}>
         Manage claimed profiles and pre-assign emails to ghost profiles for auto-linking on first login.
       </p>
 
@@ -3008,7 +3008,7 @@ function ManageProfilesSection() {
       ) : (
         <div>
           {/* Tabs */}
-          <div style={{ borderBottom: '1px solid #ddd', marginBottom: '15px' }}>
+          <div style={{ borderBottom: '1px solid var(--color-border)', marginBottom: '15px' }}>
             <button style={tabStyle(tab === 'claimed')} onClick={() => setTab('claimed')}>
               Claimed ({claimedProfiles.length})
             </button>
@@ -3020,15 +3020,15 @@ function ManageProfilesSection() {
           {/* Claimed Tab */}
           {tab === 'claimed' && (
             claimedProfiles.length === 0 ? (
-              <p style={{ color: '#666', fontSize: '14px' }}>No claimed profiles.</p>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>No claimed profiles.</p>
             ) : (
               <div>
                 {claimedProfiles.map(p => (
                   <div key={p.id} style={{
-                    background: 'white',
+                    background: 'var(--color-surface)',
                     padding: '12px 15px',
                     borderRadius: '8px',
-                    border: '1px solid #e0e0e0',
+                    border: '1px solid var(--color-border)',
                     marginBottom: '8px',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -3036,7 +3036,7 @@ function ManageProfilesSection() {
                   }}>
                     <div>
                       <div style={{ fontWeight: '600', fontSize: '14px' }}>{p.display_name}</div>
-                      <div style={{ color: '#666', fontSize: '12px' }}>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
                         {p.email || 'No email'} | ID: {p.id.slice(0, 8)}...
                       </div>
                     </div>
@@ -3044,7 +3044,7 @@ function ManageProfilesSection() {
                       onClick={() => handleUnlink(p)}
                       disabled={unlinkingId === p.id}
                       style={{
-                        background: '#e67e22',
+                        background: 'var(--color-skins-dark)',
                         color: 'white',
                         border: 'none',
                         padding: '6px 14px',
@@ -3066,24 +3066,24 @@ function ManageProfilesSection() {
           {/* Ghost Tab */}
           {tab === 'ghost' && (
             ghostProfiles.length === 0 ? (
-              <p style={{ color: '#666', fontSize: '14px' }}>No ghost profiles.</p>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>No ghost profiles.</p>
             ) : (
               <div>
-                <p style={{ color: '#666', fontSize: '12px', marginBottom: '10px' }}>
+                <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '10px' }}>
                   Assign an email to a ghost profile so it auto-links when that user signs up or logs in.
                 </p>
                 {ghostProfiles.map(p => (
                   <div key={p.id} style={{
-                    background: 'white',
+                    background: 'var(--color-surface)',
                     padding: '12px 15px',
                     borderRadius: '8px',
-                    border: '1px solid #e0e0e0',
+                    border: '1px solid var(--color-border)',
                     marginBottom: '8px'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <div style={{ fontWeight: '600', fontSize: '14px' }}>{p.display_name}</div>
-                        <div style={{ color: '#666', fontSize: '12px' }}>
+                        <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
                           {p.email ? (
                             <span>
                               Pre-assigned: <strong>{p.email}</strong>
@@ -3093,7 +3093,7 @@ function ManageProfilesSection() {
                                 style={{
                                   background: 'none',
                                   border: 'none',
-                                  color: '#e74c3c',
+                                  color: 'var(--color-danger)',
                                   cursor: 'pointer',
                                   fontSize: '11px',
                                   marginLeft: '8px',
@@ -3111,7 +3111,7 @@ function ManageProfilesSection() {
                         <button
                           onClick={() => { setAssigningId(p.id); setAssignEmail('') }}
                           style={{
-                            background: '#27ae60',
+                            background: 'var(--color-success)',
                             color: 'white',
                             border: 'none',
                             padding: '6px 14px',
@@ -3136,7 +3136,7 @@ function ManageProfilesSection() {
                             flex: 1,
                             padding: '6px 10px',
                             borderRadius: '5px',
-                            border: '1px solid #ccc',
+                            border: '1px solid var(--color-disabled)',
                             fontSize: '13px'
                           }}
                         />
@@ -3144,7 +3144,7 @@ function ManageProfilesSection() {
                           onClick={() => handleAssignEmail(p)}
                           disabled={savingId === p.id}
                           style={{
-                            background: '#27ae60',
+                            background: 'var(--color-success)',
                             color: 'white',
                             border: 'none',
                             padding: '6px 12px',
@@ -3160,8 +3160,8 @@ function ManageProfilesSection() {
                         <button
                           onClick={() => { setAssigningId(null); setAssignEmail('') }}
                           style={{
-                            background: '#f0f0f0',
-                            color: '#333',
+                            background: 'var(--color-border-light)',
+                            color: 'var(--color-text-primary)',
                             border: 'none',
                             padding: '6px 12px',
                             borderRadius: '5px',
@@ -3185,7 +3185,7 @@ function ManageProfilesSection() {
             style={{
               background: 'none',
               border: 'none',
-              color: '#3498db',
+              color: 'var(--color-info)',
               cursor: 'pointer',
               fontSize: '13px',
               padding: 0,

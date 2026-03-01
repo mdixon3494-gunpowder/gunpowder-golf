@@ -51,7 +51,7 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
           {player.isActive === false && (
             <span style={{
               marginLeft: '10px',
-              background: '#e74c3c',
+              background: 'var(--color-danger)',
               color: 'white',
               padding: '2px 8px',
               borderRadius: '4px',
@@ -68,7 +68,7 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
               padding: '3px 8px',
               borderRadius: '4px',
               fontSize: '12px',
-              background: isUsingGhin ? '#1565c0' : isUsingManual ? '#e67e22' : '#27ae60',
+              background: isUsingGhin ? 'var(--color-info-dark)' : isUsingManual ? 'var(--color-skins-dark)' : 'var(--color-success)',
               color: 'white',
               fontWeight: '600'
             }}>
@@ -81,7 +81,7 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
                   padding: '2px 6px',
                   borderRadius: '4px',
                   fontSize: '10px',
-                  background: '#e74c3c',
+                  background: 'var(--color-danger)',
                   color: 'white',
                   fontWeight: '700',
                   cursor: 'help'
@@ -94,17 +94,17 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
               padding: '3px 8px',
               borderRadius: '4px',
               fontSize: '12px',
-              background: '#3498db',
+              background: 'var(--color-info)',
               color: 'white',
               fontWeight: '600'
             }}>
               Course HCP: {formatCourseHandicap(courseHandicap)}
             </span>
-            <span style={{ color: '#666', fontSize: '12px' }}>
+            <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
               Games: {player.gamesPlayed || 0}
             </span>
             {player.avgTotal > 0 && (
-              <span style={{ color: '#666', fontSize: '12px' }}>
+              <span style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
                 | Avg: {player.avgTotal.toFixed(1)}
               </span>
             )}
@@ -115,9 +115,9 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
               padding: '1px 5px',
               borderRadius: '3px',
               fontSize: '10px',
-              background: handicapScope === 'true' ? '#e8f5e9' : '#f5f5f5',
-              color: handicapScope === 'true' ? '#2e7d32' : '#888',
-              border: handicapScope === 'true' ? '1px solid #a5d6a7' : '1px solid #e0e0e0'
+              background: handicapScope === 'true' ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+              color: handicapScope === 'true' ? 'var(--color-success-dark)' : 'var(--color-text-tertiary)',
+              border: handicapScope === 'true' ? '1px solid var(--color-success-border)' : '1px solid var(--color-border)'
             }}>
               True: {formatHandicap(handicaps.trueHandicap)}
             </span>
@@ -125,9 +125,9 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
               padding: '1px 5px',
               borderRadius: '3px',
               fontSize: '10px',
-              background: handicapScope === 'league' ? '#e8f5e9' : '#f5f5f5',
-              color: handicapScope === 'league' ? '#2e7d32' : '#888',
-              border: handicapScope === 'league' ? '1px solid #a5d6a7' : '1px solid #e0e0e0'
+              background: handicapScope === 'league' ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+              color: handicapScope === 'league' ? 'var(--color-success-dark)' : 'var(--color-text-tertiary)',
+              border: handicapScope === 'league' ? '1px solid var(--color-success-border)' : '1px solid var(--color-border)'
             }}>
               League: {formatHandicap(handicaps.leagueHandicap)}
             </span>
@@ -135,13 +135,13 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
               padding: '1px 5px',
               borderRadius: '3px',
               fontSize: '10px',
-              background: handicapScope === 'gunpowder' ? '#e8f5e9' : '#f5f5f5',
-              color: handicapScope === 'gunpowder' ? '#2e7d32' : '#888',
-              border: handicapScope === 'gunpowder' ? '1px solid #a5d6a7' : '1px solid #e0e0e0'
+              background: handicapScope === 'gunpowder' ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+              color: handicapScope === 'gunpowder' ? 'var(--color-success-dark)' : 'var(--color-text-tertiary)',
+              border: handicapScope === 'gunpowder' ? '1px solid var(--color-success-border)' : '1px solid var(--color-border)'
             }}>
               Gunpowder: {formatHandicap(handicaps.gunpowderHandicap)}
             </span>
-            <span style={{ fontSize: '10px', color: '#999' }}>
+            <span style={{ fontSize: '10px', color: 'var(--color-text-tertiary)' }}>
               ({courseTees?.[playerTee]?.name || playerTee} tees)
             </span>
           </div>
@@ -165,7 +165,7 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
             className="btn btn-small"
             onClick={() => onToggleActive(player)}
             style={{
-              background: player.isActive === false ? '#27ae60' : '#e74c3c',
+              background: player.isActive === false ? 'var(--color-success)' : 'var(--color-danger)',
               color: 'white'
             }}
           >
@@ -359,7 +359,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
 
   return (
     <div style={{
-      background: '#f8f9fa',
+      background: 'var(--color-surface-sunken)',
       padding: '20px',
       borderRadius: '10px',
       marginBottom: '20px'
@@ -369,7 +369,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
         {/* League member suggestions */}
         {!linkedProfile && memberSuggestions.length > 0 && (
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555', marginBottom: '6px', display: 'block' }}>League Members</label>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'block' }}>League Members</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {memberSuggestions.map(member => (
                 <button
@@ -381,20 +381,20 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                     alignItems: 'center',
                     gap: '6px',
                     padding: '6px 12px',
-                    border: '1px solid #d0d0d0',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '20px',
-                    background: 'white',
+                    background: 'var(--color-surface)',
                     cursor: 'pointer',
                     fontSize: '13px',
                     fontWeight: '500'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#f0fff4'}
-                  onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-success-light)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'var(--color-surface)'}
                 >
                   {member.avatar_url ? (
                     <img src={member.avatar_url} alt="" style={{ width: '20px', height: '20px', borderRadius: '50%' }} />
                   ) : (
-                    <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#e0e0e0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
+                    <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--color-border)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
                       {member.display_name?.[0]?.toUpperCase() || '?'}
                     </span>
                   )}
@@ -413,15 +413,15 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
               alignItems: 'center',
               gap: '8px',
               padding: '10px 12px',
-              background: '#f0fff4',
-              border: '1px solid #c6f6d5',
+              background: 'var(--color-success-light)',
+              border: '1px solid var(--color-success-border)',
               borderRadius: '8px'
             }}>
               <span style={{ fontSize: '14px', fontWeight: '600' }}>Linked to {linkedProfile.display_name}</span>
               <span style={{
                 fontSize: '11px',
-                color: '#27ae60',
-                background: 'white',
+                color: 'var(--color-success)',
+                background: 'var(--color-surface)',
                 padding: '2px 6px',
                 borderRadius: '4px'
               }}>App User</span>
@@ -432,9 +432,9 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                   marginLeft: 'auto',
                   padding: '4px 10px',
                   fontSize: '12px',
-                  border: '1px solid #ddd',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '4px',
-                  background: 'white',
+                  background: 'var(--color-surface)',
                   cursor: 'pointer'
                 }}
               >Unlink</button>
@@ -449,11 +449,11 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                 placeholder="Search by name..."
               />
               {searching && (
-                <div style={{ padding: '8px', color: '#888', fontSize: '13px' }}>Searching...</div>
+                <div style={{ padding: '8px', color: 'var(--color-text-tertiary)', fontSize: '13px' }}>Searching...</div>
               )}
               {searchResults.length > 0 && (
                 <div style={{
-                  border: '1px solid #e0e0e0',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '8px',
                   marginTop: '4px',
                   overflow: 'hidden'
@@ -468,21 +468,21 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                         width: '100%',
                         padding: '10px 12px',
                         border: 'none',
-                        borderBottom: '1px solid #f0f0f0',
-                        background: 'white',
+                        borderBottom: '1px solid var(--color-border-light)',
+                        background: 'var(--color-surface)',
                         cursor: 'pointer',
                         textAlign: 'left',
                         fontSize: '14px'
                       }}
-                      onMouseOver={(e) => e.currentTarget.style.background = '#f8f9fa'}
-                      onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-surface-sunken)'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'var(--color-surface)'}
                     >
                       <span style={{ fontWeight: '600' }}>{user.display_name}</span>
                       <span style={{
                         marginLeft: '8px',
                         fontSize: '11px',
-                        color: '#27ae60',
-                        background: '#f0fff4',
+                        color: 'var(--color-success)',
+                        background: 'var(--color-success-light)',
                         padding: '2px 6px',
                         borderRadius: '4px'
                       }}>App User</span>
@@ -510,7 +510,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
               <div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
                   {linkedProfile.handicap_index != null && (
-                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'profile' ? '#f0fff4' : '#fff', border: '1px solid', borderColor: handicapSourceMode === 'profile' ? '#c6f6d5' : '#e0e0e0', borderRadius: '8px' }}>
+                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'profile' ? 'var(--color-success-light)' : 'var(--color-surface)', border: '1px solid', borderColor: handicapSourceMode === 'profile' ? 'var(--color-success-border)' : 'var(--color-border)', borderRadius: '8px' }}>
                       <input
                         type="radio"
                         name="handicapSource"
@@ -520,15 +520,15 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                       />
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: '600' }}>{Number(linkedProfile.handicap_index).toFixed(1)}</div>
-                        <div style={{ fontSize: '11px', color: '#888' }}>Profile handicap</div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>Profile handicap</div>
                       </div>
                     </label>
                   )}
                   {loadingHandicaps && (
-                    <div style={{ fontSize: '12px', color: '#888', padding: '4px 0' }}>Loading league handicaps...</div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', padding: '4px 0' }}>Loading league handicaps...</div>
                   )}
                   {!loadingHandicaps && leagueHandicaps.map(source => (
-                    <label key={source.sourceId} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === `league:${source.sourceId}` ? '#f0fff4' : '#fff', border: '1px solid', borderColor: handicapSourceMode === `league:${source.sourceId}` ? '#c6f6d5' : '#e0e0e0', borderRadius: '8px' }}>
+                    <label key={source.sourceId} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === `league:${source.sourceId}` ? 'var(--color-success-light)' : 'var(--color-surface)', border: '1px solid', borderColor: handicapSourceMode === `league:${source.sourceId}` ? 'var(--color-success-border)' : 'var(--color-border)', borderRadius: '8px' }}>
                       <input
                         type="radio"
                         name="handicapSource"
@@ -538,13 +538,13 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                       />
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: '600' }}>{source.handicap.toFixed(1)}</div>
-                        <div style={{ fontSize: '11px', color: '#888', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {source.sourceName} {source.type === 'calculated' ? `(${source.roundCount} rds)` : '(stored)'}
                         </div>
                       </div>
                     </label>
                   ))}
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'manual' ? '#f0fff4' : '#fff', border: '1px solid', borderColor: handicapSourceMode === 'manual' ? '#c6f6d5' : '#e0e0e0', borderRadius: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'manual' ? 'var(--color-success-light)' : 'var(--color-surface)', border: '1px solid', borderColor: handicapSourceMode === 'manual' ? 'var(--color-success-border)' : 'var(--color-border)', borderRadius: '8px' }}>
                     <input
                       type="radio"
                       name="handicapSource"
@@ -554,7 +554,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                     />
                     <span>Enter Manually</span>
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'none' ? '#f0fff4' : '#fff', border: '1px solid', borderColor: handicapSourceMode === 'none' ? '#c6f6d5' : '#e0e0e0', borderRadius: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '8px 10px', background: handicapSourceMode === 'none' ? 'var(--color-success-light)' : 'var(--color-surface)', border: '1px solid', borderColor: handicapSourceMode === 'none' ? 'var(--color-success-border)' : 'var(--color-border)', borderRadius: '8px' }}>
                     <input
                       type="radio"
                       name="handicapSource"
@@ -577,12 +577,12 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
                   />
                 )}
                 {handicapSourceMode !== 'manual' && handicapSourceMode !== 'none' && handicap && (
-                  <div style={{ fontSize: '13px', color: '#555', padding: '4px 0' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)', padding: '4px 0' }}>
                     Starting at: <strong>{parseFloat(handicap).toFixed(1)}</strong>
                   </div>
                 )}
                 {handicapFetchFailed && (
-                  <div style={{ fontSize: '12px', color: '#e67e22', padding: '4px 0' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--color-skins-dark)', padding: '4px 0' }}>
                     Could not load league handicaps.
                   </div>
                 )}
@@ -604,7 +604,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
             <select
               value={defaultTee}
               onChange={(e) => setDefaultTee(e.target.value)}
-              style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+              style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
             >
               {Object.entries(courseTees || DEFAULT_COURSE_TEES).map(([key, tee]) => (
                 <option key={key} value={key}>{tee.name} ({tee.courseRating}/{tee.slopeRating})</option>
@@ -824,7 +824,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '48px', marginBottom: '15px' }}>⚠️</div>
               <h4 style={{ marginBottom: '15px' }}>Delete {player.name}?</h4>
-              <p style={{ marginBottom: '20px', color: '#666' }}>
+              <p style={{ marginBottom: '20px', color: 'var(--color-text-secondary)' }}>
                 This action cannot be undone. All player data will be permanently deleted.
               </p>
               <div className="input-group">
@@ -850,7 +850,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
             <>
               {/* Handicap Info Box */}
               <div style={{
-                background: '#e8f5e9',
+                background: 'var(--color-success-light)',
                 padding: '12px',
                 borderRadius: '8px',
                 marginBottom: '15px'
@@ -868,7 +868,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
               {/* Cap Exemptions (admin only, when caps enabled) */}
               {isAdmin && settings.capsEnabled && (
                 <div style={{
-                  background: '#f0f4f8',
+                  background: 'var(--color-surface-sunken)',
                   padding: '12px',
                   borderRadius: '8px',
                   marginBottom: '15px'
@@ -879,7 +879,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                   <div style={{ display: 'flex', gap: '15px', fontSize: '12px', marginBottom: '10px' }}>
                     <span>Low Index: <strong>{player.lowIndex != null ? formatHandicap(player.lowIndex) : '--'}</strong></span>
                     {player.capApplied && (
-                      <span style={{ color: '#e74c3c' }}>
+                      <span style={{ color: 'var(--color-danger)' }}>
                         Raw: <strong>{formatHandicap(player.rawHandicap)}</strong> (capped to {formatHandicap(player.handicap)})
                       </span>
                     )}
@@ -891,7 +891,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                     <select
                       value={exemptionType}
                       onChange={(e) => setExemptionType(e.target.value)}
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '13px' }}
                     >
                       <option value="none">None (caps apply normally)</option>
                       <option value="indefinite">Waive Indefinitely</option>
@@ -908,7 +908,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                         type="date"
                         value={exemptionDate}
                         onChange={(e) => setExemptionDate(e.target.value)}
-                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '13px' }}
                       />
                     </div>
                   )}
@@ -922,7 +922,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                         value={exemptionReason}
                         onChange={(e) => setExemptionReason(e.target.value)}
                         placeholder="e.g., Recovering from injury"
-                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '13px' }}
                       />
                     </div>
                   )}
@@ -980,7 +980,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                   <select
                     value={defaultTee}
                     onChange={(e) => setDefaultTee(e.target.value)}
-                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }}
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
                   >
                     {Object.entries(courseTees || DEFAULT_COURSE_TEES).map(([key, tee]) => (
                       <option key={key} value={key}>{tee.name} ({tee.courseRating}/{tee.slopeRating})</option>
@@ -1040,7 +1040,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#3498db',
+                      color: 'var(--color-info)',
                       fontSize: '13px',
                       cursor: 'pointer',
                       fontWeight: '600',
@@ -1051,7 +1051,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                   </button>
                   {showBulkImport && (
                     <div style={{
-                      background: '#f8f9fa',
+                      background: 'var(--color-surface-sunken)',
                       padding: '12px',
                       borderRadius: '8px',
                       marginTop: '8px'
@@ -1066,7 +1066,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                             value={bulkCourseRating}
                             onChange={(e) => setBulkCourseRating(e.target.value)}
                             step="0.1"
-                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '13px' }}
                           />
                         </div>
                         <div style={{ flex: 1 }}>
@@ -1077,7 +1077,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                             type="number"
                             value={bulkSlopeRating}
                             onChange={(e) => setBulkSlopeRating(e.target.value)}
-                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '13px' }}
+                            style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '13px' }}
                           />
                         </div>
                       </div>
@@ -1090,7 +1090,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                           width: '100%',
                           padding: '8px',
                           borderRadius: '4px',
-                          border: '1px solid #ddd',
+                          border: '1px solid var(--color-border)',
                           fontSize: '13px',
                           fontFamily: 'monospace',
                           resize: 'vertical',
@@ -1106,12 +1106,12 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                           Import
                         </button>
                         {bulkImportResult && (
-                          <span style={{ fontSize: '12px', color: '#27ae60', fontWeight: '500' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--color-success)', fontWeight: '500' }}>
                             {bulkImportResult}
                           </span>
                         )}
                       </div>
-                      <p style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
+                      <p style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '6px' }}>
                         Format: score or score,YYYY-MM-DD. Scores without dates get sequential past dates.
                       </p>
                     </div>
@@ -1173,7 +1173,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
   const calcTotal = isEditing ? calcFront + calcBack : total
 
   const cellStyle = {
-    border: '1px solid #333',
+    border: '1px solid var(--color-border-dark)',
     padding: '4px 2px',
     textAlign: 'center',
     fontSize: '11px',
@@ -1182,7 +1182,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
 
   const headerCellStyle = {
     ...cellStyle,
-    background: '#1a472a',
+    background: 'var(--color-primary-dark)',
     color: 'white',
     fontWeight: 'bold'
   }
@@ -1193,11 +1193,11 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
     const diff = parseInt(score) - par
     let bg = 'white'
     let border = cellStyle.border
-    if (diff <= -2) { bg = '#ffd700'; border = '2px solid #b8860b' }
-    else if (diff === -1) { bg = '#90EE90'; border = '1px solid #333' }
-    else if (diff === 0) { bg = '#e8f5e9' }
-    else if (diff === 1) { bg = '#fff3e0' }
-    else if (diff >= 2) { bg = '#ffcdd2' }
+    if (diff <= -2) { bg = 'var(--color-accent-gold)'; border = '2px solid var(--color-accent-gold)' }
+    else if (diff === -1) { bg = 'var(--color-success-light)'; border = '1px solid var(--color-border-dark)' }
+    else if (diff === 0) { bg = 'var(--color-success-light)' }
+    else if (diff === 1) { bg = 'var(--color-skins-light)' }
+    else if (diff >= 2) { bg = 'var(--color-danger-light)' }
     return { ...baseStyle, background: bg, border }
   }
 
@@ -1328,7 +1328,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                 style={{
                   flex: 1,
                   padding: '10px',
-                  background: '#3498db',
+                  background: 'var(--color-info)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
@@ -1342,7 +1342,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                 onClick={handleDeleteClick}
                 style={{
                   padding: '10px 20px',
-                  background: '#e74c3c',
+                  background: 'var(--color-danger)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
@@ -1358,8 +1358,8 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
           {/* Editing mode header */}
           {isEditing && (
             <div style={{
-              background: '#fff3cd',
-              border: '2px solid #f39c12',
+              background: 'var(--color-warning-light)',
+              border: '2px solid var(--color-warning)',
               padding: '12px',
               borderRadius: '8px',
               marginBottom: '15px',
@@ -1371,7 +1371,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
 
           {/* Score breakdown */}
           {round.breakdown && !isEditing && (
-            <div style={{ background: '#e8f5e9', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
+            <div style={{ background: 'var(--color-success-light)', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
               <div style={{ fontWeight: '600', marginBottom: '8px', fontSize: '13px' }}>Score Breakdown</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', fontSize: '12px' }}>
                 {round.breakdown.holeInOne > 0 && <div>Hole in One: <strong>{round.breakdown.holeInOne}</strong></div>}
@@ -1387,7 +1387,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
 
           {/* Greenies won */}
           {round.greeniesWon && round.greeniesWon.length > 0 && !isEditing && (
-            <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', fontSize: '13px' }}>
+            <div style={{ background: 'var(--color-skins-light)', padding: '12px', borderRadius: '8px', marginBottom: '15px', fontSize: '13px' }}>
               <strong>Greenies Won:</strong> {round.greeniesWon.map(h => `Hole ${h}`).join(', ')}
             </div>
           )}
@@ -1395,15 +1395,15 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
           {/* Traditional Scorecard Grid */}
           {round.scores && (
             <div style={{
-              background: 'white',
-              border: '2px solid #1a472a',
+              background: 'var(--color-surface)',
+              border: '2px solid var(--color-primary-dark)',
               borderRadius: '8px',
               overflow: 'hidden',
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
             }}>
               {/* Course Header */}
               <div style={{
-                background: '#1a472a',
+                background: 'var(--color-primary-dark)',
                 color: 'white',
                 padding: '8px 12px',
                 fontWeight: 'bold',
@@ -1422,39 +1422,39 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                       {[1,2,3,4,5,6,7,8,9].map(h => (
                         <th key={h} style={headerCellStyle}>{h}</th>
                       ))}
-                      <th style={{ ...headerCellStyle, background: '#0d2818' }}>OUT</th>
+                      <th style={{ ...headerCellStyle, background: 'var(--color-primary-dark)' }}>OUT</th>
                     </tr>
                   </thead>
                   <tbody>
                     {/* Blue Tees */}
                     <tr>
-                      <td style={{ ...cellStyle, background: '#e3f2fd', fontWeight: '600', fontSize: '10px' }}>BLUE</td>
+                      <td style={{ ...cellStyle, background: 'var(--color-info-light)', fontWeight: '600', fontSize: '10px' }}>BLUE</td>
                       {GUNPOWDER_SCORECARD.front9.map(h => (
-                        <td key={h.hole} style={{ ...cellStyle, background: '#e3f2fd', fontSize: '10px' }}>{h.blue}</td>
+                        <td key={h.hole} style={{ ...cellStyle, background: 'var(--color-info-light)', fontSize: '10px' }}>{h.blue}</td>
                       ))}
-                      <td style={{ ...cellStyle, background: '#e3f2fd', fontWeight: '600', fontSize: '10px' }}>
+                      <td style={{ ...cellStyle, background: 'var(--color-info-light)', fontWeight: '600', fontSize: '10px' }}>
                         {GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + h.blue, 0)}
                       </td>
                     </tr>
                     {/* Handicap */}
                     <tr>
-                      <td style={{ ...cellStyle, background: '#f5f5f5', fontWeight: '600', fontSize: '10px' }}>HCP</td>
+                      <td style={{ ...cellStyle, background: 'var(--color-surface-sunken)', fontWeight: '600', fontSize: '10px' }}>HCP</td>
                       {GUNPOWDER_SCORECARD.front9.map(h => (
-                        <td key={h.hole} style={{ ...cellStyle, background: '#f5f5f5', fontSize: '10px' }}>{h.hcp}</td>
+                        <td key={h.hole} style={{ ...cellStyle, background: 'var(--color-surface-sunken)', fontSize: '10px' }}>{h.hcp}</td>
                       ))}
-                      <td style={{ ...cellStyle, background: '#f5f5f5' }}></td>
+                      <td style={{ ...cellStyle, background: 'var(--color-surface-sunken)' }}></td>
                     </tr>
                     {/* Par */}
                     <tr>
-                      <td style={{ ...cellStyle, background: '#fff8e1', fontWeight: '600' }}>PAR</td>
+                      <td style={{ ...cellStyle, background: 'var(--color-warning-light)', fontWeight: '600' }}>PAR</td>
                       {GUNPOWDER_SCORECARD.front9.map(h => (
-                        <td key={h.hole} style={{ ...cellStyle, background: '#fff8e1', fontWeight: '600' }}>{h.par}</td>
+                        <td key={h.hole} style={{ ...cellStyle, background: 'var(--color-warning-light)', fontWeight: '600' }}>{h.par}</td>
                       ))}
-                      <td style={{ ...cellStyle, background: '#fff8e1', fontWeight: 'bold' }}>{frontPar}</td>
+                      <td style={{ ...cellStyle, background: 'var(--color-warning-light)', fontWeight: 'bold' }}>{frontPar}</td>
                     </tr>
                     {/* Player Score */}
                     <tr>
-                      <td style={{ ...cellStyle, fontWeight: '600', background: '#f0f0f0' }}>SCORE</td>
+                      <td style={{ ...cellStyle, fontWeight: '600', background: 'var(--color-border-light)' }}>SCORE</td>
                       {[1,2,3,4,5,6,7,8,9].map(h => {
                         const score = isEditing ? editedScores[h] : round.scores[h]
                         const par = getHoleInfo(h)?.par || 4
@@ -1468,7 +1468,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                           </td>
                         )
                       })}
-                      <td style={{ ...cellStyle, fontWeight: 'bold', background: '#e8f5e9', fontSize: '13px' }}>
+                      <td style={{ ...cellStyle, fontWeight: 'bold', background: 'var(--color-success-light)', fontSize: '13px' }}>
                         {isEditing ? calcFront : front || '-'}
                       </td>
                     </tr>
@@ -1477,7 +1477,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
               </div>
 
               {/* Back 9 */}
-              <div style={{ overflowX: 'auto', borderTop: '2px solid #1a472a' }}>
+              <div style={{ overflowX: 'auto', borderTop: '2px solid var(--color-primary-dark)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -1485,39 +1485,39 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                       {[10,11,12,13,14,15,16,17,18].map(h => (
                         <th key={h} style={headerCellStyle}>{h}</th>
                       ))}
-                      <th style={{ ...headerCellStyle, background: '#0d2818' }}>IN</th>
+                      <th style={{ ...headerCellStyle, background: 'var(--color-primary-dark)' }}>IN</th>
                     </tr>
                   </thead>
                   <tbody>
                     {/* Blue Tees */}
                     <tr>
-                      <td style={{ ...cellStyle, background: '#e3f2fd', fontWeight: '600', fontSize: '10px' }}>BLUE</td>
+                      <td style={{ ...cellStyle, background: 'var(--color-info-light)', fontWeight: '600', fontSize: '10px' }}>BLUE</td>
                       {GUNPOWDER_SCORECARD.back9.map(h => (
-                        <td key={h.hole} style={{ ...cellStyle, background: '#e3f2fd', fontSize: '10px' }}>{h.blue}</td>
+                        <td key={h.hole} style={{ ...cellStyle, background: 'var(--color-info-light)', fontSize: '10px' }}>{h.blue}</td>
                       ))}
-                      <td style={{ ...cellStyle, background: '#e3f2fd', fontWeight: '600', fontSize: '10px' }}>
+                      <td style={{ ...cellStyle, background: 'var(--color-info-light)', fontWeight: '600', fontSize: '10px' }}>
                         {GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + h.blue, 0)}
                       </td>
                     </tr>
                     {/* Handicap */}
                     <tr>
-                      <td style={{ ...cellStyle, background: '#f5f5f5', fontWeight: '600', fontSize: '10px' }}>HCP</td>
+                      <td style={{ ...cellStyle, background: 'var(--color-surface-sunken)', fontWeight: '600', fontSize: '10px' }}>HCP</td>
                       {GUNPOWDER_SCORECARD.back9.map(h => (
-                        <td key={h.hole} style={{ ...cellStyle, background: '#f5f5f5', fontSize: '10px' }}>{h.hcp}</td>
+                        <td key={h.hole} style={{ ...cellStyle, background: 'var(--color-surface-sunken)', fontSize: '10px' }}>{h.hcp}</td>
                       ))}
-                      <td style={{ ...cellStyle, background: '#f5f5f5' }}></td>
+                      <td style={{ ...cellStyle, background: 'var(--color-surface-sunken)' }}></td>
                     </tr>
                     {/* Par */}
                     <tr>
-                      <td style={{ ...cellStyle, background: '#fff8e1', fontWeight: '600' }}>PAR</td>
+                      <td style={{ ...cellStyle, background: 'var(--color-warning-light)', fontWeight: '600' }}>PAR</td>
                       {GUNPOWDER_SCORECARD.back9.map(h => (
-                        <td key={h.hole} style={{ ...cellStyle, background: '#fff8e1', fontWeight: '600' }}>{h.par}</td>
+                        <td key={h.hole} style={{ ...cellStyle, background: 'var(--color-warning-light)', fontWeight: '600' }}>{h.par}</td>
                       ))}
-                      <td style={{ ...cellStyle, background: '#fff8e1', fontWeight: 'bold' }}>{backPar}</td>
+                      <td style={{ ...cellStyle, background: 'var(--color-warning-light)', fontWeight: 'bold' }}>{backPar}</td>
                     </tr>
                     {/* Player Score */}
                     <tr>
-                      <td style={{ ...cellStyle, fontWeight: '600', background: '#f0f0f0' }}>SCORE</td>
+                      <td style={{ ...cellStyle, fontWeight: '600', background: 'var(--color-border-light)' }}>SCORE</td>
                       {[10,11,12,13,14,15,16,17,18].map(h => {
                         const score = isEditing ? editedScores[h] : round.scores[h]
                         const par = getHoleInfo(h)?.par || 4
@@ -1531,7 +1531,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                           </td>
                         )
                       })}
-                      <td style={{ ...cellStyle, fontWeight: 'bold', background: '#fff3e0', fontSize: '13px' }}>
+                      <td style={{ ...cellStyle, fontWeight: 'bold', background: 'var(--color-skins-light)', fontSize: '13px' }}>
                         {isEditing ? calcBack : back || '-'}
                       </td>
                     </tr>
@@ -1541,7 +1541,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
 
               {/* Totals Footer */}
               <div style={{
-                background: '#1a472a',
+                background: 'var(--color-primary-dark)',
                 color: 'white',
                 padding: '10px 15px',
                 display: 'flex',
@@ -1558,7 +1558,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                     <span style={{
                       marginLeft: '10px',
                       fontSize: '14px',
-                      color: (isEditing ? calcTotal : total) - totalPar < 0 ? '#90EE90' : (isEditing ? calcTotal : total) - totalPar > 0 ? '#ffcdd2' : '#fff'
+                      color: (isEditing ? calcTotal : total) - totalPar < 0 ? 'var(--color-success-light)' : (isEditing ? calcTotal : total) - totalPar > 0 ? 'var(--color-danger-light)' : 'white'
                     }}>
                       ({(isEditing ? calcTotal : total) - totalPar >= 0 ? '+' : ''}{(isEditing ? calcTotal : total) - totalPar})
                     </span>
@@ -1573,7 +1573,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
             <div style={{
               marginTop: '15px',
               padding: '10px',
-              background: '#f8f9fa',
+              background: 'var(--color-surface-sunken)',
               borderRadius: '6px',
               fontSize: '11px',
               display: 'flex',
@@ -1581,11 +1581,11 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
               gap: '15px',
               flexWrap: 'wrap'
             }}>
-              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#ffd700', border: '2px solid #b8860b', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Eagle+</span>
-              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#90EE90', border: '1px solid #333', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Birdie</span>
-              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#e8f5e9', border: '1px solid #333', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Par</span>
-              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#fff3e0', border: '1px solid #333', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Bogey</span>
-              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: '#ffcdd2', border: '1px solid #333', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Double+</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: 'var(--color-accent-gold)', border: '2px solid var(--color-accent-gold)', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Eagle+</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: 'var(--color-success-light)', border: '1px solid var(--color-border-dark)', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Birdie</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: 'var(--color-success-light)', border: '1px solid var(--color-border-dark)', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Par</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: 'var(--color-skins-light)', border: '1px solid var(--color-border-dark)', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Bogey</span>
+              <span><span style={{ display: 'inline-block', width: '14px', height: '14px', background: 'var(--color-danger-light)', border: '1px solid var(--color-border-dark)', borderRadius: '2px', verticalAlign: 'middle', marginRight: '4px' }}></span> Double+</span>
             </div>
           )}
 
@@ -1630,7 +1630,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
           zIndex: 3000
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '25px',
             borderRadius: '12px',
             width: '90%',
@@ -1648,7 +1648,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                 padding: '12px',
                 fontSize: '18px',
                 textAlign: 'center',
-                border: '2px solid #ddd',
+                border: '2px solid var(--color-border)',
                 borderRadius: '8px',
                 marginBottom: '15px'
               }}
@@ -1661,8 +1661,8 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#f8f9fa',
-                  border: '1px solid #ddd',
+                  background: 'var(--color-surface-sunken)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: '600'
@@ -1675,7 +1675,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                 style={{
                   flex: 1,
                   padding: '12px',
-                  background: '#27ae60',
+                  background: 'var(--color-success)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -1705,19 +1705,19 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
           zIndex: 3000
         }}>
           <div style={{
-            background: 'white',
+            background: 'var(--color-surface)',
             padding: '20px',
             borderRadius: '15px',
             width: '90%',
             maxWidth: '320px'
           }}>
-            <div style={{ textAlign: 'center', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid #e0e0e0' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#27ae60' }}>Hole {activeKeypad}</div>
-              <div style={{ fontSize: '14px', color: '#666' }}>Par {getHoleInfo(activeKeypad)?.par}</div>
+            <div style={{ textAlign: 'center', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid var(--color-border)' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '18px', color: 'var(--color-success)' }}>Hole {activeKeypad}</div>
+              <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Par {getHoleInfo(activeKeypad)?.par}</div>
             </div>
 
             <div style={{
-              background: '#f8f9fa',
+              background: 'var(--color-surface-sunken)',
               padding: '15px',
               borderRadius: '10px',
               textAlign: 'center',
@@ -1728,7 +1728,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '2px solid #e0e0e0'
+              border: '2px solid var(--color-border)'
             }}>
               {keypadValue || '-'}
             </div>
@@ -1742,8 +1742,8 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                     padding: '18px',
                     fontSize: '24px',
                     fontWeight: 'bold',
-                    background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                    border: '2px solid #dee2e6',
+                    background: 'var(--color-surface-sunken)',
+                    border: '2px solid var(--color-border)',
                     borderRadius: '10px',
                     cursor: 'pointer'
                   }}
@@ -1757,7 +1757,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                   padding: '18px',
                   fontSize: '24px',
                   fontWeight: 'bold',
-                  background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                  background: 'var(--color-danger)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '10px',
@@ -1772,8 +1772,8 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                   padding: '18px',
                   fontSize: '24px',
                   fontWeight: 'bold',
-                  background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                  border: '2px solid #dee2e6',
+                  background: 'var(--color-surface-sunken)',
+                  border: '2px solid var(--color-border)',
                   borderRadius: '10px',
                   cursor: 'pointer'
                 }}
@@ -1786,8 +1786,8 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                   padding: '18px',
                   fontSize: '20px',
                   fontWeight: 'bold',
-                  background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                  border: '2px solid #dee2e6',
+                  background: 'var(--color-surface-sunken)',
+                  border: '2px solid var(--color-border)',
                   borderRadius: '10px',
                   cursor: 'pointer'
                 }}
@@ -1804,8 +1804,8 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                   padding: '14px',
                   fontSize: '16px',
                   fontWeight: 'bold',
-                  background: '#f8f9fa',
-                  border: '2px solid #dee2e6',
+                  background: 'var(--color-surface-sunken)',
+                  border: '2px solid var(--color-border)',
                   borderRadius: '10px',
                   cursor: 'pointer'
                 }}
@@ -1819,7 +1819,7 @@ function RoundDetailModal({ round, onClose, playerId, onSaveRound, onDeleteRound
                   padding: '14px',
                   fontSize: '16px',
                   fontWeight: 'bold',
-                  background: 'linear-gradient(135deg, #27ae60 0%, #229954 100%)',
+                  background: 'var(--color-success)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '10px',
@@ -2131,28 +2131,28 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
           {/* Filter buttons */}
           <div style={{ marginBottom: '15px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
-              <button onClick={() => setStatFilter('all')} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', background: statFilter === 'all' ? '#27ae60' : 'white', color: statFilter === 'all' ? 'white' : '#333', cursor: 'pointer', fontWeight: statFilter === 'all' ? '600' : 'normal', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>All Time</button>
-              <button onClick={() => setStatFilter('year')} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', background: statFilter === 'year' ? '#3498db' : 'white', color: statFilter === 'year' ? 'white' : '#333', cursor: 'pointer', fontWeight: statFilter === 'year' ? '600' : 'normal', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>By Year</button>
-              <button onClick={() => setStatFilter('lastX')} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', background: statFilter === 'lastX' ? '#9b59b6' : 'white', color: statFilter === 'lastX' ? 'white' : '#333', cursor: 'pointer', fontWeight: statFilter === 'lastX' ? '600' : 'normal', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>Last X</button>
-              <button onClick={() => setStatFilter('range')} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', background: statFilter === 'range' ? '#e67e22' : 'white', color: statFilter === 'range' ? 'white' : '#333', cursor: 'pointer', fontWeight: statFilter === 'range' ? '600' : 'normal', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>Date Range</button>
+              <button onClick={() => setStatFilter('all')} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', background: statFilter === 'all' ? 'var(--color-success)' : 'var(--color-surface)', color: statFilter === 'all' ? 'white' : 'var(--color-text-primary)', cursor: 'pointer', fontWeight: statFilter === 'all' ? '600' : 'normal', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>All Time</button>
+              <button onClick={() => setStatFilter('year')} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', background: statFilter === 'year' ? 'var(--color-info)' : 'var(--color-surface)', color: statFilter === 'year' ? 'white' : 'var(--color-text-primary)', cursor: 'pointer', fontWeight: statFilter === 'year' ? '600' : 'normal', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>By Year</button>
+              <button onClick={() => setStatFilter('lastX')} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', background: statFilter === 'lastX' ? 'var(--color-accent-purple)' : 'var(--color-surface)', color: statFilter === 'lastX' ? 'white' : 'var(--color-text-primary)', cursor: 'pointer', fontWeight: statFilter === 'lastX' ? '600' : 'normal', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>Last X</button>
+              <button onClick={() => setStatFilter('range')} style={{ padding: '8px 16px', borderRadius: '20px', border: 'none', background: statFilter === 'range' ? 'var(--color-skins-dark)' : 'var(--color-surface)', color: statFilter === 'range' ? 'white' : 'var(--color-text-primary)', cursor: 'pointer', fontWeight: statFilter === 'range' ? '600' : 'normal', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>Date Range</button>
             </div>
 
             {/* Filter options */}
             {statFilter === 'year' && (
-              <select value={filterYear} onChange={(e) => setFilterYear(parseInt(e.target.value))} style={{ padding: '8px', borderRadius: '6px', border: '2px solid #ddd' }}>
+              <select value={filterYear} onChange={(e) => setFilterYear(parseInt(e.target.value))} style={{ padding: '8px', borderRadius: '6px', border: '2px solid var(--color-border)' }}>
                 {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             )}
             {statFilter === 'lastX' && (
-              <select value={filterLastX} onChange={(e) => setFilterLastX(parseInt(e.target.value))} style={{ padding: '8px', borderRadius: '6px', border: '2px solid #ddd' }}>
+              <select value={filterLastX} onChange={(e) => setFilterLastX(parseInt(e.target.value))} style={{ padding: '8px', borderRadius: '6px', border: '2px solid var(--color-border)' }}>
                 {[3, 5, 10, 15, 20].map(n => <option key={n} value={n}>Last {n} rounds</option>)}
               </select>
             )}
             {statFilter === 'range' && (
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '2px solid #ddd' }} />
+                <input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '2px solid var(--color-border)' }} />
                 <span>to</span>
-                <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '2px solid #ddd' }} />
+                <input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '2px solid var(--color-border)' }} />
               </div>
             )}
           </div>
@@ -2175,11 +2175,11 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                     <div className="stat-label">Average Score</div>
                     <div className="stat-value">{basicStats.avgTotal.toFixed(1)}</div>
                   </div>
-                  <div className="stat-card" style={{ background: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)' }}>
+                  <div className="stat-card" style={{ background: 'var(--color-success)' }}>
                     <div className="stat-label">Best Round</div>
                     <div className="stat-value">{basicStats.bestTotal}</div>
                   </div>
-                  <div className="stat-card" style={{ background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)' }}>
+                  <div className="stat-card" style={{ background: 'var(--color-danger)' }}>
                     <div className="stat-label">Worst Round</div>
                     <div className="stat-value">{basicStats.worstTotal}</div>
                   </div>
@@ -2187,7 +2187,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
               )}
 
               {/* Score breakdown */}
-              <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
+              <div style={{ background: 'var(--color-accent-purple)', color: 'white', padding: '15px', borderRadius: '10px', marginBottom: '20px' }}>
                 <h4 style={{ marginBottom: '12px', fontSize: '14px' }}>Score Breakdown - {filterLabel} ({completeRounds.length} rounds)</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '13px' }}>
                   {lifetimeStats.holeInOne > 0 && <div>Hole in One: <strong>{lifetimeStats.holeInOne}</strong></div>}
@@ -2218,15 +2218,15 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
               {/* Front/Back averages */}
               {basicStats && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                  <div style={{ background: '#e8f5e9', padding: '15px', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '14px', color: '#666' }}>Avg Front 9</div>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#27ae60' }}>
+                  <div style={{ background: 'var(--color-success-light)', padding: '15px', borderRadius: '8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Avg Front 9</div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-success)' }}>
                       {basicStats.avgFront > 0 ? basicStats.avgFront.toFixed(1) : '-'}
                     </div>
                   </div>
-                  <div style={{ background: '#fff3e0', padding: '15px', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '14px', color: '#666' }}>Avg Back 9</div>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#e67e22' }}>
+                  <div style={{ background: 'var(--color-skins-light)', padding: '15px', borderRadius: '8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>Avg Back 9</div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-skins-dark)' }}>
                       {basicStats.avgBack > 0 ? basicStats.avgBack.toFixed(1) : '-'}
                     </div>
                   </div>
@@ -2238,32 +2238,32 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                 <div style={{ marginBottom: '20px' }}>
                   {/* League Money Stats */}
                   <div style={{
-                    background: leagueNet >= 0 ? '#e8f5e9' : '#ffebee',
+                    background: leagueNet >= 0 ? 'var(--color-success-light)' : 'var(--color-danger-light)',
                     padding: '15px',
                     borderRadius: '8px',
                     marginBottom: '10px',
-                    border: `2px solid ${leagueNet >= 0 ? '#27ae60' : '#e74c3c'}`
+                    border: `2px solid ${leagueNet >= 0 ? 'var(--color-success)' : 'var(--color-danger)'}`
                   }}>
-                    <div style={{ fontWeight: '600', marginBottom: '12px', color: '#333' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '12px', color: 'var(--color-text-primary)' }}>
                       League Money Stats ({moneyTotals.rounds} rounds)
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '11px', color: '#666' }}>Paid</div>
-                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#e74c3c' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Paid</div>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-danger)' }}>
                           ${moneyTotals.leaguePaid.toFixed(2)}
                         </div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '11px', color: '#666' }}>Won</div>
-                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#27ae60' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Won</div>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-success)' }}>
                           ${moneyTotals.leagueWon.toFixed(2)}
                         </div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '11px', color: '#666' }}>Net</div>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: leagueNet >= 0 ? '#27ae60' : '#e74c3c' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>Net</div>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: leagueNet >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                           {leagueNet >= 0 ? '+' : ''}${leagueNet.toFixed(2)}
                         </div>
                       </div>
@@ -2272,31 +2272,31 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                     {/* Category breakdown */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', fontSize: '10px' }}>
                       {(moneyTotals.greeniesPaid > 0 || moneyTotals.greeniesWon > 0) && (
-                        <div style={{ background: 'white', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
-                          <div style={{ color: '#666' }}>Greenies</div>
-                          <div style={{ fontWeight: '600', color: (moneyTotals.greeniesWon - moneyTotals.greeniesPaid) >= 0 ? '#27ae60' : '#e74c3c' }}>
+                        <div style={{ background: 'var(--color-surface)', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
+                          <div style={{ color: 'var(--color-text-secondary)' }}>Greenies</div>
+                          <div style={{ fontWeight: '600', color: (moneyTotals.greeniesWon - moneyTotals.greeniesPaid) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                             {(moneyTotals.greeniesWon - moneyTotals.greeniesPaid) >= 0 ? '+' : ''}${(moneyTotals.greeniesWon - moneyTotals.greeniesPaid).toFixed(2)}
                           </div>
                         </div>
                       )}
                       {(moneyTotals.teamPaid > 0 || moneyTotals.teamWon > 0) && (
-                        <div style={{ background: 'white', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
-                          <div style={{ color: '#666' }}>Team</div>
-                          <div style={{ fontWeight: '600', color: (moneyTotals.teamWon - moneyTotals.teamPaid) >= 0 ? '#27ae60' : '#e74c3c' }}>
+                        <div style={{ background: 'var(--color-surface)', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
+                          <div style={{ color: 'var(--color-text-secondary)' }}>Team</div>
+                          <div style={{ fontWeight: '600', color: (moneyTotals.teamWon - moneyTotals.teamPaid) >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                             {(moneyTotals.teamWon - moneyTotals.teamPaid) >= 0 ? '+' : ''}${(moneyTotals.teamWon - moneyTotals.teamPaid).toFixed(2)}
                           </div>
                         </div>
                       )}
                       {moneyTotals.hioPaid > 0 && (
-                        <div style={{ background: 'white', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
-                          <div style={{ color: '#666' }}>HIO Pot</div>
-                          <div style={{ fontWeight: '600', color: '#e74c3c' }}>-${moneyTotals.hioPaid.toFixed(2)}</div>
+                        <div style={{ background: 'var(--color-surface)', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
+                          <div style={{ color: 'var(--color-text-secondary)' }}>HIO Pot</div>
+                          <div style={{ fontWeight: '600', color: 'var(--color-danger)' }}>-${moneyTotals.hioPaid.toFixed(2)}</div>
                         </div>
                       )}
                     </div>
 
                     {moneyTotals.rounds > 0 && (
-                      <div style={{ marginTop: '8px', fontSize: '10px', color: '#666', textAlign: 'center' }}>
+                      <div style={{ marginTop: '8px', fontSize: '10px', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
                         Avg per round: {leagueNet >= 0 ? '+' : ''}${(leagueNet / moneyTotals.rounds).toFixed(2)}
                       </div>
                     )}
@@ -2304,13 +2304,13 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
 
                   {/* Skins Stats (separate) */}
                   {moneyTotals.skinsPaid > 0 && (
-                    <div style={{ background: '#e3f2fd', padding: '12px', borderRadius: '8px', border: '2px solid #2196f3' }}>
-                      <div style={{ fontWeight: '600', marginBottom: '10px', color: '#1976d2' }}>Skins Stats (separate game)</div>
+                    <div style={{ background: 'var(--color-info-light)', padding: '12px', borderRadius: '8px', border: '2px solid var(--color-info)' }}>
+                      <div style={{ fontWeight: '600', marginBottom: '10px', color: 'var(--color-info-dark)' }}>Skins Stats (separate game)</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ fontSize: '11px' }}>
                           Entry: ${moneyTotals.skinsPaid.toFixed(2)} | Won: ${moneyTotals.skinsWon.toFixed(2)} ({moneyTotals.skinsCount} skins)
                         </div>
-                        <div style={{ fontSize: '18px', fontWeight: '700', color: skinsNet >= 0 ? '#27ae60' : '#e74c3c' }}>
+                        <div style={{ fontSize: '18px', fontWeight: '700', color: skinsNet >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                           {skinsNet >= 0 ? '+' : ''}${skinsNet.toFixed(2)}
                         </div>
                       </div>
@@ -2321,7 +2321,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
 
               {/* Handicap Summary */}
               <div style={{
-                background: 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)',
+                background: 'var(--color-success)',
                 color: 'white',
                 padding: '15px',
                 borderRadius: '10px',
@@ -2383,7 +2383,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                 {/* Add External Round Form */}
                 {showAddExternal && (
                   <div style={{
-                    background: '#f8f9fa',
+                    background: 'var(--color-surface-sunken)',
                     padding: '15px',
                     borderRadius: '8px',
                     marginBottom: '15px'
@@ -2474,7 +2474,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           padding: '10px 12px',
-                          background: idx % 2 === 0 ? '#f0f7ff' : '#e3f2fd',
+                          background: idx % 2 === 0 ? 'var(--color-surface-sunken)' : 'var(--color-info-light)',
                           borderRadius: '6px',
                           marginBottom: '4px',
                           fontSize: '13px'
@@ -2482,7 +2482,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                       >
                         <div>
                           <div style={{ fontWeight: '600' }}>{round.courseName}</div>
-                          <div style={{ fontSize: '11px', color: '#666' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
                             {new Date(round.date).toLocaleDateString()} |
                             {round.tee && ` ${round.tee} |`}
                             Rating: {round.courseRating}/{round.slopeRating}
@@ -2495,7 +2495,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                             <button
                               onClick={() => handleDeleteExternalRound(round.id)}
                               style={{
-                                background: '#e74c3c',
+                                background: 'var(--color-danger)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '4px',
@@ -2518,7 +2518,7 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
               <h4 style={{ marginBottom: '10px' }}>League Round History ({filteredRounds.length})</h4>
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {filteredRounds.length === 0 ? (
-                  <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>No rounds found for this filter</p>
+                  <p style={{ color: 'var(--color-text-tertiary)', textAlign: 'center', padding: '20px' }}>No rounds found for this filter</p>
                 ) : (
                   filteredRounds.slice().reverse().map((round, idx) => {
                     const total = round.total || round.totalScore
@@ -2533,27 +2533,27 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           padding: '12px',
-                          background: round.isComplete === false ? '#fff3e0' : (idx % 2 === 0 ? '#f8f9fa' : 'white'),
+                          background: round.isComplete === false ? 'var(--color-skins-light)' : (idx % 2 === 0 ? 'var(--color-surface-sunken)' : 'var(--color-surface)'),
                           borderRadius: '6px',
                           marginBottom: '4px',
                           cursor: 'pointer',
-                          border: round.isComplete === false ? '2px solid #ff9800' : '2px solid transparent',
+                          border: round.isComplete === false ? '2px solid var(--color-warning)' : '2px solid transparent',
                           transition: 'background 0.2s'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#e3f2fd'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = round.isComplete === false ? '#fff3e0' : (idx % 2 === 0 ? '#f8f9fa' : 'white')}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-info-light)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = round.isComplete === false ? 'var(--color-skins-light)' : (idx % 2 === 0 ? 'var(--color-surface-sunken)' : 'var(--color-surface)')}
                       >
                         <div>
                           <span style={{ fontWeight: '600' }}>
                             {new Date(round.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
                           {round.isComplete === false && (
-                            <span style={{ marginLeft: '8px', background: '#ff9800', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>
+                            <span style={{ marginLeft: '8px', background: 'var(--color-warning)', color: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>
                               INCOMPLETE
                             </span>
                           )}
                           {round.greeniesWon && round.greeniesWon.length > 0 && (
-                            <span style={{ marginLeft: '8px', color: '#27ae60', fontSize: '12px' }}>
+                            <span style={{ marginLeft: '8px', color: 'var(--color-success)', fontSize: '12px' }}>
                               +{round.greeniesWon.length} greenie{round.greeniesWon.length > 1 ? 's' : ''}
                             </span>
                           )}
@@ -2561,11 +2561,11 @@ function PlayerStatsModal({ player, onClose, onUpdatePlayer, isAdmin, courseTees
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <span>
                             <strong style={{ fontSize: '16px' }}>{total}</strong>
-                            <span style={{ color: '#666', marginLeft: '8px', fontSize: '12px' }}>
+                            <span style={{ color: 'var(--color-text-secondary)', marginLeft: '8px', fontSize: '12px' }}>
                               ({front} + {back})
                             </span>
                           </span>
-                          <span style={{ color: '#3498db', fontSize: '12px' }}>View</span>
+                          <span style={{ color: 'var(--color-info)', fontSize: '12px' }}>View</span>
                         </div>
                       </div>
                     )
