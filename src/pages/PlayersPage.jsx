@@ -1044,6 +1044,51 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                 </div>
               </div>
 
+              {/* Linked Profile Info (admin only) */}
+              {isAdmin && (player.profileId || player.profile_id) && (
+                <div style={{
+                  background: 'var(--color-surface-sunken)',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  marginTop: '15px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ fontSize: '12px' }}>
+                    <span style={{ fontWeight: '600' }}>Linked Profile: </span>
+                    <span style={{ color: 'var(--color-text-secondary)', fontFamily: 'monospace', fontSize: '11px' }}>
+                      {(player.profileId || player.profile_id).slice(0, 8)}...
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-small btn-danger"
+                    onClick={() => {
+                      if (confirm(`Unlink ${player.name} from their profile? This won't delete the profile, but the player will no longer be associated with it.`)) {
+                        onSave({
+                          ...player,
+                          name: name.trim(),
+                          skillRating: parseFloat(skillRating) || 5,
+                          handicap: handicap ? parseFloat(handicap) : null,
+                          handicapSource: handicap ? 'manual' : player.handicapSource,
+                          ghinIndex: ghinIndex ? parseFloat(ghinIndex) : null,
+                          defaultTee,
+                          phone: phone.trim(),
+                          email: email.trim(),
+                          emergencyName: emergencyName.trim(),
+                          emergencyPhone: emergencyPhone.trim(),
+                          profileId: null,
+                          profile_id: null
+                        })
+                      }
+                    }}
+                    style={{ fontSize: '11px' }}
+                  >
+                    Unlink
+                  </button>
+                </div>
+              )}
+
               {/* Bulk Import Scores (admin only) */}
               {isAdmin && (
                 <div style={{ marginTop: '15px' }}>
