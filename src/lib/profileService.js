@@ -201,6 +201,87 @@ export async function unlinkProfile(profileId) {
   return data?.[0] || null
 }
 
+// Merge a duplicate claimed profile into a ghost profile.
+// Transfers user_id from duplicate to ghost, migrates league_members/round_history, deletes duplicate.
+export async function mergeProfiles(ghostId, duplicateId) {
+  // 1. Get the duplicate profile to grab its user_id
+  const { data: dupeData, error: dupeError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', duplicateId)
+    .limit(1)
+
+  if (dupeError) throw dupeError
+  const dupe = dupeData?.[0]
+  if (!dupe) throw new Error('Duplicate profile not found')
+  if (!dupe.user_id) throw new Error('Duplicate profile has no linked account')
+
+  // 2. Transfer user_id (and email/avatar if ghost is missing them) to the ghost profile
+  const updateFields = { user_id: dupe.user_id }
+  if (dupe.email) updateFields.email = dupe.email
+  if (dupe.avatar_url) updateFields.avatar_url = dupe.avatar_url
+
+  const { data: merged, error: mergeError } = await supabase
+    .from('profiles')
+    .update(updateFields)
+    .eq('id', ghostId)
+    .is('user_id', null)
+    .select()
+
+  if (mergeError) throw mergeError
+  if (!merged || merged.length === 0) throw new Error('Failed to update ghost profile — it may already be claimed')
+
+  // 3. Migrate league_members rows from duplicate to ghost (skip conflicts)
+  const { data: dupeMembers } = await supabase
+    .from('league_members')
+    .select('league_id')
+    .eq('profile_id', duplicateId)
+
+  if (dupeMembers && dupeMembers.length > 0) {
+    // Check which leagues already have the ghost profile
+    const { data: ghostMembers } = await supabase
+      .from('league_members')
+      .select('league_id')
+      .eq('profile_id', ghostId)
+
+    const ghostLeagues = new Set((ghostMembers || []).map(m => m.league_id))
+
+    for (const dm of dupeMembers) {
+      if (!ghostLeagues.has(dm.league_id)) {
+        await supabase
+          .from('league_members')
+          .update({ profile_id: ghostId })
+          .eq('profile_id', duplicateId)
+          .eq('league_id', dm.league_id)
+      }
+    }
+    // Delete any remaining duplicate league_members
+    await supabase
+      .from('league_members')
+      .delete()
+      .eq('profile_id', duplicateId)
+  }
+
+  // 4. Migrate round_history rows from duplicate to ghost
+  await supabase
+    .from('round_history')
+    .update({ profile_id: ghostId })
+    .eq('profile_id', duplicateId)
+
+  // 5. Delete the duplicate profile
+  const { error: deleteError } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', duplicateId)
+
+  if (deleteError) {
+    console.warn('Could not delete duplicate profile:', deleteError)
+    // Non-fatal — the merge itself succeeded
+  }
+
+  return merged[0]
+}
+
 export async function getClaimedProfiles() {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 8000)

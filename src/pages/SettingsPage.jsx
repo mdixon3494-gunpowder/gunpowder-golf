@@ -3121,6 +3121,7 @@ function ManageProfilesSection() {
   const [assigningId, setAssigningId] = useState(null)
   const [assignEmail, setAssignEmail] = useState('')
   const [savingId, setSavingId] = useState(null)
+  const [linkingId, setLinkingId] = useState(null)
 
   const loadAllProfiles = async () => {
     setLoading(true)
@@ -3165,9 +3166,11 @@ function ManageProfilesSection() {
       const updated = await assignEmailToProfile(ghostProfile.id, assignEmail.trim())
       if (updated) {
         setGhostProfiles(prev => prev.map(p => p.id === ghostProfile.id ? { ...p, email: assignEmail.trim() } : p))
+        setAssigningId(null)
+        setAssignEmail('')
+      } else {
+        alert('Could not update profile. Make sure you are logged in as a site owner.')
       }
-      setAssigningId(null)
-      setAssignEmail('')
     } catch (err) {
       console.error('Error assigning email:', err)
       alert('Failed to assign email: ' + err.message)
@@ -3184,6 +3187,31 @@ function ManageProfilesSection() {
       setGhostProfiles(prev => prev.map(p => p.id === ghostProfile.id ? { ...p, email: null } : p))
     } catch (err) {
       console.error('Error clearing email:', err)
+    } finally {
+      setSavingId(null)
+    }
+  }
+
+  const handleMerge = async (ghostProfile, claimedProfile) => {
+    if (!window.confirm(
+      `Link "${ghostProfile.display_name}" to ${claimedProfile.display_name}'s account (${claimedProfile.email || 'no email'})?\n\n` +
+      `This will transfer their login to this ghost profile and delete the duplicate "${claimedProfile.display_name}" profile.`
+    )) return
+
+    setSavingId(ghostProfile.id)
+    try {
+      const { mergeProfiles } = await import('../lib/profileService')
+      await mergeProfiles(ghostProfile.id, claimedProfile.id)
+      // Ghost becomes claimed — move it to claimed list
+      setGhostProfiles(prev => prev.filter(p => p.id !== ghostProfile.id))
+      setClaimedProfiles(prev => [
+        ...prev.filter(p => p.id !== claimedProfile.id),
+        { ...ghostProfile, user_id: claimedProfile.user_id, email: claimedProfile.email || ghostProfile.email, avatar_url: claimedProfile.avatar_url || ghostProfile.avatar_url }
+      ].sort((a, b) => a.display_name.localeCompare(b.display_name)))
+      setLinkingId(null)
+    } catch (err) {
+      console.error('Error merging profiles:', err)
+      alert('Failed to merge profiles: ' + err.message)
     } finally {
       setSavingId(null)
     }
@@ -3323,23 +3351,42 @@ function ManageProfilesSection() {
                           ) : 'No email assigned'}
                         </div>
                       </div>
-                      {!p.email && assigningId !== p.id && (
-                        <button
-                          onClick={() => { setAssigningId(p.id); setAssignEmail('') }}
-                          style={{
-                            background: 'var(--color-success)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 14px',
-                            borderRadius: '5px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}
-                        >
-                          Assign Email
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        {!p.email && assigningId !== p.id && linkingId !== p.id && (
+                          <button
+                            onClick={() => { setAssigningId(p.id); setLinkingId(null); setAssignEmail('') }}
+                            style={{
+                              background: 'var(--color-success)',
+                              color: 'white',
+                              border: 'none',
+                              padding: '6px 14px',
+                              borderRadius: '5px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            Assign Email
+                          </button>
+                        )}
+                        {linkingId !== p.id && assigningId !== p.id && claimedProfiles.length > 0 && (
+                          <button
+                            onClick={() => { setLinkingId(p.id); setAssigningId(null) }}
+                            style={{
+                              background: 'var(--color-info)',
+                              color: 'white',
+                              border: 'none',
+                              padding: '6px 14px',
+                              borderRadius: '5px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            Link to Account
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {assigningId === p.id && (
                       <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -3376,6 +3423,67 @@ function ManageProfilesSection() {
                         <button
                           onClick={() => { setAssigningId(null); setAssignEmail('') }}
                           style={{
+                            background: 'var(--color-border-light)',
+                            color: 'var(--color-text-primary)',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                    {linkingId === p.id && (
+                      <div style={{ marginTop: '10px' }}>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
+                          Select the account to link this ghost profile to. The duplicate profile will be deleted.
+                        </p>
+                        <div style={{ maxHeight: '200px', overflow: 'auto' }}>
+                          {claimedProfiles.map(cp => (
+                            <div
+                              key={cp.id}
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '8px 10px',
+                                borderRadius: '6px',
+                                background: 'var(--color-surface-sunken)',
+                                marginBottom: '4px',
+                                border: '1px solid var(--color-border)'
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontWeight: '600', fontSize: '13px' }}>{cp.display_name}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>{cp.email || 'No email'}</div>
+                              </div>
+                              <button
+                                onClick={() => handleMerge(p, cp)}
+                                disabled={savingId === p.id}
+                                style={{
+                                  background: 'var(--color-info)',
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '5px 12px',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  opacity: savingId === p.id ? 0.6 : 1
+                                }}
+                              >
+                                {savingId === p.id ? '...' : 'Link'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setLinkingId(null)}
+                          style={{
+                            marginTop: '8px',
                             background: 'var(--color-border-light)',
                             color: 'var(--color-text-primary)',
                             border: 'none',
