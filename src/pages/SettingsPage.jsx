@@ -1798,6 +1798,184 @@ function SideGamesSettingsSection({ leagueSettings, onUpdate, isAdmin }) {
   )
 }
 
+function TeamScoringRulesSection({ leagueSettings, onUpdate, isAdmin }) {
+  const rules = leagueSettings.teamScoringRules || {
+    maxScoreMode: 'none',
+    maxScoreFixed: 10,
+    allowXForTeamScore: false,
+    dqOnMissingScores: false
+  }
+
+  const updateRules = (updates) => {
+    onUpdate({ ...leagueSettings, teamScoringRules: { ...rules, ...updates } })
+  }
+
+  const maxScoreOptions = [
+    { value: 'none', label: 'No Max', desc: 'Raw scores count toward team total' },
+    { value: 'ndb', label: 'Net Double Bogey', desc: 'Par + 2 + handicap strokes (WHS)' },
+    { value: 'double_bogey', label: 'Double Bogey', desc: 'Par + 2 for all players' },
+    { value: 'triple_bogey', label: 'Triple Bogey', desc: 'Par + 3 for all players' },
+    { value: 'fixed', label: 'Custom Fixed', desc: 'Same max for every hole' }
+  ]
+
+  const hasMax = rules.maxScoreMode && rules.maxScoreMode !== 'none'
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '5px' }}>Team Scoring Rules</h3>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '15px' }}>
+        Control how individual scores contribute to team totals. Separate from handicap calculation settings.
+      </p>
+
+      {isAdmin ? (
+        <>
+          {/* Setting 1: Max Score Mode */}
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px' }}>
+              Max Score Per Player Per Hole
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {maxScoreOptions.map(opt => (
+                <label
+                  key={opt.value}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: rules.maxScoreMode === opt.value ? '2px solid var(--color-success)' : '2px solid var(--color-border)',
+                    background: rules.maxScoreMode === opt.value ? 'var(--color-success-light)' : 'var(--color-surface)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="maxScoreMode"
+                    value={opt.value}
+                    checked={rules.maxScoreMode === opt.value}
+                    onChange={() => updateRules({ maxScoreMode: opt.value })}
+                    style={{ width: '18px', height: '18px' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: '600', fontSize: '14px', color: rules.maxScoreMode === opt.value ? 'var(--color-success)' : 'var(--color-text-primary)' }}>
+                      {opt.label}
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{opt.desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Fixed value input */}
+            {rules.maxScoreMode === 'fixed' && (
+              <div style={{ marginTop: '10px', paddingLeft: '28px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '600' }}>Fixed Max Score: </label>
+                <input
+                  type="number"
+                  min="4"
+                  max="20"
+                  value={rules.maxScoreFixed || 10}
+                  onChange={(e) => updateRules({ maxScoreFixed: parseInt(e.target.value) || 10 })}
+                  style={{
+                    width: '60px',
+                    padding: '6px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '14px',
+                    marginLeft: '8px'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Setting 2: Allow X for Team Score (only when max is active) */}
+          {hasMax && (
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                padding: '12px',
+                background: rules.allowXForTeamScore ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+                borderRadius: '8px',
+                border: rules.allowXForTeamScore ? '2px solid var(--color-success)' : '2px solid var(--color-border)'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={rules.allowXForTeamScore || false}
+                  onChange={(e) => updateRules({ allowXForTeamScore: e.target.checked })}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <div>
+                  <div style={{ fontWeight: '600', color: rules.allowXForTeamScore ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
+                    Convert X Scores to Team Max
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    When enabled, X scores count as the max score instead of being excluded
+                  </div>
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* Setting 3: DQ on Missing Scores (only when X is NOT allowed) */}
+          {!rules.allowXForTeamScore && (
+            <div style={{ marginBottom: '0' }}>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                cursor: 'pointer',
+                padding: '12px',
+                background: rules.dqOnMissingScores ? 'var(--color-danger-light, rgba(220,53,69,0.1))' : 'var(--color-surface-sunken)',
+                borderRadius: '8px',
+                border: rules.dqOnMissingScores ? '2px solid var(--color-danger)' : '2px solid var(--color-border)'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={rules.dqOnMissingScores || false}
+                  onChange={(e) => updateRules({ dqOnMissingScores: e.target.checked })}
+                  style={{ width: '20px', height: '20px' }}
+                />
+                <div>
+                  <div style={{ fontWeight: '600', color: rules.dqOnMissingScores ? 'var(--color-danger)' : 'var(--color-text-secondary)' }}>
+                    DQ Team on Missing Scores
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    If any hole has no valid score from a team, the team is DQ for that 9
+                  </div>
+                </div>
+              </label>
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{
+          background: 'var(--color-surface-sunken)',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          fontSize: '14px'
+        }}>
+          Max Score: <strong>{maxScoreOptions.find(o => o.value === rules.maxScoreMode)?.label || 'No Max'}</strong>
+          {hasMax && rules.maxScoreMode === 'fixed' && <span> ({rules.maxScoreFixed || 10})</span>}
+          {hasMax && <span> | X as Max: <strong>{rules.allowXForTeamScore ? 'Yes' : 'No'}</strong></span>}
+          {!rules.allowXForTeamScore && <span> | DQ on Missing: <strong>{rules.dqOnMissingScores ? 'Yes' : 'No'}</strong></span>}
+          <span style={{ color: 'var(--color-text-tertiary)', marginLeft: '10px', fontSize: '12px' }}>(Admin only)</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
   return (
     <div style={{
@@ -3364,6 +3542,11 @@ function SettingsPage({ onShowLeagueSelector }) {
             <RoundSettingsSection
               defaultStartingHole={defaultStartingHole}
               onUpdate={setDefaultStartingHole}
+              isAdmin={isAdmin}
+            />
+            <TeamScoringRulesSection
+              leagueSettings={leagueSettings}
+              onUpdate={setLeagueSettings}
               isAdmin={isAdmin}
             />
             <SideGamesSettingsSection

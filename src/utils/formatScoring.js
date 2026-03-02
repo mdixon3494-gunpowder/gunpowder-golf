@@ -1,4 +1,5 @@
 import { getHoleInfo, getAllHoles } from '../lib/courseData'
+import { getNetDoubleBogeyMax } from '../utils/handicapCalculation'
 
 // ── Format Configurations ──────────────────────────────────────────────
 export const FORMAT_CONFIGS = {
@@ -62,19 +63,107 @@ function getValidScores(team, hole) {
     .filter(s => s.score !== undefined && s.score !== null && s.score !== '' && s.score !== 'X')
 }
 
+// ── Team Scoring Rules ────────────────────────────────────────────────
+
+/**
+ * Get the max score a player can contribute to the team for a given hole.
+ * Returns null if no cap is active.
+ */
+export function getTeamMaxScore(holeNumber, player, rules, courseTees) {
+  if (!rules || rules.maxScoreMode === 'none' || !rules.maxScoreMode) return null
+  const holeInfo = getHoleInfo(holeNumber)
+  const par = holeInfo?.par || 4
+
+  switch (rules.maxScoreMode) {
+    case 'ndb': {
+      const ndb = getNetDoubleBogeyMax(holeNumber, player.handicap, player.tee || player.defaultTee || 'blue', courseTees)
+      return ndb != null ? ndb : par + 2 // fallback if handicap is null
+    }
+    case 'double_bogey':
+      return par + 2
+    case 'triple_bogey':
+      return par + 3
+    case 'fixed':
+      return rules.maxScoreFixed || 10
+    default:
+      return null
+  }
+}
+
+/**
+ * Get processed scores for a team on a hole, applying team scoring rules.
+ * Returns array of { score, handicap, rawScore, isXConverted }.
+ */
+export function getTeamScoresForHole(team, hole, rules, courseTees) {
+  const activePlayers = team.players.filter(p => !p.isDNF && p.includeInTeamScore)
+  const results = []
+
+  for (const p of activePlayers) {
+    const raw = p.scores[hole]
+    if (raw === undefined || raw === null || raw === '') continue
+
+    const maxForTeam = rules ? getTeamMaxScore(hole, p, rules, courseTees) : null
+
+    if (raw === 'X') {
+      // X score: convert to max if allowed and max exists, else skip
+      if (rules?.allowXForTeamScore && maxForTeam !== null) {
+        results.push({ score: maxForTeam, handicap: p.handicap || 0, rawScore: raw, isXConverted: true })
+      }
+      // else: skip X (current default behavior)
+      continue
+    }
+
+    // Numeric score: cap at team max if set
+    const numScore = typeof raw === 'number' ? raw : parseInt(raw)
+    if (isNaN(numScore)) continue
+
+    const capped = maxForTeam !== null ? Math.min(numScore, maxForTeam) : numScore
+    results.push({ score: capped, handicap: p.handicap || 0, rawScore: numScore, isXConverted: false })
+  }
+
+  return results
+}
+
+/**
+ * Check if a team is DQ'd for a 9-hole segment due to missing scores.
+ * Only applies when dqOnMissingScores is true AND allowXForTeamScore is false.
+ * requiredScores = minimum non-X scores needed per hole (format-dependent).
+ */
+export function checkTeamDQ(team, startHole, endHole, rules, requiredScores = 1) {
+  if (!rules || !rules.dqOnMissingScores || rules.allowXForTeamScore) return false
+
+  for (let hole = startHole; hole <= endHole; hole++) {
+    const activePlayers = team.players.filter(p => !p.isDNF && p.includeInTeamScore)
+    let validCount = 0
+    for (const p of activePlayers) {
+      const s = p.scores[hole]
+      if (s !== undefined && s !== null && s !== '' && s !== 'X') {
+        validCount++
+      }
+    }
+    if (validCount < requiredScores) return true
+  }
+  return false
+}
+
 // ── Big Boys Format ────────────────────────────────────────────────────
 // All under-par scores summed + best score if none under par
 
-export function calculateBigBoysScore(team, startHole, endHole) {
+export function calculateBigBoysScore(team, startHole, endHole, rules = null, courseTees = null) {
   let totalScore = 0
   for (let hole = startHole; hole <= endHole; hole++) {
     const holeInfo = getHoleInfo(hole)
     const par = holeInfo?.par || 4
 
-    const playerScores = team.players
-      .filter(p => !p.isDNF && p.includeInTeamScore)
-      .map(p => p.scores[hole])
-      .filter(s => s !== undefined && s !== null && s !== '' && s !== 'X')
+    let playerScores
+    if (rules && rules.maxScoreMode && rules.maxScoreMode !== 'none') {
+      playerScores = getTeamScoresForHole(team, hole, rules, courseTees).map(e => e.score)
+    } else {
+      playerScores = team.players
+        .filter(p => !p.isDNF && p.includeInTeamScore)
+        .map(p => p.scores[hole])
+        .filter(s => s !== undefined && s !== null && s !== '' && s !== 'X')
+    }
 
     if (playerScores.length === 0) continue
 
@@ -93,13 +182,18 @@ export function calculateBigBoysScore(team, startHole, endHole) {
 // ── Best Ball ──────────────────────────────────────────────────────────
 // 1 best score per hole per team (gross or net), relative to par
 
-export function calculateBestBallScore(team, startHole, endHole, useHandicaps = false) {
+export function calculateBestBallScore(team, startHole, endHole, useHandicaps = false, rules = null, courseTees = null) {
   let totalScore = 0
   for (let hole = startHole; hole <= endHole; hole++) {
     const holeInfo = getHoleInfo(hole)
     const par = holeInfo?.par || 4
 
-    const entries = getValidScores(team, hole)
+    let entries
+    if (rules && rules.maxScoreMode && rules.maxScoreMode !== 'none') {
+      entries = getTeamScoresForHole(team, hole, rules, courseTees)
+    } else {
+      entries = getValidScores(team, hole)
+    }
     if (entries.length === 0) continue
 
     let bestRelative
@@ -116,10 +210,15 @@ export function calculateBestBallScore(team, startHole, endHole, useHandicaps = 
 // ── Scramble ───────────────────────────────────────────────────────────
 // Single score per hole (first active player's score), gross total
 
-export function calculateScrambleScore(team, startHole, endHole) {
+export function calculateScrambleScore(team, startHole, endHole, rules = null, courseTees = null) {
   let totalScore = 0
   for (let hole = startHole; hole <= endHole; hole++) {
-    const entries = getValidScores(team, hole)
+    let entries
+    if (rules && rules.maxScoreMode && rules.maxScoreMode !== 'none') {
+      entries = getTeamScoresForHole(team, hole, rules, courseTees)
+    } else {
+      entries = getValidScores(team, hole)
+    }
     if (entries.length === 0) continue
     // In scramble everyone enters the same score; take the first valid one
     totalScore += entries[0].score
@@ -138,23 +237,35 @@ export function getRetireesAdjustment(teamSize, settings = {}) {
   }
 }
 
-export function calculateRetireesScore(team, startHole, endHole, settings = {}) {
+export function calculateRetireesScore(team, startHole, endHole, settings = {}, rules = null, courseTees = null) {
   const scoresToCount = settings.retireesScoresToCount || 2
   const activePlayers = team.players.filter(p => !p.isDNF && p.includeInTeamScore)
   const teamSize = activePlayers.length
   const adj = getRetireesAdjustment(teamSize, settings)
+  const hasRules = rules && rules.maxScoreMode && rules.maxScoreMode !== 'none'
 
   let totalNet = 0
   for (let hole = startHole; hole <= endHole; hole++) {
-    const netScores = activePlayers
-      .map(p => {
-        const s = p.scores[hole]
-        if (s === undefined || s === null || s === '' || s === 'X') return null
-        const extraStrokes = adj.extraStrokes
-        return s - getNetStrokes((p.handicap || 0) + extraStrokes, hole)
-      })
-      .filter(s => s !== null)
-      .sort((a, b) => a - b)
+    let netScores
+    if (hasRules) {
+      // Cap gross scores before net calculation
+      netScores = getTeamScoresForHole(team, hole, rules, courseTees)
+        .map(e => {
+          const extraStrokes = adj.extraStrokes
+          return e.score - getNetStrokes((e.handicap || 0) + extraStrokes, hole)
+        })
+        .sort((a, b) => a - b)
+    } else {
+      netScores = activePlayers
+        .map(p => {
+          const s = p.scores[hole]
+          if (s === undefined || s === null || s === '' || s === 'X') return null
+          const extraStrokes = adj.extraStrokes
+          return s - getNetStrokes((p.handicap || 0) + extraStrokes, hole)
+        })
+        .filter(s => s !== null)
+        .sort((a, b) => a - b)
+    }
 
     // Take the N best net scores
     const best = netScores.slice(0, Math.min(scoresToCount, netScores.length))
@@ -259,34 +370,75 @@ export function calculateMatchPlayScore(team1, team2, startHole, endHole) {
 // ── Dispatcher ─────────────────────────────────────────────────────────
 
 export function calculateFormatScore(format, team, startHole, endHole, settings = {}) {
+  const rules = settings.teamScoringRules || null
+  const courseTees = settings.courseTees || null
+
   switch (format) {
     case 'bigboys':
-      return calculateBigBoysScore(team, startHole, endHole)
+      return calculateBigBoysScore(team, startHole, endHole, rules, courseTees)
     case 'bestball':
-      return calculateBestBallScore(team, startHole, endHole, settings.useHandicaps)
+      return calculateBestBallScore(team, startHole, endHole, settings.useHandicaps, rules, courseTees)
     case 'scramble':
-      return calculateScrambleScore(team, startHole, endHole)
+      return calculateScrambleScore(team, startHole, endHole, rules, courseTees)
     case 'retirees':
-      return calculateRetireesScore(team, startHole, endHole, settings)
+      return calculateRetireesScore(team, startHole, endHole, settings, rules, courseTees)
     default:
-      return calculateBigBoysScore(team, startHole, endHole)
+      return calculateBigBoysScore(team, startHole, endHole, rules, courseTees)
   }
 }
 
 // ── Leaderboard Data Builder ───────────────────────────────────────────
 
-export function getLeaderboardData(liveRound) {
+export function getLeaderboardData(liveRound, teamScoringRules = null, courseTees = null) {
   const formatConfig = liveRound.formatConfig
   const format = formatConfig?.format || null
   const settings = formatConfig || {}
   const config = format ? FORMAT_CONFIGS[format] : null
+  const rules = teamScoringRules || null
+
+  // Determine requiredScores for DQ based on format
+  const getRequiredScores = (fmt) => {
+    if (fmt === 'retirees') return settings.retireesScoresToCount || 2
+    return 1 // bigboys, bestball, scramble, default
+  }
+
+  // Apply DQ flags to a team entry
+  const applyDQ = (entry, team, fmt) => {
+    if (!rules || fmt === 'matchplay') return entry
+    const req = getRequiredScores(fmt)
+    const dqFront9 = checkTeamDQ(team, 1, 9, rules, req)
+    const dqBack9 = checkTeamDQ(team, 10, 18, rules, req)
+    const dqTotal = dqFront9 || dqBack9
+    return {
+      ...entry,
+      dqFront9,
+      dqBack9,
+      dqTotal,
+      front9: dqFront9 ? 'DQ' : entry.front9,
+      back9: dqBack9 ? 'DQ' : entry.back9,
+      total: dqTotal ? 'DQ' : entry.total
+    }
+  }
+
+  // Sort helper: DQ entries go to bottom
+  const sortWithDQ = (entries, sortDirection) => {
+    return [...entries].sort((a, b) => {
+      const aDQ = a.dqTotal || false
+      const bDQ = b.dqTotal || false
+      if (aDQ && !bDQ) return 1
+      if (!aDQ && bDQ) return -1
+      if (aDQ && bDQ) return 0
+      // Normal sort for non-DQ entries handled by caller
+      return 0
+    })
+  }
 
   // No format config → exact legacy behavior (Big Boys)
   if (!format || !config) {
     const entries = liveRound.teams.map(team => {
-      const front9 = calculateBigBoysScore(team, 1, 9)
-      const back9 = calculateBigBoysScore(team, 10, 18)
-      return {
+      const front9 = calculateBigBoysScore(team, 1, 9, rules, courseTees)
+      const back9 = calculateBigBoysScore(team, 10, 18, rules, courseTees)
+      const entry = {
         id: team.id,
         name: team.name,
         front9,
@@ -294,11 +446,12 @@ export function getLeaderboardData(liveRound) {
         total: front9 + back9,
         holesCompleted: getTeamHolesCompleted(team)
       }
+      return applyDQ(entry, team, 'bigboys')
     })
     return { entries, displayMode: 'relative', sortDirection: 'asc' }
   }
 
-  // Match Play: special 2-team format
+  // Match Play: special 2-team format (exempt from DQ)
   if (format === 'matchplay' && liveRound.teams.length >= 2) {
     const team1 = liveRound.teams[0]
     const team2 = liveRound.teams[1]
@@ -332,7 +485,7 @@ export function getLeaderboardData(liveRound) {
     return { entries: [], displayMode: null, sortDirection: 'asc' }
   }
 
-  // Individual formats: flatten players from all teams
+  // Individual formats: flatten players from all teams (no team DQ applies)
   if (!config.team) {
     const allPlayers = liveRound.teams.flatMap(t => t.players)
 
@@ -384,19 +537,19 @@ export function getLeaderboardData(liveRound) {
   const entries = liveRound.teams.map(team => {
     let front9, back9
     if (format === 'bestball') {
-      front9 = calculateBestBallScore(team, 1, 9, settings.useHandicaps)
-      back9 = calculateBestBallScore(team, 10, 18, settings.useHandicaps)
+      front9 = calculateBestBallScore(team, 1, 9, settings.useHandicaps, rules, courseTees)
+      back9 = calculateBestBallScore(team, 10, 18, settings.useHandicaps, rules, courseTees)
     } else if (format === 'scramble') {
-      front9 = calculateScrambleScore(team, 1, 9)
-      back9 = calculateScrambleScore(team, 10, 18)
+      front9 = calculateScrambleScore(team, 1, 9, rules, courseTees)
+      back9 = calculateScrambleScore(team, 10, 18, rules, courseTees)
     } else if (format === 'retirees') {
-      front9 = calculateRetireesScore(team, 1, 9, settings)
-      back9 = calculateRetireesScore(team, 10, 18, settings)
+      front9 = calculateRetireesScore(team, 1, 9, settings, rules, courseTees)
+      back9 = calculateRetireesScore(team, 10, 18, settings, rules, courseTees)
     } else {
-      front9 = calculateBigBoysScore(team, 1, 9)
-      back9 = calculateBigBoysScore(team, 10, 18)
+      front9 = calculateBigBoysScore(team, 1, 9, rules, courseTees)
+      back9 = calculateBigBoysScore(team, 10, 18, rules, courseTees)
     }
-    return {
+    const entry = {
       id: team.id,
       name: team.name,
       front9,
@@ -404,6 +557,7 @@ export function getLeaderboardData(liveRound) {
       total: front9 + back9,
       holesCompleted: getTeamHolesCompleted(team)
     }
+    return applyDQ(entry, team, format)
   })
 
   const displayMode = config.leaderboard

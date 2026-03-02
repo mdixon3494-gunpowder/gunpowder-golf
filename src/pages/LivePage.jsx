@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
-import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore } from '../utils/formatScoring'
+import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore, calculateBigBoysScore } from '../utils/formatScoring'
 import NassauTracker from '../components/NassauTracker'
 import WolfTracker from '../components/WolfTracker'
 import {
@@ -14,32 +14,6 @@ import {
   getNetDoubleBogeyMax
 } from '../utils/handicapCalculation'
 
-// Calculate team score for a 9-hole range
-function calculateTeamScore(team, startHole, endHole) {
-  let totalScore = 0
-  for (let hole = startHole; hole <= endHole; hole++) {
-    const holeInfo = getHoleInfo(hole)
-    const par = holeInfo?.par || 4
-
-    const playerScores = team.players
-      .filter(p => !p.isDNF && p.includeInTeamScore)
-      .map(p => p.scores[hole])
-      .filter(s => s !== undefined && s !== null && s !== '' && s !== 'X')
-
-    if (playerScores.length === 0) continue
-
-    const underParScores = playerScores.filter(s => s < par)
-
-    if (underParScores.length > 0) {
-      totalScore += underParScores.reduce((sum, s) => sum + (s - par), 0)
-    } else {
-      const bestScore = Math.min(...playerScores)
-      totalScore += (bestScore - par)
-    }
-  }
-  return totalScore
-}
-
 function formatRelativeToPar(score) {
   if (score === 0) return 'E'
   if (score > 0) return `+${score}`
@@ -47,9 +21,9 @@ function formatRelativeToPar(score) {
 }
 
 // Leaderboard Component
-function Leaderboard({ liveRound, view, setView }) {
+function Leaderboard({ liveRound, view, setView, teamScoringRules, courseTees }) {
 
-  const { entries, displayMode, sortDirection, matchResult } = getLeaderboardData(liveRound)
+  const { entries, displayMode, sortDirection, matchResult } = getLeaderboardData(liveRound, teamScoringRules, courseTees)
 
   // If no leaderboard for this format (e.g. skins), show nothing
   if (!displayMode || entries.length === 0) return null
@@ -98,10 +72,15 @@ function Leaderboard({ liveRound, view, setView }) {
     )
   }
 
-  // Sort entries
+  // Sort entries (DQ teams go to bottom)
   const sorted = [...entries].sort((a, b) => {
     const aVal = view === 'front' ? a.front9 : view === 'back' ? a.back9 : a.total
     const bVal = view === 'front' ? b.front9 : view === 'back' ? b.back9 : b.total
+    const aDQ = aVal === 'DQ'
+    const bDQ = bVal === 'DQ'
+    if (aDQ && !bDQ) return 1
+    if (!aDQ && bDQ) return -1
+    if (aDQ && bDQ) return 0
     return sortDirection === 'desc' ? bVal - aVal : aVal - bVal
   })
 
@@ -111,6 +90,9 @@ function Leaderboard({ liveRound, view, setView }) {
 
   // Score display helper
   const renderScore = (score) => {
+    if (score === 'DQ') {
+      return <span style={{ color: 'var(--color-danger)', fontWeight: '700' }}>DQ</span>
+    }
     if (displayMode === 'relative') {
       return (
         <span style={{ color: score < 0 ? 'var(--color-primary)' : score > 0 ? 'var(--color-danger)' : 'var(--color-text-primary)' }}>
@@ -459,7 +441,7 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
 }
 
 // Score Entry Component - Legacy Style
-function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings }) {
+function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings, leagueSettings, courseTees }) {
   const [activeInput, setActiveInput] = useState(null)
   const [keypadValue, setKeypadValue] = useState('')
   const [isFirstKeypress, setIsFirstKeypress] = useState(true)
@@ -561,27 +543,8 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
   // Calculate team score for a range of holes
   const calculateTeamTotal = (team, startHole, endHole) => {
-    let total = 0
-    for (let h = startHole; h <= endHole; h++) {
-      const holeInfo = getHoleInfo(h)
-      const par = holeInfo?.par || 4
-      const playerScores = team.players
-        .filter(p => !p.isDNF && p.includeInTeamScore !== false)
-        .map(p => p.scores[h])
-        .filter(s => s !== undefined && s !== null && s !== '' && s !== 'X')
-        .map(s => parseInt(s))
-        .filter(s => !isNaN(s))
-
-      if (playerScores.length > 0) {
-        const underPar = playerScores.filter(s => s < par)
-        if (underPar.length > 0) {
-          total += underPar.reduce((sum, s) => sum + (s - par), 0)
-        } else {
-          total += Math.min(...playerScores) - par
-        }
-      }
-    }
-    return total
+    const rules = leagueSettings?.teamScoringRules || null
+    return calculateBigBoysScore(team, startHole, endHole, rules, courseTees)
   }
 
   const openKeypad = (teamId, playerId, hole, currentValue, playerName) => {
@@ -6353,6 +6316,7 @@ function LivePage() {
 
     const formatKey = liveRound.formatConfig?.format || null
     const formatSettings = liveRound.formatConfig || {}
+    const teamRules = leagueSettings?.teamScoringRules || null
 
     const roundData = {
       id: liveRound.id,
@@ -6361,11 +6325,11 @@ function LivePage() {
       teams: liveRound.teams.map(team => {
         let front9Score, back9Score
         if (formatKey && FORMAT_CONFIGS[formatKey]) {
-          front9Score = calculateFormatScore(formatKey, team, 1, 9, formatSettings)
-          back9Score = calculateFormatScore(formatKey, team, 10, 18, formatSettings)
+          front9Score = calculateFormatScore(formatKey, team, 1, 9, { ...formatSettings, teamScoringRules: teamRules, courseTees })
+          back9Score = calculateFormatScore(formatKey, team, 10, 18, { ...formatSettings, teamScoringRules: teamRules, courseTees })
         } else {
-          front9Score = calculateTeamScore(team, 1, 9)
-          back9Score = calculateTeamScore(team, 10, 18)
+          front9Score = calculateBigBoysScore(team, 1, 9, teamRules, courseTees)
+          back9Score = calculateBigBoysScore(team, 10, 18, teamRules, courseTees)
         }
         return {
           ...team,
@@ -6964,7 +6928,7 @@ function LivePage() {
         ))}
       </div>
 
-      {subTab === 'leaderboard' && <Leaderboard liveRound={liveRound} view={leaderboardView} setView={setLeaderboardView} />}
+      {subTab === 'leaderboard' && <Leaderboard liveRound={liveRound} view={leaderboardView} setView={setLeaderboardView} teamScoringRules={leagueSettings?.teamScoringRules} courseTees={courseTees} />}
       {subTab === 'scoring' && (
         <ScoringGrid
           liveRound={liveRound}
@@ -6977,6 +6941,8 @@ function LivePage() {
           isQuickSkins={effectiveQuickSkinsMode}
           isIndividualRound={isIndividualRound}
           handicapSettings={handicapSettings}
+          leagueSettings={leagueSettings}
+          courseTees={courseTees}
         />
       )}
       {subTab === 'greenies' && (

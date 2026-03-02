@@ -209,13 +209,23 @@ export function LeagueProvider({ children }) {
     setPairingRequests(data.pairingRequests || [])
     setLiveRound(normalizeRound(data.liveRound))
     setTeams(data.teams || [])
-    setLeagueSettings(data.leagueSettings || {
+    const loadedSettings = data.leagueSettings || {
       contactInfoVisibility: 'admin',
       nextRoundDate: '',
       nextRoundTime: '',
       nextRoundMessage: '',
       sideGames: { enabled: false, allowSkins: true, allowNassau: true }
-    })
+    }
+    // Merge default teamScoringRules if missing
+    if (!loadedSettings.teamScoringRules) {
+      loadedSettings.teamScoringRules = {
+        maxScoreMode: 'none',
+        maxScoreFixed: 10,
+        allowXForTeamScore: false,
+        dqOnMissingScores: false
+      }
+    }
+    setLeagueSettings(loadedSettings)
     setPendingPlayerRequests(data.pendingPlayerRequests || [])
     setSkinsMatch(data.skinsMatch || null)
     setNassauMatch(data.nassauMatch || null)
