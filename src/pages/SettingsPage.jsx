@@ -2854,7 +2854,7 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
   )
 }
 
-function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
+function AccountSection({ user, profile, onSignOut, onUnlinkProfile, onLeaveLeague, onSignIn }) {
   const [signingOut, setSigningOut] = useState(false)
   const [unlinking, setUnlinking] = useState(false)
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false)
@@ -2869,9 +2869,47 @@ function AccountSection({ user, profile, onSignOut, onUnlinkProfile }) {
         border: '1px solid var(--color-border)'
       }}>
         <h3 style={{ marginBottom: '10px' }}>Account</h3>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '15px' }}>
           Not signed in. Sign in to link your player profile and access your leagues across devices.
         </p>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {onSignIn && (
+            <button
+              onClick={onSignIn}
+              style={{
+                background: 'var(--color-primary)',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Sign In
+            </button>
+          )}
+          {onLeaveLeague && (
+            <button
+              onClick={() => {
+                if (confirm('Leave this league? You can rejoin later with the league code.')) {
+                  onLeaveLeague()
+                }
+              }}
+              style={{
+                background: 'var(--color-danger)',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Leave League
+            </button>
+          )}
+        </div>
       </div>
     )
   }
@@ -3628,7 +3666,20 @@ function SettingsPage({ onShowLeagueSelector }) {
       case 'account':
         return (
           <>
-            <AccountSection user={user} profile={profile} onSignOut={signOut} onUnlinkProfile={unlinkMyProfile} />
+            <AccountSection
+              user={user}
+              profile={profile}
+              onSignOut={signOut}
+              onUnlinkProfile={unlinkMyProfile}
+              onLeaveLeague={() => {
+                leaveLeague()
+                onShowLeagueSelector()
+              }}
+              onSignIn={() => {
+                leaveLeague()
+                window.location.reload()
+              }}
+            />
             <AdminLoginSection isAdmin={isAdmin} onLogin={adminLogin} onLogout={adminLogout} />
           </>
         )

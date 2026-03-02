@@ -125,7 +125,7 @@ function NextRoundBanner({ leagueSettings }) {
 /* ================================
    LEAGUE SWITCHER
    ================================ */
-function LeagueSwitcher({ leagueId, leagueSettings, onShowLeagueSelector, switchLeague, isAdmin }) {
+function LeagueSwitcher({ leagueId, leagueSettings, onShowLeagueSelector, switchLeague, isAdmin, leaveLeague }) {
   const { isAuthenticated, profile } = useAuth()
   const [leagues, setLeagues] = useState([])
   const [isOpen, setIsOpen] = useState(false)
@@ -168,8 +168,47 @@ function LeagueSwitcher({ leagueId, leagueSettings, onShowLeagueSelector, switch
     setSwitching(false)
   }
 
-  // Simple display — no dropdown needed
+  // No other leagues — show name with tap-to-leave for unauthenticated users
   if (!isAuthenticated || otherLeagues.length === 0) {
+    if (!isAuthenticated) {
+      return (
+        <div ref={dropdownRef} className="header-left" style={{ position: 'relative' }}>
+          <button
+            className="league-switcher-btn"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            <span className="league-switcher-name">{displayName}</span>
+            <span className="league-switcher-chevron">{Icons.chevronDown}</span>
+          </button>
+          {isOpen && (
+            <div className="league-switcher-dropdown">
+              <button
+                className="league-switcher-option"
+                onClick={() => {
+                  setIsOpen(false)
+                  leaveLeague()
+                  window.location.reload()
+                }}
+              >
+                <div className="league-switcher-option-name">Sign In</div>
+                <div className="league-switcher-option-meta">
+                  <span className="text-xs text-tertiary">Link your profile across devices</span>
+                </div>
+              </button>
+              <button
+                className="league-switcher-option"
+                onClick={() => { setIsOpen(false); onShowLeagueSelector() }}
+              >
+                <div className="league-switcher-option-name">Switch League</div>
+                <div className="league-switcher-option-meta">
+                  <span className="text-xs text-tertiary">Enter a different league code</span>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
+      )
+    }
     return (
       <div className="header-left">
         <span className="league-switcher-name">{displayName}</span>
@@ -446,6 +485,7 @@ function Layout({ onShowLeagueSelector }) {
           onShowLeagueSelector={onShowLeagueSelector}
           switchLeague={switchLeague}
           isAdmin={isAdmin}
+          leaveLeague={leaveLeague}
         />
         <div className="header-right">
           {isAdmin && <span className="badge badge-admin">Admin</span>}
