@@ -216,37 +216,13 @@ export async function mergeProfiles(ghostId, duplicateId) {
   if (!dupe) throw new Error('Duplicate profile not found')
   if (!dupe.user_id) throw new Error('Duplicate profile has no linked account')
 
-  // 2. Clear user_id from duplicate first (unique constraint prevents two rows with same user_id)
-  const { error: unlinkError } = await supabase
-    .from('profiles')
-    .update({ user_id: null })
-    .eq('id', duplicateId)
-
-  if (unlinkError) throw unlinkError
-
-  // 3. Transfer user_id (and email/avatar if ghost is missing them) to the ghost profile
-  const updateFields = { user_id: dupe.user_id }
-  if (dupe.email) updateFields.email = dupe.email
-  if (dupe.avatar_url) updateFields.avatar_url = dupe.avatar_url
-
-  const { data: merged, error: mergeError } = await supabase
-    .from('profiles')
-    .update(updateFields)
-    .eq('id', ghostId)
-    .is('user_id', null)
-    .select()
-
-  if (mergeError) throw mergeError
-  if (!merged || merged.length === 0) throw new Error('Failed to update ghost profile — it may already be claimed')
-
-  // 3. Migrate league_members rows from duplicate to ghost (skip conflicts)
+  // 2. Migrate league_members rows from duplicate to ghost BEFORE deleting
   const { data: dupeMembers } = await supabase
     .from('league_members')
     .select('league_id')
     .eq('profile_id', duplicateId)
 
   if (dupeMembers && dupeMembers.length > 0) {
-    // Check which leagues already have the ghost profile
     const { data: ghostMembers } = await supabase
       .from('league_members')
       .select('league_id')
@@ -263,24 +239,41 @@ export async function mergeProfiles(ghostId, duplicateId) {
           .eq('league_id', dm.league_id)
       }
     }
-    // Delete any remaining duplicate league_members
     await supabase
       .from('league_members')
       .delete()
       .eq('profile_id', duplicateId)
   }
 
-  // 4. Migrate round_history rows from duplicate to ghost
+  // 3. Migrate round_history rows from duplicate to ghost
   await supabase
     .from('round_history')
     .update({ profile_id: ghostId })
     .eq('profile_id', duplicateId)
 
-  // 5. Delete the duplicate profile
+  // 4. Delete the duplicate profile (CASCADE cleans up any remaining FK refs)
+  //    This frees up the user_id for the ghost profile
   const { error: deleteError } = await supabase
     .from('profiles')
     .delete()
     .eq('id', duplicateId)
+
+  if (deleteError) throw new Error('Failed to delete duplicate profile: ' + deleteError.message)
+
+  // 5. Now transfer user_id to the ghost profile (no unique conflict since dupe is gone)
+  const updateFields = { user_id: dupe.user_id }
+  if (dupe.email) updateFields.email = dupe.email
+  if (dupe.avatar_url) updateFields.avatar_url = dupe.avatar_url
+
+  const { data: merged, error: mergeError } = await supabase
+    .from('profiles')
+    .update(updateFields)
+    .eq('id', ghostId)
+    .is('user_id', null)
+    .select()
+
+  if (mergeError) throw mergeError
+  if (!merged || merged.length === 0) throw new Error('Failed to update ghost profile — it may already be claimed')
 
   if (deleteError) {
     console.warn('Could not delete duplicate profile:', deleteError)
