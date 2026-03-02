@@ -2744,9 +2744,13 @@ function PlayerProfileCard({ player, handicapScope, leagueId, courseTees, handic
   )
 }
 
+const MANAGE_PAGE_SIZE = 10
+
 function ManagePlayersModal({ players, onClose, onEdit, onView, onToggleActive, onAddPlayer, isAdmin, handicapScope, leagueId, courseTees, handicapSettings }) {
   const [filter, setFilter] = useState('active')
   const [showAddForm, setShowAddForm] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
 
   const activeCount = players.filter(p => p.isActive !== false).length
   const inactiveCount = players.filter(p => p.isActive === false).length
@@ -2755,7 +2759,16 @@ function ManagePlayersModal({ players, onClose, onEdit, onView, onToggleActive, 
     if (filter === 'active') return player.isActive !== false
     if (filter === 'inactive') return player.isActive === false
     return true
+  }).filter(player => {
+    if (!searchQuery) return true
+    return player.name.toLowerCase().includes(searchQuery.toLowerCase())
   }).sort((a, b) => a.name.localeCompare(b.name))
+
+  const totalPages = Math.ceil(filteredPlayers.length / MANAGE_PAGE_SIZE)
+  const paginatedPlayers = filteredPlayers.slice(
+    currentPage * MANAGE_PAGE_SIZE,
+    (currentPage + 1) * MANAGE_PAGE_SIZE
+  )
 
   const handleAdd = (newPlayer) => {
     onAddPlayer(newPlayer)
@@ -2774,21 +2787,21 @@ function ManagePlayersModal({ players, onClose, onEdit, onView, onToggleActive, 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '15px', alignItems: 'center' }}>
             <button
               className={`btn btn-small ${filter === 'active' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setFilter('active')}
+              onClick={() => { setFilter('active'); setCurrentPage(0) }}
               style={{ minHeight: '36px' }}
             >
               Active ({activeCount})
             </button>
             <button
               className={`btn btn-small ${filter === 'inactive' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setFilter('inactive')}
+              onClick={() => { setFilter('inactive'); setCurrentPage(0) }}
               style={{ minHeight: '36px' }}
             >
               Inactive ({inactiveCount})
             </button>
             <button
               className={`btn btn-small ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={() => setFilter('all')}
+              onClick={() => { setFilter('all'); setCurrentPage(0) }}
               style={{ minHeight: '36px' }}
             >
               All ({players.length})
@@ -2816,85 +2829,154 @@ function ManagePlayersModal({ players, onClose, onEdit, onView, onToggleActive, 
             />
           )}
 
+          {/* Search box */}
+          <input
+            type="text"
+            placeholder="Search players..."
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0) }}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-surface-sunken)',
+              fontSize: '14px',
+              marginBottom: '12px',
+              boxSizing: 'border-box'
+            }}
+          />
+
           {/* Player list */}
           {filteredPlayers.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-tertiary)' }}>
-              {filter === 'active' && 'No active players.'}
-              {filter === 'inactive' && 'No inactive players.'}
-              {filter === 'all' && 'No players yet.'}
+              {searchQuery ? 'No matching players.' : (
+                <>
+                  {filter === 'active' && 'No active players.'}
+                  {filter === 'inactive' && 'No inactive players.'}
+                  {filter === 'all' && 'No players yet.'}
+                </>
+              )}
             </div>
           ) : (
-            <div>
-              {filteredPlayers.map(player => {
-                const effectiveHcp = getEffectiveHandicap(player, handicapSettings, leagueId, courseTees)
-                return (
-                  <div
-                    key={player.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      marginBottom: '4px',
-                      background: 'var(--color-surface-sunken)',
-                      flexWrap: 'wrap'
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: '120px' }}>
-                      <div style={{ fontWeight: '600', fontSize: '14px' }}>
-                        {player.name}
-                        {player.isActive === false && (
-                          <span style={{
-                            marginLeft: '8px',
-                            background: 'var(--color-danger)',
-                            color: 'white',
-                            padding: '1px 6px',
-                            borderRadius: '3px',
-                            fontSize: '10px'
-                          }}>
-                            INACTIVE
-                          </span>
+            <>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: '8px'
+              }}>
+                {paginatedPlayers.map(player => {
+                  const effectiveHcp = getEffectiveHandicap(player, handicapSettings, leagueId, courseTees)
+                  return (
+                    <div
+                      key={player.id}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        background: 'var(--color-surface-sunken)'
+                      }}
+                    >
+                      <div style={{ marginBottom: '6px' }}>
+                        <div style={{ fontWeight: '600', fontSize: '13px' }}>
+                          {player.name}
+                          {player.isActive === false && (
+                            <span style={{
+                              marginLeft: '6px',
+                              background: 'var(--color-danger)',
+                              color: 'white',
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              fontSize: '10px'
+                            }}>
+                              INACTIVE
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
+                          HCP: {formatHandicap(effectiveHcp)} | Games: {player.gamesPlayed || 0}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          className="btn btn-small btn-primary"
+                          onClick={() => { onView(player); onClose() }}
+                          style={{ minHeight: '32px', flex: 1, fontSize: '12px' }}
+                        >
+                          Stats
+                        </button>
+                        <button
+                          className="btn btn-small btn-secondary"
+                          onClick={() => { onEdit(player); onClose() }}
+                          style={{ minHeight: '32px', flex: 1, fontSize: '12px' }}
+                        >
+                          Edit
+                        </button>
+                        {isAdmin && (
+                          <button
+                            className="btn btn-small"
+                            onClick={() => onToggleActive(player)}
+                            style={{
+                              minHeight: '32px',
+                              background: player.isActive === false ? 'var(--color-success)' : 'var(--color-danger)',
+                              color: 'white',
+                              flex: 1,
+                              fontSize: '12px'
+                            }}
+                          >
+                            {player.isActive === false ? 'Activate' : 'Deactivate'}
+                          </button>
                         )}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                        HCP: {formatHandicap(effectiveHcp)} | Games: {player.gamesPlayed || 0}
-                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                      <button
-                        className="btn btn-small btn-primary"
-                        onClick={() => { onView(player); onClose() }}
-                        style={{ minHeight: '36px', minWidth: '50px' }}
-                      >
-                        Stats
-                      </button>
-                      <button
-                        className="btn btn-small btn-secondary"
-                        onClick={() => { onEdit(player); onClose() }}
-                        style={{ minHeight: '36px', minWidth: '44px' }}
-                      >
-                        Edit
-                      </button>
-                      {isAdmin && (
-                        <button
-                          className="btn btn-small"
-                          onClick={() => onToggleActive(player)}
-                          style={{
-                            minHeight: '36px',
-                            background: player.isActive === false ? 'var(--color-success)' : 'var(--color-danger)',
-                            color: 'white',
-                            minWidth: '44px'
-                          }}
-                        >
-                          {player.isActive === false ? 'Activate' : 'Deactivate'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '12px',
+                  marginTop: '12px'
+                }}>
+                  <button
+                    onClick={() => setCurrentPage(p => p - 1)}
+                    disabled={currentPage === 0}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-surface)',
+                      cursor: currentPage === 0 ? 'default' : 'pointer',
+                      fontSize: '13px',
+                      opacity: currentPage === 0 ? 0.4 : 1
+                    }}
+                  >
+                    Prev
+                  </button>
+                  <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                    Page {currentPage + 1} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    disabled={currentPage >= totalPages - 1}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-surface)',
+                      cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer',
+                      fontSize: '13px',
+                      opacity: currentPage >= totalPages - 1 ? 0.4 : 1
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

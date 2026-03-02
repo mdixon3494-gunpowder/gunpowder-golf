@@ -20,6 +20,8 @@ const ROLE_COLORS = {
   player: 'var(--color-text-secondary)'
 }
 
+const PAGE_SIZE = 10
+
 function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,6 +29,8 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(null)
   const [showTransferConfirm, setShowTransferConfirm] = useState(null)
   const [error, setError] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
 
   const loadMembers = async () => {
     setLoading(true)
@@ -103,6 +107,21 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
     ['co_owner', 'admin'].includes(m.role)
   )
 
+  const filteredMembers = members.filter(member => {
+    if (!searchQuery) return true
+    const q = searchQuery.toLowerCase()
+    const profileData = member.profiles || {}
+    const name = (profileData.display_name || '').toLowerCase()
+    const email = (profileData.email || '').toLowerCase()
+    return name.includes(q) || email.includes(q)
+  })
+
+  const totalPages = Math.ceil(filteredMembers.length / PAGE_SIZE)
+  const paginatedMembers = filteredMembers.slice(
+    currentPage * PAGE_SIZE,
+    (currentPage + 1) * PAGE_SIZE
+  )
+
   if (loading) {
     return (
       <div style={{
@@ -128,7 +147,9 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
     }}>
       <h3 style={{ marginBottom: '4px' }}>Members</h3>
       <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
-        {members.length} member{members.length !== 1 ? 's' : ''}
+        {searchQuery
+          ? `${filteredMembers.length} of ${members.length} member${members.length !== 1 ? 's' : ''}`
+          : `${members.length} member${members.length !== 1 ? 's' : ''}`}
       </p>
 
       {error && (
@@ -144,121 +165,178 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
         </div>
       )}
 
-      {members.map(member => {
-        const profileData = member.profiles || {}
-        const name = profileData.display_name || profileData.email || 'Unknown'
-        const avatar = profileData.avatar_url
-        const isCurrentUser = member.profile_id === currentProfileId
+      {/* Search box */}
+      <input
+        type="text"
+        placeholder="Search members..."
+        value={searchQuery}
+        onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0) }}
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          border: '1px solid var(--color-border)',
+          background: 'var(--color-surface-sunken)',
+          fontSize: '14px',
+          marginBottom: '12px',
+          boxSizing: 'border-box'
+        }}
+      />
 
-        return (
-          <div key={member.profile_id} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '12px',
-            borderRadius: '8px',
-            background: isCurrentUser ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
-            marginBottom: '8px'
-          }}>
-            {/* Avatar */}
-            <div style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              background: avatar ? 'none' : 'var(--color-border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: 'var(--color-text-secondary)',
-              overflow: 'hidden',
-              flexShrink: 0
+      {/* Member grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+        gap: '8px'
+      }}>
+        {paginatedMembers.map(member => {
+          const profileData = member.profiles || {}
+          const name = profileData.display_name || profileData.email || 'Unknown'
+          const avatar = profileData.avatar_url
+          const isCurrentUser = member.profile_id === currentProfileId
+
+          return (
+            <div key={member.profile_id} style={{
+              padding: '10px',
+              borderRadius: '8px',
+              background: isCurrentUser ? 'var(--color-success-light)' : 'var(--color-surface-sunken)'
             }}>
-              {avatar ? (
-                <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                name.charAt(0).toUpperCase()
+              {/* Top row: avatar + name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: avatar ? 'none' : 'var(--color-border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: 'var(--color-text-secondary)',
+                  overflow: 'hidden',
+                  flexShrink: 0
+                }}>
+                  {avatar ? (
+                    <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {name}
+                    {isCurrentUser && <span style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginLeft: '4px' }}>(you)</span>}
+                  </div>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    background: 'var(--color-surface-sunken)',
+                    color: ROLE_COLORS[member.role],
+                    border: '1px solid var(--color-border-light)'
+                  }}>
+                    {ROLE_LABELS[member.role]}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom row: role dropdown + remove */}
+              {canChangeRole(member) && (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <select
+                    value={member.role}
+                    onChange={(e) => handleRoleChange(member, e.target.value)}
+                    disabled={actionLoading === member.profile_id}
+                    style={{
+                      flex: 1,
+                      padding: '4px 6px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '12px',
+                      background: 'var(--color-surface)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value={member.role}>{ROLE_LABELS[member.role]}</option>
+                    {getRoleOptions(member).map(role => (
+                      <option key={role} value={role}>{ROLE_LABELS[role]}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setShowRemoveConfirm(member.profile_id)}
+                    disabled={actionLoading === member.profile_id}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--color-danger-border)',
+                      background: 'var(--color-danger-light)',
+                      color: 'var(--color-danger-dark)',
+                      cursor: 'pointer',
+                      fontSize: '12px'
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
               )}
             </div>
+          )
+        })}
+      </div>
 
-            {/* Name & Role */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontWeight: '600',
-                fontSize: '14px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
-                {name}
-                {isCurrentUser && <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginLeft: '6px' }}>(you)</span>}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                <span style={{
-                  display: 'inline-block',
-                  padding: '1px 8px',
-                  borderRadius: '10px',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  background: 'var(--color-surface-sunken)',
-                  color: ROLE_COLORS[member.role],
-                  border: `1px solid var(--color-border-light)`
-                }}>
-                  {ROLE_LABELS[member.role]}
-                </span>
-                {member.joined_at && (
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>
-                    Joined {new Date(member.joined_at).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Actions */}
-            {canChangeRole(member) && (
-              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                {/* Role dropdown */}
-                <select
-                  value={member.role}
-                  onChange={(e) => handleRoleChange(member, e.target.value)}
-                  disabled={actionLoading === member.profile_id}
-                  style={{
-                    padding: '4px 6px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '12px',
-                    background: 'var(--color-surface)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value={member.role}>{ROLE_LABELS[member.role]}</option>
-                  {getRoleOptions(member).map(role => (
-                    <option key={role} value={role}>{ROLE_LABELS[role]}</option>
-                  ))}
-                </select>
-
-                {/* Remove button */}
-                <button
-                  onClick={() => setShowRemoveConfirm(member.profile_id)}
-                  disabled={actionLoading === member.profile_id}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--color-danger-border)',
-                    background: 'var(--color-danger-light)',
-                    color: 'var(--color-danger-dark)',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
-            )}
-          </div>
-        )
-      })}
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '12px',
+          marginTop: '12px'
+        }}>
+          <button
+            onClick={() => setCurrentPage(p => p - 1)}
+            disabled={currentPage === 0}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '6px',
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              cursor: currentPage === 0 ? 'default' : 'pointer',
+              fontSize: '13px',
+              opacity: currentPage === 0 ? 0.4 : 1
+            }}
+          >
+            Prev
+          </button>
+          <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+            Page {currentPage + 1} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => p + 1)}
+            disabled={currentPage >= totalPages - 1}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '6px',
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              cursor: currentPage >= totalPages - 1 ? 'default' : 'pointer',
+              fontSize: '13px',
+              opacity: currentPage >= totalPages - 1 ? 0.4 : 1
+            }}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* Remove Confirmation Modal */}
       {showRemoveConfirm && (
