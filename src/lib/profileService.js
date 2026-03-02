@@ -216,7 +216,15 @@ export async function mergeProfiles(ghostId, duplicateId) {
   if (!dupe) throw new Error('Duplicate profile not found')
   if (!dupe.user_id) throw new Error('Duplicate profile has no linked account')
 
-  // 2. Transfer user_id (and email/avatar if ghost is missing them) to the ghost profile
+  // 2. Clear user_id from duplicate first (unique constraint prevents two rows with same user_id)
+  const { error: unlinkError } = await supabase
+    .from('profiles')
+    .update({ user_id: null })
+    .eq('id', duplicateId)
+
+  if (unlinkError) throw unlinkError
+
+  // 3. Transfer user_id (and email/avatar if ghost is missing them) to the ghost profile
   const updateFields = { user_id: dupe.user_id }
   if (dupe.email) updateFields.email = dupe.email
   if (dupe.avatar_url) updateFields.avatar_url = dupe.avatar_url
