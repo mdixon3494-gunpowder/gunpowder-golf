@@ -13,17 +13,18 @@ CREATE POLICY "Users can claim ghost profiles"
   USING (user_id IS NULL)
   WITH CHECK (user_id = auth.uid());
 
--- Policy 2: Site owner admin — full update access to ghost profiles (merge, assign email, etc.)
-CREATE POLICY "Site owners can update ghost profiles"
+-- Policy 2: Site owner admin — full update access to any profile (merge, assign email, etc.)
+-- Covers both ghost and claimed profiles so site owners can clear user_id during merges
+CREATE POLICY "Site owners can update any profile"
   ON profiles FOR UPDATE
   USING (
-    user_id IS NULL
-    AND EXISTS (
+    EXISTS (
       SELECT 1 FROM profiles
       WHERE user_id = auth.uid()
         AND is_site_owner = true
     )
-  );
+  )
+  WITH CHECK (true);
 
 -- Policy 3: Site owners can delete profiles (for cleanup after merging duplicates)
 CREATE POLICY "Site owners can delete profiles"
