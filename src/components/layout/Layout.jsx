@@ -125,7 +125,7 @@ function NextRoundBanner({ leagueSettings }) {
 /* ================================
    LEAGUE SWITCHER
    ================================ */
-function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin }) {
+function LeagueSwitcher({ leagueId, leagueSettings, onShowLeagueSelector, switchLeague, isAdmin }) {
   const { isAuthenticated, profile } = useAuth()
   const [leagues, setLeagues] = useState([])
   const [isOpen, setIsOpen] = useState(false)
@@ -159,7 +159,7 @@ function LeagueSwitcher({ leagueId, onShowLeagueSelector, switchLeague, isAdmin 
   const currentMembership = leagues.find(m => m.league_id === leagueId)
   const currentLeagueName = currentMembership?.leagues?.name
 
-  const displayName = currentLeagueName || 'League'
+  const displayName = currentLeagueName || leagueSettings?.leagueName || leagueId || 'League'
 
   const handleSwitch = async (newLeagueId) => {
     setSwitching(true)
@@ -442,6 +442,7 @@ function Layout({ onShowLeagueSelector }) {
       <header className="header">
         <LeagueSwitcher
           leagueId={leagueId}
+          leagueSettings={leagueSettings}
           onShowLeagueSelector={onShowLeagueSelector}
           switchLeague={switchLeague}
           isAdmin={isAdmin}

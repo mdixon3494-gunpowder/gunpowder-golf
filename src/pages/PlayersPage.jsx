@@ -322,6 +322,17 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
       return
     }
 
+    // Prevent linking a profile that's already in the roster
+    if (linkedProfile) {
+      const existingIds = new Set(
+        (existingPlayers || []).filter(p => p.profileId || p.profile_id).map(p => p.profileId || p.profile_id)
+      )
+      if (existingIds.has(linkedProfile.id)) {
+        alert('This profile is already linked to another player in the roster.')
+        return
+      }
+    }
+
     const resolvedHandicap = handicap ? parseFloat(handicap) : null
     let resolvedSource = null
     if (resolvedHandicap !== null && linkedProfile) {

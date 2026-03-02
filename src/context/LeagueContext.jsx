@@ -694,6 +694,16 @@ export function LeagueProvider({ children }) {
 
     await CloudStorage.saveData(testLeagueId, clonedData)
 
+    // Mark as test league in the leagues table so UI filters hide it from non-admins
+    try {
+      await supabase
+        .from('leagues')
+        .update({ is_test: true, name: `Test: ${leagueId}` })
+        .eq('id', testLeagueId)
+    } catch (err) {
+      console.warn('Could not set is_test on leagues table:', err)
+    }
+
     return { success: true, testLeagueId }
   }
 
