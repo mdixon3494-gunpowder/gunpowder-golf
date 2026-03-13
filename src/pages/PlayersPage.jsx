@@ -1147,6 +1147,57 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                       borderRadius: '8px',
                       marginTop: '8px'
                     }}>
+                      {/* Quick-fill tee selector */}
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', fontWeight: '500' }}>
+                          Course Tees
+                        </label>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {[
+                            { key: 'gold', label: 'Gold', color: '#DAA520' },
+                            { key: 'blue', label: 'Blue', color: 'var(--color-info)' },
+                            { key: 'red', label: 'Red', color: 'var(--color-danger)' },
+                            { key: 'custom', label: 'Other Course', color: 'var(--color-text-secondary)' }
+                          ].map(tee => {
+                            const ratings = GUNPOWDER_SCORECARD.ratings[tee.key]
+                            const isSelected = tee.key === 'custom'
+                              ? !Object.keys(GUNPOWDER_SCORECARD.ratings).some(k => {
+                                  const r = GUNPOWDER_SCORECARD.ratings[k]
+                                  return String(r.rating) === bulkCourseRating && String(r.slope) === bulkSlopeRating
+                                })
+                              : String(ratings?.rating) === bulkCourseRating && String(ratings?.slope) === bulkSlopeRating
+                            return (
+                              <button
+                                key={tee.key}
+                                onClick={() => {
+                                  if (ratings) {
+                                    setBulkCourseRating(String(ratings.rating))
+                                    setBulkSlopeRating(String(ratings.slope))
+                                  } else {
+                                    setBulkCourseRating('72')
+                                    setBulkSlopeRating('113')
+                                  }
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  borderRadius: '6px',
+                                  border: isSelected ? `2px solid ${tee.color}` : '1px solid var(--color-border)',
+                                  background: isSelected ? 'var(--color-surface)' : 'var(--color-surface-sunken)',
+                                  cursor: 'pointer',
+                                  fontSize: '11px',
+                                  fontWeight: isSelected ? '700' : '500',
+                                  color: isSelected ? tee.color : 'var(--color-text-secondary)',
+                                  textAlign: 'center'
+                                }}
+                              >
+                                {tee.label}
+                                {ratings && <div style={{ fontSize: '9px', opacity: 0.8 }}>{ratings.rating}/{ratings.slope}</div>}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
                       <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                         <div style={{ flex: 1 }}>
                           <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', fontWeight: '500' }}>
