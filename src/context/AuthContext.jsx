@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { getProfileByUserId, createProfile, updateProfile, unlinkProfile, getGhostProfileByEmail, claimProfile } from '../lib/profileService'
+import { getProfileByUserId, createProfile, updateProfile, unlinkProfile, getGhostProfileByEmail, claimProfile, sanitizeDisplayName } from '../lib/profileService'
 
 const AuthContext = createContext(null)
 
@@ -192,11 +192,12 @@ export function AuthProvider({ children }) {
   }
 
   const signUp = async (email, password, displayName) => {
+    const cleanName = sanitizeDisplayName(displayName)
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { display_name: displayName }
+        data: { display_name: cleanName }
       }
     })
     if (error) throw error
@@ -206,7 +207,7 @@ export function AuthProvider({ children }) {
       try {
         const newProfile = await createProfile({
           userId: data.user.id,
-          displayName,
+          displayName: cleanName,
           email
         })
         setProfile(newProfile)

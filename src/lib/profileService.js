@@ -5,6 +5,22 @@ import { supabase, supabaseUrl, supabaseAnonKey } from './supabase'
  * Handles both authenticated user profiles and ghost profiles (user_id = null)
  */
 
+/**
+ * Sanitize a display name — if it looks like an email, convert to a proper name.
+ * e.g. "jeremy.lorinczy@gmail.com" → "Jeremy Lorinczy"
+ */
+export function sanitizeDisplayName(name) {
+  if (!name || typeof name !== 'string') return name
+  const trimmed = name.trim()
+  if (!trimmed.includes('@')) return trimmed
+  // Extract username before @, replace dots/underscores with spaces, title-case
+  const username = trimmed.split('@')[0]
+  return username
+    .replace(/[._]/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .trim()
+}
+
 export async function getProfileByUserId(userId) {
   // Try Supabase client with AbortSignal
   const controller = new AbortController()
@@ -82,7 +98,7 @@ export async function createProfile({ userId = null, displayName, email = null, 
     .from('profiles')
     .insert({
       user_id: userId,
-      display_name: displayName,
+      display_name: sanitizeDisplayName(displayName),
       email,
       phone,
       default_tee: defaultTee
@@ -99,7 +115,7 @@ export async function createProfile({ userId = null, displayName, email = null, 
 
 export async function updateProfile(profileId, updates) {
   const mappedUpdates = {}
-  if (updates.displayName !== undefined) mappedUpdates.display_name = updates.displayName
+  if (updates.displayName !== undefined) mappedUpdates.display_name = sanitizeDisplayName(updates.displayName)
   if (updates.email !== undefined) mappedUpdates.email = updates.email
   if (updates.phone !== undefined) mappedUpdates.phone = updates.phone
   if (updates.defaultTee !== undefined) mappedUpdates.default_tee = updates.defaultTee

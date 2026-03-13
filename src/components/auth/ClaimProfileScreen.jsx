@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { searchGhostProfilesByName, claimProfile } from '../../lib/profileService'
+import { searchGhostProfilesByName, claimProfile, sanitizeDisplayName } from '../../lib/profileService'
 
 function ClaimProfileScreen() {
   const { user, createAndSetProfile, setClaimedProfile } = useAuth()
@@ -11,7 +11,7 @@ function ClaimProfileScreen() {
   const [error, setError] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [displayName, setDisplayName] = useState(
-    user?.user_metadata?.display_name || user?.user_metadata?.full_name || ''
+    sanitizeDisplayName(user?.user_metadata?.display_name || user?.user_metadata?.full_name || '')
   )
 
   useEffect(() => {
