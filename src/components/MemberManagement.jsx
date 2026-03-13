@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   getLeagueMembers,
   updateMemberRole,
@@ -22,7 +22,7 @@ const ROLE_COLORS = {
 
 const PAGE_SIZE = 10
 
-function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
+function MemberManagement({ leagueId, currentProfileId, isLeagueOwner, rosterPlayers = [] }) {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
@@ -31,6 +31,7 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(0)
+  const [filterTab, setFilterTab] = useState('all') // 'all', 'linked', 'unlinked'
 
   const loadMembers = async () => {
     setLoading(true)
@@ -47,13 +48,48 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
     if (leagueId) loadMembers()
   }, [leagueId])
 
-  const handleRoleChange = async (member, newRole) => {
-    setActionLoading(member.profile_id)
+  // Merge roster players with league_members data
+  const mergedRoster = useMemo(() => {
+    const memberByProfileId = new Map()
+    members.forEach(m => memberByProfileId.set(m.profile_id, m))
+
+    const activePlayers = rosterPlayers.filter(p => p.isActive !== false)
+
+    return activePlayers.map(player => {
+      const profileId = player.profileId || player.profile_id
+      const member = profileId ? memberByProfileId.get(profileId) : null
+      const isLinked = !!member
+
+      return {
+        // Roster data
+        id: player.id,
+        name: player.name,
+        handicap: player.handicap,
+        tee: player.tee,
+        // Profile/member data
+        profileId,
+        member,
+        isLinked,
+        role: member?.role || null,
+        avatar: member?.profiles?.avatar_url || null,
+        email: member?.profiles?.email || null,
+        isCurrentUser: profileId === currentProfileId
+      }
+    }).sort((a, b) => {
+      // Linked first, then alphabetical
+      if (a.isLinked !== b.isLinked) return a.isLinked ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
+  }, [rosterPlayers, members, currentProfileId])
+
+  const handleRoleChange = async (entry, newRole) => {
+    if (!entry.member) return
+    setActionLoading(entry.profileId)
     setError('')
     try {
-      await updateMemberRole(leagueId, member.profile_id, newRole)
+      await updateMemberRole(leagueId, entry.profileId, newRole)
       setMembers(prev => prev.map(m =>
-        m.profile_id === member.profile_id ? { ...m, role: newRole } : m
+        m.profile_id === entry.profileId ? { ...m, role: newRole } : m
       ))
     } catch (err) {
       setError(`Failed to update role: ${err.message}`)
@@ -61,12 +97,13 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
     setActionLoading(null)
   }
 
-  const handleRemove = async (member) => {
-    setActionLoading(member.profile_id)
+  const handleRemove = async (entry) => {
+    if (!entry.member) return
+    setActionLoading(entry.profileId)
     setError('')
     try {
-      await removeLeagueMember(leagueId, member.profile_id)
-      setMembers(prev => prev.filter(m => m.profile_id !== member.profile_id))
+      await removeLeagueMember(leagueId, entry.profileId)
+      setMembers(prev => prev.filter(m => m.profile_id !== entry.profileId))
       setShowRemoveConfirm(null)
     } catch (err) {
       setError(`Failed to remove member: ${err.message}`)
@@ -74,12 +111,12 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
     setActionLoading(null)
   }
 
-  const handleTransferOwnership = async (targetMember) => {
-    setActionLoading(targetMember.profile_id)
+  const handleTransferOwnership = async (entry) => {
+    if (!entry.member) return
+    setActionLoading(entry.profileId)
     setError('')
     try {
-      await transferOwnership(leagueId, currentProfileId, targetMember.profile_id)
-      // Refresh member list to reflect changes
+      await transferOwnership(leagueId, currentProfileId, entry.profileId)
       await loadMembers()
       setShowTransferConfirm(null)
     } catch (err) {
@@ -88,36 +125,43 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
     setActionLoading(null)
   }
 
-  const canChangeRole = (member) => {
-    if (member.profile_id === currentProfileId) return false
-    if (member.role === 'owner') return false
+  const canChangeRole = (entry) => {
+    if (!entry.isLinked) return false
+    if (entry.isCurrentUser) return false
+    if (entry.role === 'owner') return false
     return true
   }
 
-  const getRoleOptions = (member) => {
+  const getRoleOptions = (entry) => {
     const options = []
-    if (member.role !== 'player') options.push('player')
-    if (member.role !== 'admin') options.push('admin')
-    if (isLeagueOwner && member.role !== 'co_owner') options.push('co_owner')
+    if (entry.role !== 'player') options.push('player')
+    if (entry.role !== 'admin') options.push('admin')
+    if (isLeagueOwner && entry.role !== 'co_owner') options.push('co_owner')
     return options
   }
 
-  const transferTargets = members.filter(m =>
-    m.profile_id !== currentProfileId &&
-    ['co_owner', 'admin'].includes(m.role)
+  const transferTargets = mergedRoster.filter(e =>
+    e.isLinked &&
+    e.profileId !== currentProfileId &&
+    ['co_owner', 'admin'].includes(e.role)
   )
 
-  const filteredMembers = members.filter(member => {
+  const linkedCount = mergedRoster.filter(e => e.isLinked).length
+  const unlinkedCount = mergedRoster.filter(e => !e.isLinked).length
+
+  const filteredRoster = mergedRoster.filter(entry => {
+    // Filter tab
+    if (filterTab === 'linked' && !entry.isLinked) return false
+    if (filterTab === 'unlinked' && entry.isLinked) return false
+    // Search
     if (!searchQuery) return true
     const q = searchQuery.toLowerCase()
-    const profileData = member.profiles || {}
-    const name = (profileData.display_name || '').toLowerCase()
-    const email = (profileData.email || '').toLowerCase()
-    return name.includes(q) || email.includes(q)
+    return entry.name.toLowerCase().includes(q) ||
+      (entry.email || '').toLowerCase().includes(q)
   })
 
-  const totalPages = Math.ceil(filteredMembers.length / PAGE_SIZE)
-  const paginatedMembers = filteredMembers.slice(
+  const totalPages = Math.ceil(filteredRoster.length / PAGE_SIZE)
+  const paginatedRoster = filteredRoster.slice(
     currentPage * PAGE_SIZE,
     (currentPage + 1) * PAGE_SIZE
   )
@@ -147,9 +191,7 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
     }}>
       <h3 style={{ marginBottom: '4px' }}>Members</h3>
       <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
-        {searchQuery
-          ? `${filteredMembers.length} of ${members.length} member${members.length !== 1 ? 's' : ''}`
-          : `${members.length} member${members.length !== 1 ? 's' : ''}`}
+        {mergedRoster.length} player{mergedRoster.length !== 1 ? 's' : ''} &middot; {linkedCount} linked &middot; {unlinkedCount} unlinked
       </p>
 
       {error && (
@@ -165,10 +207,36 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
         </div>
       )}
 
+      {/* Filter tabs */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+        {[
+          { key: 'all', label: `All (${mergedRoster.length})` },
+          { key: 'linked', label: `Linked (${linkedCount})` },
+          { key: 'unlinked', label: `Unlinked (${unlinkedCount})` }
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => { setFilterTab(tab.key); setCurrentPage(0) }}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '16px',
+              border: '1px solid var(--color-border)',
+              background: filterTab === tab.key ? 'var(--color-success)' : 'var(--color-surface-sunken)',
+              color: filterTab === tab.key ? 'white' : 'var(--color-text-secondary)',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: '600'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Search box */}
       <input
         type="text"
-        placeholder="Search members..."
+        placeholder="Search players..."
         value={searchQuery}
         onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0) }}
         style={{
@@ -189,108 +257,122 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
         gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
         gap: '8px'
       }}>
-        {paginatedMembers.map(member => {
-          const profileData = member.profiles || {}
-          const name = profileData.display_name || profileData.email || 'Unknown'
-          const avatar = profileData.avatar_url
-          const isCurrentUser = member.profile_id === currentProfileId
-
-          return (
-            <div key={member.profile_id} style={{
-              padding: '10px',
-              borderRadius: '8px',
-              background: isCurrentUser ? 'var(--color-success-light)' : 'var(--color-surface-sunken)'
-            }}>
-              {/* Top row: avatar + name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+        {paginatedRoster.map(entry => (
+          <div key={entry.id} style={{
+            padding: '10px',
+            borderRadius: '8px',
+            background: entry.isCurrentUser ? 'var(--color-success-light)'
+              : entry.isLinked ? 'var(--color-surface-sunken)'
+              : 'var(--color-surface-sunken)',
+            opacity: entry.isLinked ? 1 : 0.7
+          }}>
+            {/* Top row: avatar + name + badges */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: entry.avatar ? 'none' : 'var(--color-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: 'var(--color-text-secondary)',
+                overflow: 'hidden',
+                flexShrink: 0
+              }}>
+                {entry.avatar ? (
+                  <img src={entry.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  entry.name.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: avatar ? 'none' : 'var(--color-border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '13px',
                   fontWeight: '600',
-                  color: 'var(--color-text-secondary)',
+                  fontSize: '13px',
                   overflow: 'hidden',
-                  flexShrink: 0
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
                 }}>
-                  {avatar ? (
-                    <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    name.charAt(0).toUpperCase()
-                  )}
+                  {entry.name}
+                  {entry.isCurrentUser && <span style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginLeft: '4px' }}>(you)</span>}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontWeight: '600',
-                    fontSize: '13px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {name}
-                    {isCurrentUser && <span style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginLeft: '4px' }}>(you)</span>}
-                  </div>
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                  {/* Linked/Unlinked badge */}
                   <span style={{
                     display: 'inline-block',
                     padding: '1px 6px',
                     borderRadius: '10px',
                     fontSize: '10px',
                     fontWeight: '600',
-                    background: 'var(--color-surface-sunken)',
-                    color: ROLE_COLORS[member.role],
-                    border: '1px solid var(--color-border-light)'
+                    background: entry.isLinked ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+                    color: entry.isLinked ? 'var(--color-success)' : 'var(--color-text-tertiary)',
+                    border: `1px solid ${entry.isLinked ? 'var(--color-success)' : 'var(--color-border-light)'}`
                   }}>
-                    {ROLE_LABELS[member.role]}
+                    {entry.isLinked ? 'Linked' : 'Unlinked'}
                   </span>
+                  {/* Role badge for linked members */}
+                  {entry.isLinked && entry.role && (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      fontSize: '10px',
+                      fontWeight: '600',
+                      background: 'var(--color-surface-sunken)',
+                      color: ROLE_COLORS[entry.role],
+                      border: '1px solid var(--color-border-light)'
+                    }}>
+                      {ROLE_LABELS[entry.role]}
+                    </span>
+                  )}
                 </div>
               </div>
-
-              {/* Bottom row: role dropdown + remove */}
-              {canChangeRole(member) && (
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <select
-                    value={member.role}
-                    onChange={(e) => handleRoleChange(member, e.target.value)}
-                    disabled={actionLoading === member.profile_id}
-                    style={{
-                      flex: 1,
-                      padding: '4px 6px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '12px',
-                      background: 'var(--color-surface)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value={member.role}>{ROLE_LABELS[member.role]}</option>
-                    {getRoleOptions(member).map(role => (
-                      <option key={role} value={role}>{ROLE_LABELS[role]}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => setShowRemoveConfirm(member.profile_id)}
-                    disabled={actionLoading === member.profile_id}
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--color-danger-border)',
-                      background: 'var(--color-danger-light)',
-                      color: 'var(--color-danger-dark)',
-                      cursor: 'pointer',
-                      fontSize: '12px'
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
             </div>
-          )
-        })}
+
+            {/* Bottom row: role dropdown + remove (linked members only) */}
+            {canChangeRole(entry) && (
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <select
+                  value={entry.role}
+                  onChange={(e) => handleRoleChange(entry, e.target.value)}
+                  disabled={actionLoading === entry.profileId}
+                  style={{
+                    flex: 1,
+                    padding: '4px 6px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '12px',
+                    background: 'var(--color-surface)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value={entry.role}>{ROLE_LABELS[entry.role]}</option>
+                  {getRoleOptions(entry).map(role => (
+                    <option key={role} value={role}>{ROLE_LABELS[role]}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setShowRemoveConfirm(entry.profileId)}
+                  disabled={actionLoading === entry.profileId}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--color-danger-border)',
+                    background: 'var(--color-danger-light)',
+                    color: 'var(--color-danger-dark)',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Pagination controls */}
@@ -356,8 +438,8 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={() => {
-                const member = members.find(m => m.profile_id === showRemoveConfirm)
-                if (member) handleRemove(member)
+                const entry = mergedRoster.find(e => e.profileId === showRemoveConfirm)
+                if (entry) handleRemove(entry)
               }}
               style={{
                 padding: '8px 16px',
@@ -410,7 +492,7 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
             }}>
               <p style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>
                 Transfer ownership to {
-                  (members.find(m => m.profile_id === showTransferConfirm)?.profiles?.display_name) || 'this member'
+                  mergedRoster.find(e => e.profileId === showTransferConfirm)?.name || 'this member'
                 }?
               </p>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
@@ -419,8 +501,8 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button
                   onClick={() => {
-                    const member = members.find(m => m.profile_id === showTransferConfirm)
-                    if (member) handleTransferOwnership(member)
+                    const entry = mergedRoster.find(e => e.profileId === showTransferConfirm)
+                    if (entry) handleTransferOwnership(entry)
                   }}
                   disabled={!!actionLoading}
                   style={{
@@ -453,10 +535,10 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
             </div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {transferTargets.map(member => (
+              {transferTargets.map(entry => (
                 <button
-                  key={member.profile_id}
-                  onClick={() => setShowTransferConfirm(member.profile_id)}
+                  key={entry.profileId}
+                  onClick={() => setShowTransferConfirm(entry.profileId)}
                   style={{
                     padding: '6px 14px',
                     borderRadius: '6px',
@@ -467,7 +549,7 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner }) {
                     fontSize: '12px'
                   }}
                 >
-                  {member.profiles?.display_name || 'Unknown'} ({ROLE_LABELS[member.role]})
+                  {entry.name} ({ROLE_LABELS[entry.role]})
                 </button>
               ))}
             </div>

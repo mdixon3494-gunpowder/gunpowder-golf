@@ -3755,6 +3755,7 @@ function SettingsPage({ onShowLeagueSelector }) {
                 leagueId={leagueId}
                 currentProfileId={profile.id}
                 isLeagueOwner={isLeagueOwner}
+                rosterPlayers={players}
               />
             )}
             {isAdmin && <JoinSettingsSection leagueId={leagueId} />}
