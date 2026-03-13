@@ -3183,30 +3183,47 @@ function PlayersPage() {
 
   const handicapScope = handicapSettings?.handicapScope || 'true'
 
-  // Two-way sync between league_members table and JSONB player data
+  // Two-way sync between league_members, claimed profiles, and JSONB player data
   useEffect(() => {
     if (!leagueId || !players.length) return
-    getLeagueMembers(leagueId).then(async (members) => {
-      // Direction 1: Backfill profileIds from league_members onto JSONB players (by name match)
+    const syncAll = async () => {
+      const [members, { getClaimedProfiles }] = await Promise.all([
+        getLeagueMembers(leagueId),
+        import('../lib/profileService')
+      ])
+      const claimedProfiles = await getClaimedProfiles()
+
+      // Build lookup of all known profiles (from league_members + claimed profiles)
+      const allProfiles = new Map()
+      members.forEach(m => {
+        if (m.profiles?.display_name) {
+          allProfiles.set(m.profile_id, { name: m.profiles.display_name, source: 'member' })
+        }
+      })
+      claimedProfiles.forEach(p => {
+        if (p.display_name && !allProfiles.has(p.id)) {
+          allProfiles.set(p.id, { name: p.display_name, source: 'profile' })
+        }
+      })
+
+      // Direction 1: Backfill profileIds onto JSONB players by name match
       let changed = false
       const updatedPlayers = players.map(player => {
         if (player.profileId || player.profile_id) return player
-        const match = members.find(m =>
-          m.profiles?.display_name &&
-          m.profiles.display_name.toLowerCase().trim() === player.name.toLowerCase().trim()
-        )
-        if (match) {
-          changed = true
-          return { ...player, profileId: match.profile_id, profile_id: match.profile_id }
+        for (const [profileId, info] of allProfiles) {
+          if (info.name.toLowerCase().trim() === player.name.toLowerCase().trim()) {
+            changed = true
+            return { ...player, profileId, profile_id: profileId }
+          }
         }
         return player
       })
       if (changed) {
-        console.log('[PlayersPage] Synced profileIds from league_members to player data')
+        console.log('[PlayersPage] Synced profileIds from profiles to player data')
         setPlayers(updatedPlayers)
       }
 
-      // Direction 2: Add missing league_members rows for JSONB players that have profileIds
+      // Direction 2: Add missing league_members rows for all players with profileIds
       const memberProfileIds = new Set(members.map(m => m.profile_id))
       const playersToSync = (changed ? updatedPlayers : players).filter(p => {
         const pid = p.profileId || p.profile_id
@@ -3221,7 +3238,8 @@ function PlayersPage() {
           console.warn('[PlayersPage] Failed to sync league_member for:', p.name, e)
         }
       }
-    }).catch(() => {})
+    }
+    syncAll().catch(() => {})
   }, [leagueId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Find logged-in user's player
