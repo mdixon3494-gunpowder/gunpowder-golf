@@ -746,41 +746,59 @@ function TeamsPage() {
   const [swapSelection, setSwapSelection] = useState(null) // { playerId, teamIndex }
 
   const balance = teams.length > 0 ? calculateTeamBalance(teams) : null
-  const canSwap = isAdmin && !liveRound
+  const canSwap = isAdmin
 
   const handlePlayerTap = (playerId, teamIndex) => {
     if (!canSwap) return
 
     if (!swapSelection) {
-      // First tap — select this player
       setSwapSelection({ playerId, teamIndex })
       return
     }
 
     if (swapSelection.playerId === playerId) {
-      // Tapped same player — deselect
       setSwapSelection(null)
       return
     }
 
     if (swapSelection.teamIndex === teamIndex) {
-      // Same team — switch selection to this player
       setSwapSelection({ playerId, teamIndex })
       return
     }
 
     // Different team — perform the swap
-    const newTeams = teams.map(t => [...t])
-    const team1 = newTeams[swapSelection.teamIndex]
-    const team2 = newTeams[teamIndex]
-    const idx1 = team1.findIndex(p => p.id === swapSelection.playerId)
-    const idx2 = team2.findIndex(p => p.id === playerId)
+    const ti1 = swapSelection.teamIndex
+    const ti2 = teamIndex
+    const pid1 = swapSelection.playerId
+    const pid2 = playerId
 
+    // Swap in teams array
+    const newTeams = teams.map(t => [...t])
+    const idx1 = newTeams[ti1].findIndex(p => p.id === pid1)
+    const idx2 = newTeams[ti2].findIndex(p => p.id === pid2)
     if (idx1 !== -1 && idx2 !== -1) {
-      const temp = team1[idx1]
-      team1[idx1] = team2[idx2]
-      team2[idx2] = temp
+      const temp = newTeams[ti1][idx1]
+      newTeams[ti1][idx1] = newTeams[ti2][idx2]
+      newTeams[ti2][idx2] = temp
       setTeams(newTeams)
+    }
+
+    // Also swap in liveRound if active
+    if (liveRound) {
+      const newRound = { ...liveRound, teams: liveRound.teams.map(t => ({ ...t, players: [...t.players] })) }
+      const liveTeam1 = newRound.teams[ti1]
+      const liveTeam2 = newRound.teams[ti2]
+      const li1 = liveTeam1.players.findIndex(p => p.id === pid1)
+      const li2 = liveTeam2.players.findIndex(p => p.id === pid2)
+      if (li1 !== -1 && li2 !== -1) {
+        const temp = liveTeam1.players[li1]
+        liveTeam1.players[li1] = liveTeam2.players[li2]
+        liveTeam2.players[li2] = temp
+        // Update team names
+        liveTeam1.name = getTeamName(liveTeam1.players)
+        liveTeam2.name = getTeamName(liveTeam2.players)
+        setLiveRound(newRound)
+      }
     }
 
     setSwapSelection(null)
