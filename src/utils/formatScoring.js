@@ -7,6 +7,11 @@ import { getNetDoubleBogeyMax } from '../utils/handicapCalculation'
  * Resolve manual team scores for a hole range.
  * Returns gross score total, or null if no manual data covers this range.
  */
+/**
+ * Resolve manual team score for a hole range.
+ * Values are stored as relative-to-par (e.g. -1 = one under, +2 = two over).
+ * Returns the relative-to-par value directly.
+ */
 export function resolveManualTeamScore(team, startHole, endHole) {
   const manual = team.manualTeamScores
   if (!manual) return null
@@ -34,21 +39,22 @@ export function resolveManualTeamScore(team, startHole, endHole) {
 }
 
 /**
- * Convert a gross manual score to the appropriate display value for the format.
- * Relative modes (bigboys, bestball) show score relative to par.
- * Gross/net modes show raw total.
+ * Convert a relative-to-par manual score to the appropriate display value.
+ * Relative modes (bigboys, bestball) use the value directly.
+ * Gross/net modes add par back to get the raw total.
  */
-function convertManualScoreForDisplay(grossScore, startHole, endHole, displayMode) {
-  if (grossScore === null) return 0
+function convertManualScoreForDisplay(relativeScore, startHole, endHole, displayMode) {
+  if (relativeScore === null) return 0
   if (displayMode === 'relative') {
-    const par = startHole <= 9 && endHole <= 9
-      ? getFront9Par()
-      : startHole >= 10 && endHole >= 10
-        ? getBack9Par()
-        : getFront9Par() + getBack9Par()
-    return grossScore - par
+    return relativeScore
   }
-  return grossScore
+  // For gross/net display, convert back to actual score
+  const par = startHole <= 9 && endHole <= 9
+    ? getFront9Par()
+    : startHole >= 10 && endHole >= 10
+      ? getBack9Par()
+      : getFront9Par() + getBack9Par()
+  return relativeScore + par
 }
 
 // ── Format Configurations ──────────────────────────────────────────────

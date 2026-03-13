@@ -450,22 +450,32 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
     if (value === '' || value === null) {
       delete holes[hole]
     } else {
-      holes[hole] = parseInt(value) || 0
+      holes[hole] = parseInt(value)
     }
     onUpdateManualTeamScore(team.id, { ...manual, holes })
   }
 
   const update9Score = (key, value) => {
-    onUpdateManualTeamScore(team.id, { ...manual, [key]: value === '' ? null : parseInt(value) || 0 })
+    onUpdateManualTeamScore(team.id, { ...manual, [key]: value === '' ? null : parseInt(value) })
   }
 
   const front9Par = GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + h.par, 0)
   const back9Par = GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + h.par, 0)
 
-  // Calculate totals for hole-by-hole mode
+  // Calculate totals for hole-by-hole mode (relative to par)
   const holeScores = manual.holes || {}
-  const holeFront = GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + (parseInt(holeScores[h.hole]) || 0), 0)
-  const holeBack = GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + (parseInt(holeScores[h.hole]) || 0), 0)
+  const frontHoleCount = GUNPOWDER_SCORECARD.front9.filter(h => holeScores[h.hole] != null).length
+  const backHoleCount = GUNPOWDER_SCORECARD.back9.filter(h => holeScores[h.hole] != null).length
+  const holeFront = GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + (holeScores[h.hole] != null ? parseInt(holeScores[h.hole]) : 0), 0)
+  const holeBack = GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + (holeScores[h.hole] != null ? parseInt(holeScores[h.hole]) : 0), 0)
+
+  const formatRelative = (val) => {
+    if (val === null || val === undefined || val === '') return '-'
+    const n = parseInt(val)
+    if (isNaN(n)) return '-'
+    if (n === 0) return 'E'
+    return n > 0 ? `+${n}` : `${n}`
+  }
 
   return (
     <div style={{ marginBottom: '15px' }}>
@@ -519,21 +529,25 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
         </button>
       </div>
 
+      <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginBottom: '8px', textAlign: 'center' }}>
+        Enter score relative to par (e.g. -1 = one under, 0 = even, 2 = two over)
+      </div>
+
       {entryMode === 'by9' ? (
-        /* Front 9 / Back 9 total entry */
+        /* Front 9 / Back 9 relative-to-par entry */
         <div style={{
           display: 'flex',
           gap: '12px',
           flexWrap: 'wrap'
         }}>
           <div style={{ flex: 1, minWidth: '120px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>FRONT 9 (par {front9Par})</div>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>FRONT 9</div>
             <input
               type="number"
               inputMode="numeric"
               value={manual.front9 != null ? manual.front9 : ''}
               onChange={(e) => update9Score('front9', e.target.value)}
-              placeholder={String(front9Par)}
+              placeholder="0"
               style={{
                 width: '80px',
                 padding: '10px',
@@ -545,15 +559,18 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                 background: 'var(--color-surface-sunken)'
               }}
             />
+            <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
+              {formatRelative(manual.front9)}
+            </div>
           </div>
           <div style={{ flex: 1, minWidth: '120px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>BACK 9 (par {back9Par})</div>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>BACK 9</div>
             <input
               type="number"
               inputMode="numeric"
               value={manual.back9 != null ? manual.back9 : ''}
               onChange={(e) => update9Score('back9', e.target.value)}
-              placeholder={String(back9Par)}
+              placeholder="0"
               style={{
                 width: '80px',
                 padding: '10px',
@@ -565,16 +582,21 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                 background: 'var(--color-surface-sunken)'
               }}
             />
+            <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
+              {formatRelative(manual.back9)}
+            </div>
           </div>
           <div style={{ flex: 1, minWidth: '120px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>TOTAL (par {front9Par + back9Par})</div>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>TOTAL</div>
             <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-primary-dark)' }}>
-              {(manual.front9 || 0) + (manual.back9 || 0) || '-'}
+              {manual.front9 != null || manual.back9 != null
+                ? formatRelative((manual.front9 || 0) + (manual.back9 || 0))
+                : '-'}
             </div>
           </div>
         </div>
       ) : (
-        /* Hole-by-hole team score entry */
+        /* Hole-by-hole relative-to-par entry */
         <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
           {/* Front 9 */}
           <div style={{ overflowX: 'auto' }}>
@@ -597,7 +619,7 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                   <td style={{ padding: '5px 4px', textAlign: 'center', fontWeight: 'bold', fontSize: '10px' }}>{front9Par}</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: '4px', fontWeight: 'bold', fontSize: '10px' }}>Team</td>
+                  <td style={{ padding: '4px', fontWeight: 'bold', fontSize: '10px' }}>+/-</td>
                   {GUNPOWDER_SCORECARD.front9.map(h => (
                     <td key={h.hole} style={{ padding: '2px 1px', textAlign: 'center' }}>
                       <input
@@ -605,6 +627,7 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                         inputMode="numeric"
                         value={holeScores[h.hole] != null ? holeScores[h.hole] : ''}
                         onChange={(e) => updateHoleScore(h.hole, e.target.value)}
+                        placeholder="0"
                         style={{
                           width: '28px',
                           padding: '4px 2px',
@@ -619,7 +642,7 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                     </td>
                   ))}
                   <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: 'var(--color-skins-light)', fontSize: '12px' }}>
-                    {holeFront || '-'}
+                    {frontHoleCount > 0 ? formatRelative(holeFront) : '-'}
                   </td>
                 </tr>
               </tbody>
@@ -646,7 +669,7 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                   <td style={{ padding: '5px 4px', textAlign: 'center', fontWeight: 'bold', fontSize: '10px' }}>{back9Par}</td>
                 </tr>
                 <tr>
-                  <td style={{ padding: '4px', fontWeight: 'bold', fontSize: '10px' }}>Team</td>
+                  <td style={{ padding: '4px', fontWeight: 'bold', fontSize: '10px' }}>+/-</td>
                   {GUNPOWDER_SCORECARD.back9.map(h => (
                     <td key={h.hole} style={{ padding: '2px 1px', textAlign: 'center' }}>
                       <input
@@ -654,6 +677,7 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                         inputMode="numeric"
                         value={holeScores[h.hole] != null ? holeScores[h.hole] : ''}
                         onChange={(e) => updateHoleScore(h.hole, e.target.value)}
+                        placeholder="0"
                         style={{
                           width: '28px',
                           padding: '4px 2px',
@@ -668,7 +692,7 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                     </td>
                   ))}
                   <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: 'var(--color-skins-light)', fontSize: '12px' }}>
-                    {holeBack || '-'}
+                    {backHoleCount > 0 ? formatRelative(holeBack) : '-'}
                   </td>
                 </tr>
               </tbody>
@@ -676,8 +700,9 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
           </div>
           {/* Total */}
           <div style={{ padding: '10px', textAlign: 'center', background: 'var(--color-surface-sunken)', borderTop: '1px solid var(--color-border)' }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Total: {holeFront + holeBack || '-'}</span>
-            <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginLeft: '8px' }}>(par {front9Par + back9Par})</span>
+            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>
+              Total: {(frontHoleCount > 0 || backHoleCount > 0) ? formatRelative(holeFront + holeBack) : '-'}
+            </span>
           </div>
         </div>
       )}
@@ -6748,7 +6773,7 @@ function LivePage() {
       teams: liveRound.teams.map(team => {
         let front9Score, back9Score
         if (team.isManualTeamScore && team.manualTeamScores) {
-          // Manual team scores: use raw gross scores (relative-to-par conversion happens in leaderboard)
+          // Manual team scores: values are already relative-to-par (same as calculateBigBoysScore)
           front9Score = resolveManualTeamScore(team, 1, 9) || 0
           back9Score = resolveManualTeamScore(team, 10, 18) || 0
         } else if (formatKey && FORMAT_CONFIGS[formatKey]) {
