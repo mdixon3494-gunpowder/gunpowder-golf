@@ -2094,6 +2094,89 @@ function TeamScoringRulesSection({ leagueSettings, onUpdate, isAdmin }) {
   )
 }
 
+function ScoringPermissionsSection({ leagueSettings, onUpdate, isAdmin }) {
+  const permissions = leagueSettings?.scoringPermissions || { enabled: false }
+
+  const updatePermissions = (updates) => {
+    onUpdate({
+      ...leagueSettings,
+      scoringPermissions: { ...permissions, ...updates }
+    })
+  }
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '4px' }}>Scoring Permissions</h3>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
+        Control who can enter scores during a live round.
+      </p>
+
+      {isAdmin ? (
+        <>
+          <label style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            padding: '14px',
+            borderRadius: '8px',
+            border: permissions.enabled ? '2px solid var(--color-info)' : '1px solid var(--color-border)',
+            background: permissions.enabled ? 'var(--color-info-light)' : 'var(--color-surface)',
+            cursor: 'pointer',
+            marginBottom: '12px'
+          }}>
+            <input
+              type="checkbox"
+              checked={!!permissions.enabled}
+              onChange={(e) => updatePermissions({ enabled: e.target.checked })}
+              style={{ marginTop: '2px' }}
+            />
+            <div>
+              <div style={{ fontWeight: '600', fontSize: '14px' }}>Restrict Score Entry</div>
+              <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginTop: '2px' }}>
+                When enabled, players can only enter scores for themselves and their teammates. Admins can always score for anyone.
+              </div>
+            </div>
+          </label>
+
+          {permissions.enabled && (
+            <div style={{
+              background: 'var(--color-surface-sunken)',
+              padding: '14px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              color: 'var(--color-text-secondary)'
+            }}>
+              <div style={{ fontWeight: '600', marginBottom: '8px', color: 'var(--color-text-primary)' }}>Who can score:</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div>&#x2022; Players can score for <strong>themselves</strong></div>
+                <div>&#x2022; Teammates can score for <strong>each other</strong></div>
+                <div>&#x2022; Admins can score for <strong>anyone</strong></div>
+                <div>&#x2022; Non-teammates are <strong>blocked</strong></div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{
+          background: 'var(--color-surface-sunken)',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          fontSize: '14px'
+        }}>
+          Scoring restrictions: <strong>{permissions.enabled ? 'Enabled' : 'Off (anyone can score)'}</strong>
+          <span style={{ color: 'var(--color-text-tertiary)', marginLeft: '10px', fontSize: '12px' }}>(Admin only)</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function RoundSettingsSection({ defaultStartingHole, onUpdate, isAdmin }) {
   return (
     <div style={{
@@ -3975,6 +4058,11 @@ function SettingsPage({ onShowLeagueSelector }) {
               isAdmin={isAdmin}
             />
             <SideGamesSettingsSection
+              leagueSettings={leagueSettings}
+              onUpdate={setLeagueSettings}
+              isAdmin={isAdmin}
+            />
+            <ScoringPermissionsSection
               leagueSettings={leagueSettings}
               onUpdate={setLeagueSettings}
               isAdmin={isAdmin}

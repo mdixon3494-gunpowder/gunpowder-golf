@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
+import { useAuth } from '../context/AuthContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
 import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore, calculateBigBoysScore, resolveManualTeamScore } from '../utils/formatScoring'
@@ -948,7 +949,7 @@ function ManualPlayerTotal({ team, onUpdatePlayerManualTotal }) {
 }
 
 // Score Entry Component - Legacy Style
-function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings, leagueSettings, courseTees, onUpdateManualTeamScore, onToggleManualMode, onUpdatePlayerManualTotal, holeStats, onUpdateHoleStats }) {
+function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings, leagueSettings, courseTees, onUpdateManualTeamScore, onToggleManualMode, onUpdatePlayerManualTotal, holeStats, onUpdateHoleStats, currentProfileId, isAdmin }) {
   const [activeInput, setActiveInput] = useState(null)
   const [keypadValue, setKeypadValue] = useState('')
   const [isFirstKeypress, setIsFirstKeypress] = useState(true)
@@ -957,6 +958,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
   const [greeniePrompt, setGreeniePrompt] = useState(null) // { hole: number, isLastTeam: boolean } when showing prompt
   const [markGreenieAsFinal, setMarkGreenieAsFinal] = useState(false) // User must explicitly check to mark as final
   const [greenieSelectedPlayer, setGreenieSelectedPlayer] = useState(null) // Selected player in greenie prompt
+  const [permissionDenied, setPermissionDenied] = useState(null) // flash message when blocked
 
   const selectedTeam = selectedTeamId !== null
     ? liveRound.teams.find(t => t.id === selectedTeamId)
@@ -1054,7 +1056,35 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
     return calculateBigBoysScore(team, startHole, endHole, rules, courseTees)
   }
 
+  // Check if current user can score for a given player on a given team
+  const canScoreForPlayer = (teamId, playerId) => {
+    // If scoring permissions are disabled, allow everyone (backward compat)
+    if (!leagueSettings?.scoringPermissions?.enabled) return true
+    // Admins can always score
+    if (isAdmin) return true
+    // No profile = guest viewing, block if permissions enabled
+    if (!currentProfileId) return false
+    // Find the player being scored for
+    const team = liveRound.teams.find(t => t.id === teamId)
+    if (!team) return false
+    const player = team.players.find(p => p.id === playerId)
+    if (!player) return false
+    // Player scoring for themselves
+    if (player.profileId === currentProfileId || player.id === currentProfileId) return true
+    // Teammate scoring for teammate (same team)
+    const isOnSameTeam = team.players.some(p =>
+      p.profileId === currentProfileId || p.id === currentProfileId
+    )
+    if (isOnSameTeam) return true
+    return false
+  }
+
   const openKeypad = (teamId, playerId, hole, currentValue, playerName) => {
+    if (!canScoreForPlayer(teamId, playerId)) {
+      setPermissionDenied(`Only teammates or admins can enter scores for ${playerName}`)
+      setTimeout(() => setPermissionDenied(null), 3000)
+      return
+    }
     setActiveInput({ teamId, playerId, hole, playerName })
     setKeypadValue(currentValue?.toString() || '')
     setIsFirstKeypress(true)
@@ -1249,6 +1279,27 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
   return (
     <div>
+      {/* Permission denied toast */}
+      {permissionDenied && (
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'var(--color-danger)',
+          color: 'white',
+          padding: '10px 20px',
+          borderRadius: '8px',
+          fontSize: '13px',
+          fontWeight: '600',
+          zIndex: 9999,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          maxWidth: '320px',
+          textAlign: 'center'
+        }}>
+          {permissionDenied}
+        </div>
+      )}
       {/* Team Header */}
       <div style={{
         background: selectedTeam.isFinished ? 'var(--color-success-light)' : 'var(--color-primary-dark)',
@@ -6546,6 +6597,7 @@ function LivePage() {
     saveIndividualRoundHistory,
     saveLeagueRoundHistory
   } = useLeague()
+  const { profile } = useAuth()
 
   // Leaderboard view state - defaults based on starting hole (front if 1-9, back if 10-18)
   const getInitialLeaderboardView = () => {
@@ -7554,6 +7606,8 @@ function LivePage() {
           onUpdatePlayerManualTotal={updatePlayerManualTotal}
           holeStats={holeStats}
           onUpdateHoleStats={(hole, stats) => setHoleStats(prev => ({ ...prev, [hole]: stats }))}
+          currentProfileId={profile?.id}
+          isAdmin={isAdmin}
         />
       )}
       {subTab === 'greenies' && (
