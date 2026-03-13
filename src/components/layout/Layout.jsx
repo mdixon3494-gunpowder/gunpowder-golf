@@ -276,6 +276,19 @@ function LeagueSwitcher({ leagueId, leagueSettings, onShowLeagueSelector, switch
    ================================ */
 function BottomNav({ moreOpen, setMoreOpen, gpsEnabled }) {
   const location = useLocation()
+  const [showShame, setShowShame] = useState(false)
+
+  // Shame messages - random pick each time
+  const shameMessages = [
+    { emoji: '😤', title: 'SERIOUSLY?!', text: 'You should be absolutely ashamed of yourself. This is a GOLF app.' },
+    { emoji: '🚨', title: 'BONK!', text: 'Go directly to horny jail. Do not pass Go. Do not collect $200.' },
+    { emoji: '👀', title: 'CAUGHT IN 4K', text: 'Screenshot has been sent to the group chat.' },
+    { emoji: '📸', title: 'SMILE!', text: 'Your wife has been notified. Good luck at home tonight.' },
+    { emoji: '⛪', title: 'DEAR LORD', text: 'Sir, this is a golf league. Please find Jesus before your next tee time.' },
+    { emoji: '🤦', title: 'REALLY BRO?', text: 'The cart girl saw you click that. She says you\'re a 3 at best.' },
+    { emoji: '🏌️', title: 'FOCUS!', text: 'The only thing getting stroked out here is your scorecard. Get back to golf.' },
+    { emoji: '💀', title: 'YOU FELL FOR IT', text: 'This has been reported to the league commissioner. Expect a 2-stroke penalty.' },
+  ]
 
   // Pages shown in the More sheet
   const morePages = [
@@ -335,10 +348,71 @@ function BottomNav({ moreOpen, setMoreOpen, gpsEnabled }) {
                   {page.label}
                 </NavLink>
               ))}
+              <button
+                className="bottom-sheet-item"
+                onClick={() => { setMoreOpen(false); setShowShame(true) }}
+                style={{ color: '#e91e8e', border: 'none', background: 'none', cursor: 'pointer' }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                Cart Girl Nudes
+              </button>
             </div>
           </div>
         </>
       )}
+
+      {/* Shame modal */}
+      {showShame && (() => {
+        const msg = shameMessages[Math.floor(Math.random() * shameMessages.length)]
+        return (
+          <div
+            onClick={() => setShowShame(false)}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.85)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10000,
+              padding: '20px'
+            }}
+          >
+            <div style={{
+              background: 'var(--color-surface)',
+              borderRadius: '20px',
+              padding: '30px',
+              textAlign: 'center',
+              maxWidth: '340px',
+              width: '100%',
+              animation: 'fadeIn 0.3s ease'
+            }}>
+              <div style={{ fontSize: '80px', marginBottom: '15px' }}>{msg.emoji}</div>
+              <div style={{ fontSize: '24px', fontWeight: '800', color: 'var(--color-danger)', marginBottom: '10px', letterSpacing: '1px' }}>
+                {msg.title}
+              </div>
+              <div style={{ fontSize: '16px', color: 'var(--color-text-primary)', lineHeight: '1.5', marginBottom: '20px' }}>
+                {msg.text}
+              </div>
+              <button
+                onClick={() => setShowShame(false)}
+                style={{
+                  padding: '12px 30px',
+                  background: 'var(--color-danger)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                I'm Sorry
+              </button>
+            </div>
+          </div>
+        )
+      })()}
     </>
   )
 }
