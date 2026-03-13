@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gunpowder-golf-v3'
+const CACHE_NAME = 'gunpowder-golf-v4'
 const urlsToCache = [
   '/gunpowder-golf/',
   '/gunpowder-golf/index.html'
