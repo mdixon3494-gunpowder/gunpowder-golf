@@ -786,20 +786,51 @@ function TeamsPage() {
     setSwapSelection(null)
   }
 
-  // Players not already on any team (available for late add)
-  const teamPlayerIds = new Set(teams.flat().map(p => p.id))
+  // Players not already on any team (available for late add) — includes all roster players
+  const allTeamPlayers = liveRound
+    ? liveRound.teams.flatMap(t => t.players)
+    : teams.flat()
+  const teamPlayerIds = new Set(allTeamPlayers.map(p => p.id))
   const availablePlayers = players
     .filter(p => p.isActive !== false && !teamPlayerIds.has(p.id))
     .sort((a, b) => a.name.localeCompare(b.name))
 
   const handleAddPlayer = (player, teamIndex) => {
-    const newTeams = teams.map(t => [...t])
-    newTeams[teamIndex].push({
+    const playerData = {
       ...player,
       handicap: player.handicap ?? player.effectiveHandicap ?? null,
       tee: player.defaultTee || 'blue'
-    })
+    }
+
+    // Update pre-round teams
+    const newTeams = teams.map(t => [...t])
+    newTeams[teamIndex].push(playerData)
     setTeams(newTeams)
+
+    // If live round is active, also add to liveRound
+    if (liveRound) {
+      const fullPlayer = players.find(fp => fp.id === player.id) || player
+      const newLiveRound = { ...liveRound, teams: liveRound.teams.map((t, idx) => {
+        if (idx !== teamIndex) return t
+        return {
+          ...t,
+          name: getTeamName([...t.players, playerData]),
+          players: [...t.players, {
+            id: player.id,
+            name: player.name,
+            skillRating: player.skillRating || fullPlayer.skillRating,
+            handicap: player.handicap || fullPlayer.handicap,
+            avgTotal: player.avgTotal || fullPlayer.avgTotal || 0,
+            scores: {},
+            isDNF: false,
+            includeInTeamScore: true,
+            joinedLate: true,
+            tee: fullPlayer.defaultTee || 'blue'
+          }]
+        }
+      })}
+      setLiveRound(newLiveRound)
+    }
   }
 
   const moveTeamUp = (idx) => {
@@ -962,7 +993,7 @@ function TeamsPage() {
               onPlayerTap={handlePlayerTap}
               canSwap={canSwap}
               onAddPlayer={handleAddPlayer}
-              availablePlayers={!liveRound ? availablePlayers : []}
+              availablePlayers={availablePlayers}
             />
           ))}
 
