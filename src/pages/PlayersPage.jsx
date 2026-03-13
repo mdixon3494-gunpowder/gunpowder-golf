@@ -3183,6 +3183,33 @@ function PlayersPage() {
 
   const handicapScope = handicapSettings?.handicapScope || 'true'
 
+  // Sync profileIds from league_members table onto JSONB player data (one-time backfill)
+  useEffect(() => {
+    if (!leagueId || !players.length) return
+    getLeagueMembers(leagueId).then(members => {
+      if (!members.length) return
+      let changed = false
+      const updatedPlayers = players.map(player => {
+        // Skip if player already has a profileId
+        if (player.profileId || player.profile_id) return player
+        // Find a league_member whose profile display_name matches this player's name
+        const match = members.find(m =>
+          m.profiles?.display_name &&
+          m.profiles.display_name.toLowerCase().trim() === player.name.toLowerCase().trim()
+        )
+        if (match) {
+          changed = true
+          return { ...player, profileId: match.profile_id, profile_id: match.profile_id }
+        }
+        return player
+      })
+      if (changed) {
+        console.log('[PlayersPage] Synced profileIds from league_members to player data')
+        setPlayers(updatedPlayers)
+      }
+    }).catch(() => {})
+  }, [leagueId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Find logged-in user's player
   const myPlayer = useMemo(() => {
     if (!profile?.id) return null
@@ -3202,7 +3229,6 @@ function PlayersPage() {
 
   // Determine effective selected player: myPlayer wins unless user manually picked someone else
   const effectiveSelectedId = useMemo(() => {
-    console.log('[PlayersPage] Selection debug:', { profileId: profile?.id, myPlayerId: myPlayer?.id, myPlayerName: myPlayer?.name, userHasSelected, selectedPlayerId, firstSorted: sortedPlayers[0]?.name, playerCount: players.length, playersWithProfile: players.filter(p => p.profileId || p.profile_id).map(p => ({ name: p.name, profileId: p.profileId || p.profile_id })) })
     if (myPlayer && !userHasSelected) return myPlayer.id
     if (selectedPlayerId && players.find(p => p.id === selectedPlayerId)) return selectedPlayerId
     if (myPlayer) return myPlayer.id
