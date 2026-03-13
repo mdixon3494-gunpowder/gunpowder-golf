@@ -305,13 +305,17 @@ export function calculateHandicap(rounds, courseTees = DEFAULT_COURSE_TEES, maxH
   const differentials = validRounds.map(r => {
     let score = r.score || r.total || r.totalScore
 
-    // Get rating/slope - check for tee first, then explicit values, then defaults
+    // Get rating/slope - explicit values on the round take priority (imported/external rounds),
+    // then tee lookup, then defaults
     let rating, slope
-    if (r.tee && courseTees?.[r.tee]) {
+    if (r.courseRating && r.slopeRating) {
+      // Round has explicit rating/slope (external or imported rounds)
+      rating = r.courseRating
+      slope = r.slopeRating
+    } else if (r.tee && courseTees?.[r.tee]) {
       rating = courseTees[r.tee].courseRating
       slope = courseTees[r.tee].slopeRating
     } else {
-      // External round with explicit rating/slope, or use defaults
       rating = r.courseRating || 63.5
       slope = r.slopeRating || 100
     }

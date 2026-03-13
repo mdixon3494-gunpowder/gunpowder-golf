@@ -697,6 +697,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
   const [bulkCourseRating, setBulkCourseRating] = useState('72')
   const [bulkSlopeRating, setBulkSlopeRating] = useState('113')
   const [bulkImportResult, setBulkImportResult] = useState(null)
+  const [bulkImportAsLeague, setBulkImportAsLeague] = useState(false)
 
   const settings = { ...DEFAULT_HANDICAP_SETTINGS, ...handicapSettings }
   const currentExemption = settings.capExemptions?.[player.id] || null
@@ -782,12 +783,45 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
       return
     }
 
-    const updatedExternalRounds = [...(player.externalRounds || []), ...newRounds]
-    const updatedPlayer = recalculatePlayerHandicaps(
-      { ...player, externalRounds: updatedExternalRounds },
-      leagueId,
-      courseTees
-    )
+    let updatedPlayer
+    if (bulkImportAsLeague) {
+      // Save as league rounds (scoreHistory) — counts for league handicap scope
+      const leagueEntries = newRounds.map(r => ({
+        id: r.id,
+        date: r.date,
+        total: r.score,
+        totalScore: r.score,
+        frontNine: null,
+        backNine: null,
+        frontNineScore: null,
+        backNineScore: null,
+        scores: {},
+        breakdown: null,
+        isComplete: true,
+        holesCompleted: 18,
+        tee: defaultTee || 'blue',
+        holesPlayed: 18,
+        startingHole: 1,
+        importedRound: true,
+        courseRating: r.courseRating,
+        slopeRating: r.slopeRating
+      }))
+      const updatedScoreHistory = [...(player.scoreHistory || []), ...leagueEntries]
+      updatedPlayer = recalculatePlayerHandicaps(
+        { ...player, scoreHistory: updatedScoreHistory },
+        leagueId,
+        courseTees
+      )
+      updatedPlayer.scoreHistory = updatedScoreHistory
+    } else {
+      // Save as external rounds (original behavior)
+      const updatedExternalRounds = [...(player.externalRounds || []), ...newRounds]
+      updatedPlayer = recalculatePlayerHandicaps(
+        { ...player, externalRounds: updatedExternalRounds },
+        leagueId,
+        courseTees
+      )
+    }
 
     onSave({
       ...updatedPlayer,
@@ -802,7 +836,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
       emergencyPhone: emergencyPhone.trim()
     })
 
-    setBulkImportResult(`Imported ${newRounds.length} rounds`)
+    setBulkImportResult(`Imported ${newRounds.length} rounds as ${bulkImportAsLeague ? 'league' : 'external'} rounds`)
     setBulkScores('')
   }
 
@@ -1138,6 +1172,54 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                           />
                         </div>
                       </div>
+                      {/* League round toggle */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '6px',
+                        marginBottom: '10px',
+                        background: 'var(--color-surface)',
+                        borderRadius: '8px',
+                        padding: '3px',
+                        border: '1px solid var(--color-border)'
+                      }}>
+                        <button
+                          onClick={() => setBulkImportAsLeague(false)}
+                          style={{
+                            flex: 1,
+                            padding: '7px 10px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            background: !bulkImportAsLeague ? 'var(--color-primary)' : 'transparent',
+                            color: !bulkImportAsLeague ? 'white' : 'var(--color-text-secondary)'
+                          }}
+                        >
+                          External Rounds
+                        </button>
+                        <button
+                          onClick={() => setBulkImportAsLeague(true)}
+                          style={{
+                            flex: 1,
+                            padding: '7px 10px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            background: bulkImportAsLeague ? 'var(--color-primary)' : 'transparent',
+                            color: bulkImportAsLeague ? 'white' : 'var(--color-text-secondary)'
+                          }}
+                        >
+                          League Rounds
+                        </button>
+                      </div>
+                      {bulkImportAsLeague && (
+                        <p style={{ fontSize: '11px', color: 'var(--color-skins)', marginBottom: '8px', fontWeight: '500' }}>
+                          League rounds count toward the league handicap and won't be overwritten by auto-calculation.
+                        </p>
+                      )}
                       <textarea
                         value={bulkScores}
                         onChange={(e) => setBulkScores(e.target.value)}
