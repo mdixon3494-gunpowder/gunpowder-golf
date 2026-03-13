@@ -3,7 +3,7 @@ import QRCode from 'qrcode'
 
 function InviteSection({ leagueId }) {
   const [qrDataUrl, setQrDataUrl] = useState(null)
-  const [copied, setCopied] = useState(null) // 'code' | 'link' | null
+  const [copied, setCopied] = useState(null) // 'code' | 'link' | 'message' | null
 
   const basePath = import.meta.env.BASE_URL || '/'
   const inviteLink = `${window.location.origin}${basePath}?join=${leagueId}`
@@ -121,6 +121,39 @@ function InviteSection({ leagueId }) {
           {copied === 'link' ? 'Copied!' : 'Copy'}
         </button>
       </div>
+
+      {/* Copy Invite Message */}
+      <button
+        onClick={() => {
+          const message = `You're invited to join my golf league on Gunpowder Big Boy's Golf!\n\nJoin with this link: ${inviteLink}\n\nOr use league code: ${leagueId}`
+          copy(message, 'message')
+        }}
+        style={{
+          width: '100%',
+          padding: '14px 16px',
+          borderRadius: '6px',
+          border: '1px solid var(--color-border)',
+          background: copied === 'message' ? 'var(--color-success-light)' : 'var(--color-surface)',
+          cursor: 'pointer',
+          marginBottom: '16px',
+          textAlign: 'left'
+        }}
+      >
+        <div style={{
+          fontSize: '14px',
+          fontWeight: '600',
+          color: copied === 'message' ? 'var(--color-success)' : 'var(--color-text-primary)',
+          marginBottom: '2px'
+        }}>
+          {copied === 'message' ? 'Copied to clipboard!' : 'Copy Invite Message'}
+        </div>
+        <div style={{
+          fontSize: '12px',
+          color: 'var(--color-text-secondary)'
+        }}>
+          Copy a ready-to-send message with the join link and league code
+        </div>
+      </button>
 
       {/* QR Code */}
       {qrDataUrl && (

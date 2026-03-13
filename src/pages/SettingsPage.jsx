@@ -9,6 +9,7 @@ import MemberManagement from '../components/MemberManagement'
 import JoinSettingsSection from '../components/JoinSettingsSection'
 import { softDeleteLeague } from '../lib/leagueService'
 import CourseMappingTool from '../components/gps/CourseMappingTool'
+import AuditLogViewer from '../components/AuditLogViewer'
 import { runAllPendingMigrations, getPendingMigrations } from '../lib/migrations/index'
 import {
   DEFAULT_HANDICAP_SETTINGS,
@@ -3863,7 +3864,11 @@ function SettingsPage({ onShowLeagueSelector }) {
     setPendingPlayerRequests,
     isLeagueOwner,
     userRole,
-    refreshCrossLeagueHandicaps
+    refreshCrossLeagueHandicaps,
+    auditLog,
+    addAuditEntry,
+    pendingOwnershipTransfer,
+    setPendingOwnershipTransfer
   } = useLeague()
 
   const [activeCategory, setActiveCategory] = useState(null)
@@ -4017,6 +4022,8 @@ function SettingsPage({ onShowLeagueSelector }) {
                 currentProfileId={profile.id}
                 isLeagueOwner={isLeagueOwner}
                 rosterPlayers={players}
+                pendingTransfer={pendingOwnershipTransfer}
+                onTransferUpdate={setPendingOwnershipTransfer}
               />
             )}
             {isAdmin && <JoinSettingsSection leagueId={leagueId} />}
@@ -4098,6 +4105,7 @@ function SettingsPage({ onShowLeagueSelector }) {
                 </span>
               </label>
             </div>
+            <AuditLogViewer auditLog={auditLog} />
             <ManageProfilesSection />
             <MigrationSection
               leagueId={leagueId}

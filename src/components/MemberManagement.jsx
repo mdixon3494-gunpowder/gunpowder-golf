@@ -3,7 +3,10 @@ import {
   getLeagueMembers,
   updateMemberRole,
   removeLeagueMember,
-  transferOwnership
+  initiatePendingTransfer,
+  cancelPendingTransfer,
+  approvePendingTransfer,
+  executePendingTransfer
 } from '../lib/leagueService'
 
 const ROLE_LABELS = {
@@ -22,7 +25,7 @@ const ROLE_COLORS = {
 
 const PAGE_SIZE = 10
 
-function MemberManagement({ leagueId, currentProfileId, isLeagueOwner, rosterPlayers = [] }) {
+function MemberManagement({ leagueId, currentProfileId, isLeagueOwner, rosterPlayers = [], pendingTransfer = null, onTransferUpdate }) {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
@@ -126,19 +129,73 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner, rosterPla
     setActionLoading(null)
   }
 
-  const handleTransferOwnership = async (entry) => {
+  const handleInitiateTransfer = async (entry) => {
     if (!entry.member) return
     setActionLoading(entry.profileId)
     setError('')
     try {
-      await transferOwnership(leagueId, currentProfileId, entry.profileId)
-      await loadMembers()
+      const transfer = await initiatePendingTransfer(leagueId, currentProfileId, entry.profileId, entry.name)
+      if (onTransferUpdate) onTransferUpdate(transfer)
       setShowTransferConfirm(null)
     } catch (err) {
-      setError(`Failed to transfer ownership: ${err.message}`)
+      setError(`Failed to initiate transfer: ${err.message}`)
     }
     setActionLoading(null)
   }
+
+  const handleCancelTransfer = async () => {
+    setActionLoading('cancel-transfer')
+    setError('')
+    try {
+      await cancelPendingTransfer(leagueId)
+      if (onTransferUpdate) onTransferUpdate(null)
+    } catch (err) {
+      setError(`Failed to cancel transfer: ${err.message}`)
+    }
+    setActionLoading(null)
+  }
+
+  const handleApproveTransfer = async (approve) => {
+    setActionLoading('approve-transfer')
+    setError('')
+    try {
+      const updated = await approvePendingTransfer(leagueId, currentProfileId, approve)
+      if (onTransferUpdate) onTransferUpdate(updated)
+    } catch (err) {
+      setError(`Failed to ${approve ? 'approve' : 'reject'} transfer: ${err.message}`)
+    }
+    setActionLoading(null)
+  }
+
+  const handleExecuteTransfer = async () => {
+    setActionLoading('execute-transfer')
+    setError('')
+    try {
+      await executePendingTransfer(leagueId)
+      if (onTransferUpdate) onTransferUpdate(null)
+      await loadMembers()
+    } catch (err) {
+      setError(`Failed to complete transfer: ${err.message}`)
+    }
+    setActionLoading(null)
+  }
+
+  // Check if transfer can be completed (all co-owners approved OR 7 days passed)
+  const canCompleteTransfer = () => {
+    if (!pendingTransfer) return false
+    // Check if 7 days have passed
+    if (new Date() >= new Date(pendingTransfer.expiresAt)) return true
+    // Check if all co-owners approved
+    const coOwners = mergedRoster.filter(e =>
+      e.isLinked && e.role === 'co_owner' && e.profileId !== currentProfileId
+    )
+    if (coOwners.length === 0) return true
+    return coOwners.every(co => pendingTransfer.coOwnerApprovals[co.profileId] === true)
+  }
+
+  // Current user's co-owner role (for approval UI)
+  const currentUserEntry = mergedRoster.find(e => e.profileId === currentProfileId)
+  const isCoOwner = currentUserEntry?.role === 'co_owner'
 
   const canChangeRole = (entry) => {
     if (!entry.isLinked) return false
@@ -486,88 +543,251 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner, rosterPla
         </div>
       )}
 
-      {/* Transfer Ownership - Owner only */}
-      {isLeagueOwner && transferTargets.length > 0 && (
+      {/* Transfer Ownership - Owner & Co-owner visibility */}
+      {(isLeagueOwner || isCoOwner) && (pendingTransfer || (isLeagueOwner && transferTargets.length > 0)) && (
         <div style={{
           marginTop: '16px',
           paddingTop: '16px',
           borderTop: '1px solid var(--color-border)'
         }}>
           <h4 style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--color-text-secondary)' }}>Transfer Ownership</h4>
-          <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginBottom: '10px' }}>
-            Transfer league ownership to a co-owner or admin. You will become a co-owner.
-          </p>
 
-          {showTransferConfirm ? (
-            <div style={{
-              background: 'var(--color-danger-light)',
-              padding: '15px',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--color-danger-border)'
-            }}>
-              <p style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>
-                Transfer ownership to {
-                  mergedRoster.find(e => e.profileId === showTransferConfirm)?.name || 'this member'
-                }?
-              </p>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
-                This action cannot be easily undone. You will become a co-owner.
-              </p>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={() => {
-                    const entry = mergedRoster.find(e => e.profileId === showTransferConfirm)
-                    if (entry) handleTransferOwnership(entry)
-                  }}
-                  disabled={!!actionLoading}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: 'var(--color-accent-purple)',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: '600'
-                  }}
-                >
-                  {actionLoading ? 'Transferring...' : 'Confirm Transfer'}
-                </button>
-                <button
-                  onClick={() => setShowTransferConfirm(null)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--color-border)',
-                    background: 'var(--color-surface)',
-                    cursor: 'pointer',
-                    fontSize: '13px'
-                  }}
-                >
-                  Cancel
-                </button>
+          {pendingTransfer ? (() => {
+            const coOwners = mergedRoster.filter(e =>
+              e.isLinked && e.role === 'co_owner' && e.profileId !== pendingTransfer.fromOwnerId
+            )
+            const approvedCount = coOwners.filter(co => pendingTransfer.coOwnerApprovals[co.profileId] === true).length
+            const rejectedCount = coOwners.filter(co => pendingTransfer.coOwnerApprovals[co.profileId] === false).length
+            const now = new Date()
+            const expires = new Date(pendingTransfer.expiresAt)
+            const daysLeft = Math.max(0, Math.ceil((expires - now) / (1000 * 60 * 60 * 24)))
+            const isExpired = now >= expires
+            const myApproval = pendingTransfer.coOwnerApprovals[currentProfileId]
+
+            return (
+              <div style={{
+                background: 'var(--color-info-light, #e3f2fd)',
+                padding: '15px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--color-info, #2196f3)'
+              }}>
+                {/* Status banner */}
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>
+                    Pending Transfer to {pendingTransfer.toOwnerName}
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    Initiated {new Date(pendingTransfer.initiatedAt).toLocaleDateString()}
+                    {' \u2022 '}
+                    {isExpired
+                      ? 'Waiting period complete'
+                      : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`
+                    }
+                  </p>
+                </div>
+
+                {/* Approval progress */}
+                {coOwners.length > 0 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <p style={{ fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>
+                      Co-Owner Approvals: {approvedCount} of {coOwners.length}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {coOwners.map(co => {
+                        const approval = pendingTransfer.coOwnerApprovals[co.profileId]
+                        return (
+                          <div key={co.profileId} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '12px'
+                          }}>
+                            <span style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: approval === true
+                                ? 'var(--color-success)'
+                                : approval === false
+                                  ? 'var(--color-danger)'
+                                  : 'var(--color-border)',
+                              display: 'inline-block',
+                              flexShrink: 0
+                            }} />
+                            <span>{co.name}</span>
+                            <span style={{ color: 'var(--color-text-tertiary)' }}>
+                              {approval === true ? 'Approved' : approval === false ? 'Rejected' : 'Pending'}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Co-owner: Approve/Reject buttons */}
+                {isCoOwner && myApproval === undefined && (
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                    <button
+                      onClick={() => handleApproveTransfer(true)}
+                      disabled={actionLoading === 'approve-transfer'}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'var(--color-success)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleApproveTransfer(false)}
+                      disabled={actionLoading === 'approve-transfer'}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'var(--color-danger)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+
+                {/* Co-owner: Already voted */}
+                {isCoOwner && myApproval !== undefined && (
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginBottom: '12px', fontStyle: 'italic' }}>
+                    You {myApproval ? 'approved' : 'rejected'} this transfer.
+                  </p>
+                )}
+
+                {/* Owner actions */}
+                {isLeagueOwner && (
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {canCompleteTransfer() && (
+                      <button
+                        onClick={handleExecuteTransfer}
+                        disabled={!!actionLoading}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: 'var(--color-accent-purple)',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        {actionLoading === 'execute-transfer' ? 'Completing...' : 'Complete Transfer'}
+                      </button>
+                    )}
+                    <button
+                      onClick={handleCancelTransfer}
+                      disabled={!!actionLoading}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--color-danger-border)',
+                        background: 'var(--color-danger-light)',
+                        color: 'var(--color-danger-dark)',
+                        cursor: 'pointer',
+                        fontSize: '13px'
+                      }}
+                    >
+                      {actionLoading === 'cancel-transfer' ? 'Cancelling...' : 'Cancel Transfer'}
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {transferTargets.map(entry => (
-                <button
-                  key={entry.profileId}
-                  onClick={() => setShowTransferConfirm(entry.profileId)}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--color-accent-purple)',
-                    background: 'var(--color-surface-sunken)',
-                    color: 'var(--color-accent-purple)',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  {entry.name} ({ROLE_LABELS[entry.role]})
-                </button>
-              ))}
-            </div>
+            )
+          })() : (
+            <>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginBottom: '10px' }}>
+                Transfer league ownership to a co-owner or admin. A 7-day waiting period applies unless all co-owners approve sooner.
+              </p>
+
+              {showTransferConfirm ? (
+                <div style={{
+                  background: 'var(--color-danger-light)',
+                  padding: '15px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--color-danger-border)'
+                }}>
+                  <p style={{ fontWeight: '600', marginBottom: '10px', fontSize: '14px' }}>
+                    Initiate transfer to {
+                      mergedRoster.find(e => e.profileId === showTransferConfirm)?.name || 'this member'
+                    }?
+                  </p>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '13px', marginBottom: '12px' }}>
+                    The transfer will complete after 7 days or when all co-owners approve. You can cancel anytime before completion.
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      onClick={() => {
+                        const entry = mergedRoster.find(e => e.profileId === showTransferConfirm)
+                        if (entry) handleInitiateTransfer(entry)
+                      }}
+                      disabled={!!actionLoading}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'var(--color-accent-purple)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {actionLoading ? 'Starting...' : 'Start Transfer'}
+                    </button>
+                    <button
+                      onClick={() => setShowTransferConfirm(null)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--color-border)',
+                        background: 'var(--color-surface)',
+                        cursor: 'pointer',
+                        fontSize: '13px'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {transferTargets.map(entry => (
+                    <button
+                      key={entry.profileId}
+                      onClick={() => setShowTransferConfirm(entry.profileId)}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--color-accent-purple)',
+                        background: 'var(--color-surface-sunken)',
+                        color: 'var(--color-accent-purple)',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      {entry.name} ({ROLE_LABELS[entry.role]})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

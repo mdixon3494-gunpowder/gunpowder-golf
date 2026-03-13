@@ -214,3 +214,185 @@ export async function getLeaguesForProfileWithCounts(profileId) {
 
   return enriched
 }
+
+export async function getPublicLeagues(searchQuery) {
+  let query = supabase
+    .from('leagues')
+    .select('id, name, owner_id, created_at')
+    .eq('visibility', 'public')
+    .eq('type', 'league')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  if (searchQuery && searchQuery.trim()) {
+    query = query.ilike('name', `%${searchQuery.trim()}%`)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching public leagues:', error)
+    return []
+  }
+
+  // Fetch member counts in parallel
+  const enriched = await Promise.all(
+    (data || []).map(async (league) => {
+      try {
+        const { count, error: countError } = await supabase
+          .from('league_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('league_id', league.id)
+
+        return { ...league, memberCount: countError ? 0 : (count || 0) }
+      } catch {
+        return { ...league, memberCount: 0 }
+      }
+    })
+  )
+
+  return enriched
+}
+
+export async function initiatePendingTransfer(leagueId, currentOwnerId, newOwnerId, newOwnerName) {
+  // Store pending transfer in the JSONB data blob
+  const { data: league, error: fetchError } = await supabase
+    .from('leagues')
+    .select('data')
+    .eq('id', leagueId)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  const leagueData = typeof league.data === 'string' ? JSON.parse(league.data) : league.data
+
+  leagueData.pendingOwnershipTransfer = {
+    fromOwnerId: currentOwnerId,
+    toOwnerId: newOwnerId,
+    toOwnerName: newOwnerName,
+    initiatedAt: new Date().toISOString(),
+    // Transfer completes after 7 days OR when all co-owners approve
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    coOwnerApprovals: {}, // { profileId: true/false }
+    status: 'pending' // 'pending' | 'approved' | 'cancelled'
+  }
+
+  const { error: updateError } = await supabase
+    .from('leagues')
+    .update({ data: leagueData })
+    .eq('id', leagueId)
+
+  if (updateError) throw updateError
+  return leagueData.pendingOwnershipTransfer
+}
+
+export async function cancelPendingTransfer(leagueId) {
+  const { data: league, error: fetchError } = await supabase
+    .from('leagues')
+    .select('data')
+    .eq('id', leagueId)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  const leagueData = typeof league.data === 'string' ? JSON.parse(league.data) : league.data
+  delete leagueData.pendingOwnershipTransfer
+
+  const { error: updateError } = await supabase
+    .from('leagues')
+    .update({ data: leagueData })
+    .eq('id', leagueId)
+
+  if (updateError) throw updateError
+}
+
+export async function approvePendingTransfer(leagueId, profileId, approve) {
+  const { data: league, error: fetchError } = await supabase
+    .from('leagues')
+    .select('data')
+    .eq('id', leagueId)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  const leagueData = typeof league.data === 'string' ? JSON.parse(league.data) : league.data
+  if (!leagueData.pendingOwnershipTransfer) throw new Error('No pending transfer')
+
+  leagueData.pendingOwnershipTransfer.coOwnerApprovals[profileId] = approve
+
+  const { error: updateError } = await supabase
+    .from('leagues')
+    .update({ data: leagueData })
+    .eq('id', leagueId)
+
+  if (updateError) throw updateError
+  return leagueData.pendingOwnershipTransfer
+}
+
+export async function executePendingTransfer(leagueId) {
+  // Load league data to get pending transfer
+  const { data: league, error: fetchError } = await supabase
+    .from('leagues')
+    .select('data')
+    .eq('id', leagueId)
+    .single()
+
+  if (fetchError) throw fetchError
+
+  const leagueData = typeof league.data === 'string' ? JSON.parse(league.data) : league.data
+  const transfer = leagueData.pendingOwnershipTransfer
+  if (!transfer) throw new Error('No pending transfer')
+
+  // Execute the actual transfer
+  await transferOwnership(leagueId, transfer.fromOwnerId, transfer.toOwnerId)
+
+  // Clean up
+  delete leagueData.pendingOwnershipTransfer
+
+  const { error: updateError } = await supabase
+    .from('leagues')
+    .update({ data: leagueData })
+    .eq('id', leagueId)
+
+  if (updateError) throw updateError
+}
+
+export async function requestToJoinLeague(leagueId, profileId, displayName) {
+  // Fetch current data blob
+  const { data: league, error: fetchError } = await supabase
+    .from('leagues')
+    .select('data')
+    .eq('id', leagueId)
+    .single()
+
+  if (fetchError) {
+    console.error('Error fetching league data for join request:', fetchError)
+    throw fetchError
+  }
+
+  const blob = league.data || {}
+  const pendingRequests = blob.pendingPlayerRequests || []
+
+  // Avoid duplicate requests
+  if (pendingRequests.some(r => r.profileId === profileId)) {
+    return { alreadyRequested: true }
+  }
+
+  pendingRequests.push({
+    profileId,
+    displayName,
+    requestedAt: new Date().toISOString()
+  })
+
+  const { error: updateError } = await supabase
+    .from('leagues')
+    .update({ data: { ...blob, pendingPlayerRequests: pendingRequests } })
+    .eq('id', leagueId)
+
+  if (updateError) {
+    console.error('Error saving join request:', updateError)
+    throw updateError
+  }
+
+  return { alreadyRequested: false }
+}

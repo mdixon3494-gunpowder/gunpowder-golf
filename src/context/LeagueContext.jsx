@@ -5,6 +5,7 @@ import { addLeagueMember, getMemberRole } from '../lib/leagueService'
 import { useAuth } from './AuthContext'
 import { getTemplateById, getDefaultTemplate } from '../lib/formatTemplateService'
 import { saveRoundHistory, recalculateAndStoreHandicap, calculateCrossLeagueHandicap } from '../lib/roundHistoryService'
+import { createAuditEntry } from '../utils/auditLog'
 
 const LeagueContext = createContext(null)
 
@@ -128,6 +129,7 @@ export function LeagueProvider({ children }) {
   const [defaultStartingHole, setDefaultStartingHole] = useState(1)
   const [playerMoneyRecords, setPlayerMoneyRecords] = useState([])
   const [pendingPlayerRequests, setPendingPlayerRequests] = useState([])
+  const [auditLog, setAuditLog] = useState([])
 
   // Handicap settings
   const [handicapSettings, setHandicapSettings] = useState(DEFAULT_HANDICAP_SETTINGS)
@@ -178,6 +180,9 @@ export function LeagueProvider({ children }) {
 
   // Test league flag (cloned leagues)
   const [isTestLeague, setIsTestLeague] = useState(false)
+
+  // Pending ownership transfer
+  const [pendingOwnershipTransfer, setPendingOwnershipTransfer] = useState(null)
 
   // Format template for the league
   const [formatTemplate, setFormatTemplate] = useState(null)
@@ -240,6 +245,8 @@ export function LeagueProvider({ children }) {
     if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
     if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
     if (data.courseMapping) setCourseMapping(data.courseMapping)
+    setAuditLog(data.auditLog || [])
+    setPendingOwnershipTransfer(data.pendingOwnershipTransfer || null)
     setIsTestLeague(Boolean(data.isTestLeague))
     setCheckedInPlayers([])
     setManualTeams([])
@@ -334,7 +341,9 @@ export function LeagueProvider({ children }) {
           quickSkinsMode,
           handicapSettings,
           courseTees,
-          courseMapping
+          courseMapping,
+          auditLog,
+          pendingOwnershipTransfer
         },
         () => setSaveStatus('saving'),
         (success) => setSaveStatus(success ? 'saved' : 'error')
@@ -343,7 +352,7 @@ export function LeagueProvider({ children }) {
   }, [players, history, pairingRequests, liveRound, teams, leagueId, isSetup,
       leagueSettings, pendingPlayerRequests, payoutFormats, holeInOnePot,
       moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, nassauMatch, wolfMatch, quickSkinsHistory, quickSkinsMode,
-      handicapSettings, courseTees, courseMapping])
+      handicapSettings, courseTees, courseMapping, auditLog, pendingOwnershipTransfer])
 
   // Mark data as loaded
   useEffect(() => {
@@ -967,6 +976,12 @@ export function LeagueProvider({ children }) {
     }
   }
 
+  const addAuditEntry = (action, details = {}) => {
+    const performedBy = profile?.display_name || 'Unknown'
+    const entry = createAuditEntry(action, performedBy, details)
+    setAuditLog(prev => [entry, ...prev].slice(0, 200))
+  }
+
   const value = {
     // League
     leagueId,
@@ -1069,6 +1084,15 @@ export function LeagueProvider({ children }) {
     courseTees,
     setCourseTees,
     refreshCrossLeagueHandicaps,
+
+    // Audit Log
+    auditLog,
+    setAuditLog,
+    addAuditEntry,
+
+    // Pending ownership transfer
+    pendingOwnershipTransfer,
+    setPendingOwnershipTransfer,
 
     // Utilities
     normalizeRound

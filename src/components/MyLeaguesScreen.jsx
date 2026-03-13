@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react'
-import { getLeaguesForProfileWithCounts } from '../lib/leagueService'
+import { useState, useEffect, useCallback } from 'react'
+import { getLeaguesForProfileWithCounts, getPublicLeagues } from '../lib/leagueService'
 import { useLeague } from '../context/LeagueContext'
 
 function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting, onStartCasualGame, onStartIndividualRound, onViewRoundHistory }) {
   const { isAdmin } = useLeague()
   const [allLeagues, setAllLeagues] = useState([])
   const [loading, setLoading] = useState(true)
+  const [browseOpen, setBrowseOpen] = useState(false)
+  const [publicLeagues, setPublicLeagues] = useState([])
+  const [publicLoading, setPublicLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const fetchLeagues = async () => {
@@ -23,6 +27,33 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
     }
     fetchLeagues()
   }, [profile?.id])
+
+  const fetchPublicLeagues = useCallback(async (query) => {
+    setPublicLoading(true)
+    try {
+      const data = await getPublicLeagues(query)
+      // Filter out leagues the user is already a member of
+      const myLeagueIds = new Set(allLeagues.map(m => m.league_id))
+      setPublicLeagues(data.filter(l => !myLeagueIds.has(l.id)))
+    } catch (err) {
+      console.error('Error fetching public leagues:', err)
+    }
+    setPublicLoading(false)
+  }, [allLeagues])
+
+  useEffect(() => {
+    if (browseOpen) {
+      fetchPublicLeagues(searchQuery)
+    }
+  }, [browseOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!browseOpen) return
+    const timer = setTimeout(() => {
+      fetchPublicLeagues(searchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Hide test leagues and casual/individual games from the league list
   const leagues = allLeagues.filter(m => {
@@ -277,6 +308,121 @@ function MyLeaguesScreen({ profile, onSelectLeague, onCreateNew, onJoinExisting,
             >
               Join with Code
             </button>
+          </div>
+
+          {/* Browse Public Leagues */}
+          <div style={{ marginTop: '24px' }}>
+            <button
+              onClick={() => setBrowseOpen(!browseOpen)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-secondary)',
+                fontSize: '14px',
+                cursor: 'pointer',
+                padding: '8px 0',
+                width: '100%',
+                textAlign: 'center',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}
+            >
+              <span style={{
+                display: 'inline-block',
+                transform: browseOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s'
+              }}>
+                ›
+              </span>
+              Browse Public Leagues
+            </button>
+
+            {browseOpen && (
+              <div style={{ marginTop: '12px' }}>
+                <input
+                  type="text"
+                  placeholder="Search leagues by name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '2px solid var(--color-border)',
+                    background: 'var(--color-surface)',
+                    color: 'var(--color-text-primary)',
+                    fontSize: '14px',
+                    marginBottom: '12px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+
+                {publicLoading ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '20px',
+                    color: 'var(--color-text-tertiary)'
+                  }}>
+                    <div className="spinner-tiny" style={{ margin: '0 auto 8px' }} />
+                    Searching...
+                  </div>
+                ) : publicLeagues.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '20px',
+                    color: 'var(--color-text-tertiary)',
+                    fontSize: '13px'
+                  }}>
+                    No public leagues found
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {publicLeagues.map((league) => (
+                      <div
+                        key={league.id}
+                        style={{
+                          background: 'var(--color-surface)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '10px',
+                          padding: '12px 16px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '15px', color: 'var(--color-text-primary)' }}>
+                            {league.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
+                            {league.memberCount} member{league.memberCount !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => onSelectLeague(league.id)}
+                          style={{
+                            background: 'var(--color-success)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '6px 14px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          Request to Join
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
