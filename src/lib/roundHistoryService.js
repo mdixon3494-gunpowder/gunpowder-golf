@@ -182,6 +182,78 @@ export async function updateProfileHandicap(profileId, handicapIndex) {
 }
 
 /**
+ * Get round history filtered by specific source IDs (for cross-league handicap)
+ * @param {string} profileId
+ * @param {Array<string>} sourceIds - League IDs to include
+ * @param {Object} options - { includeIndividualRounds, includeCasualRounds }
+ * @param {number} limit
+ */
+export async function getRoundHistoryFiltered(profileId, sourceIds, options = {}, limit = 20) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    // Build list of round_types to include
+    const roundTypes = ['league']
+    if (options.includeIndividualRounds) roundTypes.push('individual')
+    if (options.includeCasualRounds) roundTypes.push('casual')
+
+    const { data, error } = await supabase
+      .from('round_history')
+      .select('*')
+      .eq('profile_id', profileId)
+      .eq('applied_to_handicap', true)
+      .in('source_id', sourceIds)
+      .in('round_type', roundTypes)
+      .order('date', { ascending: false })
+      .limit(limit)
+      .abortSignal(controller.signal)
+
+    clearTimeout(timeoutId)
+
+    if (error) {
+      console.error('Error fetching filtered round history:', error)
+      return []
+    }
+    return data || []
+  } catch (err) {
+    clearTimeout(timeoutId)
+    console.error('Filtered round history fetch failed:', err.message)
+    return []
+  }
+}
+
+/**
+ * Calculate handicap from filtered round_history sources
+ * @param {string} profileId
+ * @param {Array<string>} sourceIds - League IDs to include
+ * @param {Object} options - { includeIndividualRounds, includeCasualRounds }
+ * @param {Object} courseTees
+ * @param {Object} handicapSettings
+ */
+export async function calculateCrossLeagueHandicap(profileId, sourceIds, options = {}, courseTees = DEFAULT_COURSE_TEES, handicapSettings = null) {
+  const rounds = await getRoundHistoryFiltered(profileId, sourceIds, options)
+  if (rounds.length === 0) return null
+
+  const mappedRounds = rounds.map(row => ({
+    score: row.total_score,
+    tee: row.metadata?.tee || 'blue',
+    date: row.date,
+    scores: row.scores,
+    holesPlayed: row.holes_played,
+    courseRating: row.metadata?.courseRating,
+    slopeRating: row.metadata?.slopeRating
+  }))
+
+  // Cross-league uses WHS standard (net_double_bogey)
+  const effectiveSettings = handicapSettings
+    ? { ...handicapSettings, maxHoleScoreMode: 'net_double_bogey' }
+    : null
+
+  return calculateHandicap(mappedRounds, courseTees, 54, effectiveSettings)
+}
+
+/**
  * Recalculate handicap from round_history and store in profile
  * Uses "true" scope (all rounds) for the profile-level handicap_index
  */

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { useAuth } from '../context/AuthContext'
@@ -2971,6 +2971,149 @@ function HandicapSettingsSection({ handicapSettings, onUpdateHandicap, courseTee
   )
 }
 
+function CrossLeagueSourcesSection({ handicapSettings, onUpdateHandicap, isAdmin, leagueId, onRefresh }) {
+  const settings = { ...DEFAULT_HANDICAP_SETTINGS, ...handicapSettings }
+  const sources = settings.crossLeagueSources || { mode: 'all', includedSourceIds: [], includeIndividualRounds: true, includeCasualRounds: true }
+  const [leagues, setLeagues] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const { profile } = useAuth()
+
+  // Fetch user's leagues on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!profile?.id) return
+    setLoading(true)
+    import('../lib/leagueService').then(({ getLeaguesForProfile }) => {
+      getLeaguesForProfile(profile.id).then(memberships => {
+        const otherLeagues = (memberships || [])
+          .filter(m => m.league_id !== leagueId && !m.leagues?.deleted_at && m.leagues?.type !== 'casual')
+          .map(m => ({
+            id: m.league_id,
+            name: m.leagues?.name || m.league_id,
+            type: m.leagues?.type || 'league'
+          }))
+        setLeagues(otherLeagues)
+        setLoading(false)
+      }).catch(() => setLoading(false))
+    })
+  }, [])
+
+  const updateSources = (key, value) => {
+    const updated = { ...sources, [key]: value }
+    onUpdateHandicap({ ...handicapSettings, crossLeagueSources: updated })
+  }
+
+  const toggleLeague = (lid) => {
+    const current = sources.includedSourceIds || []
+    const updated = current.includes(lid) ? current.filter(id => id !== lid) : [...current, lid]
+    updateSources('includedSourceIds', updated)
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await onRefresh()
+    } catch {}
+    setRefreshing(false)
+  }
+
+  if (!isAdmin) return null
+
+  return (
+    <div className="card" style={{ marginBottom: '16px' }}>
+      <div className="card-header">
+        <h3 className="card-title">Cross-League Handicap Sources</h3>
+      </div>
+      <div className="card-body">
+        <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+          Choose which leagues' rounds to include when calculating handicaps. Current league is always included.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+          {[
+            { value: 'all', label: 'All Rounds', desc: 'Include rounds from all leagues and sources (default)' },
+            { value: 'selected', label: 'Selected Sources Only', desc: 'Only include rounds from leagues you choose below' }
+          ].map(opt => (
+            <label key={opt.value} style={{
+              display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '10px 12px',
+              border: `2px solid ${sources.mode === opt.value ? 'var(--color-primary)' : 'var(--color-border)'}`,
+              borderRadius: '8px', cursor: 'pointer',
+              background: sources.mode === opt.value ? 'var(--color-primary-light, rgba(76,175,80,0.08))' : 'transparent'
+            }}>
+              <input type="radio" name="crossLeagueMode" value={opt.value} checked={sources.mode === opt.value}
+                onChange={() => updateSources('mode', opt.value)} style={{ marginTop: '2px' }} />
+              <div>
+                <div style={{ fontWeight: 600 }}>{opt.label}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{opt.desc}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {sources.mode === 'selected' && (
+          <>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontWeight: 600, marginBottom: '8px' }}>Included Leagues</div>
+
+              <div style={{
+                padding: '8px 12px', background: 'var(--color-bg-secondary, #f5f5f5)',
+                borderRadius: '6px', marginBottom: '8px', fontSize: '0.85rem'
+              }}>
+                <span style={{ fontWeight: 600 }}>{leagueId}</span>
+                <span style={{ color: 'var(--color-text-secondary)', marginLeft: '8px' }}>(current league — always included)</span>
+              </div>
+
+              {loading ? (
+                <div style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>Loading leagues...</div>
+              ) : leagues.length === 0 ? (
+                <div style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
+                  No other leagues found. Join additional leagues to see them here.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {leagues.map(league => (
+                    <label key={league.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px',
+                      border: '1px solid var(--color-border)', borderRadius: '6px', cursor: 'pointer'
+                    }}>
+                      <input type="checkbox"
+                        checked={(sources.includedSourceIds || []).includes(league.id)}
+                        onChange={() => toggleLeague(league.id)} />
+                      <span>{league.name}</span>
+                      {league.type === 'individual' && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginLeft: 'auto' }}>Individual</span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                <input type="checkbox" checked={sources.includeIndividualRounds !== false}
+                  onChange={(e) => updateSources('includeIndividualRounds', e.target.checked)} />
+                Include individual (non-league) rounds
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                <input type="checkbox" checked={sources.includeCasualRounds !== false}
+                  onChange={(e) => updateSources('includeCasualRounds', e.target.checked)} />
+                Include casual game rounds
+              </label>
+            </div>
+
+            <button className="btn btn-primary btn-small" onClick={handleRefresh} disabled={refreshing}
+              style={{ width: '100%' }}>
+              {refreshing ? 'Recalculating...' : 'Recalculate Handicaps from Selected Sources'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function AccountSection({ user, profile, onSignOut, onUnlinkProfile, onLeaveLeague, onSignIn }) {
   const [signingOut, setSigningOut] = useState(false)
   const [unlinking, setUnlinking] = useState(false)
@@ -3719,7 +3862,8 @@ function SettingsPage({ onShowLeagueSelector }) {
     pendingPlayerRequests,
     setPendingPlayerRequests,
     isLeagueOwner,
-    userRole
+    userRole,
+    refreshCrossLeagueHandicaps
   } = useLeague()
 
   const [activeCategory, setActiveCategory] = useState(null)
@@ -3880,15 +4024,24 @@ function SettingsPage({ onShowLeagueSelector }) {
         )
       case 'handicaps':
         return (
-          <HandicapSettingsSection
-            handicapSettings={handicapSettings}
-            onUpdateHandicap={setHandicapSettings}
-            courseTees={courseTees}
-            onUpdateTees={setCourseTees}
-            isAdmin={isAdmin}
-            players={players}
-            leagueId={leagueId}
-          />
+          <>
+            <HandicapSettingsSection
+              handicapSettings={handicapSettings}
+              onUpdateHandicap={setHandicapSettings}
+              courseTees={courseTees}
+              onUpdateTees={setCourseTees}
+              isAdmin={isAdmin}
+              players={players}
+              leagueId={leagueId}
+            />
+            <CrossLeagueSourcesSection
+              handicapSettings={handicapSettings}
+              onUpdateHandicap={setHandicapSettings}
+              isAdmin={isAdmin}
+              leagueId={leagueId}
+              onRefresh={refreshCrossLeagueHandicaps}
+            />
+          </>
         )
       case 'payouts':
         return (

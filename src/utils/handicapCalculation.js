@@ -475,6 +475,11 @@ export function getEffectiveHandicap(player, handicapSettings, leagueId = null, 
     return lockedHandicaps[player.id]
   }
 
+  // Cross-league sources: use pre-calculated value from round_history
+  if (settings.crossLeagueSources?.mode === 'selected' && player.crossLeagueHandicap != null) {
+    return player.crossLeagueHandicap
+  }
+
   // Auto mode - calculate based on scope
   const rounds = getRoundsByScope(player, handicapScope, leagueId)
 

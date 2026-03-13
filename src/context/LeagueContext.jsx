@@ -4,7 +4,7 @@ import { DEFAULT_HANDICAP_SETTINGS, DEFAULT_COURSE_TEES } from '../utils/handica
 import { addLeagueMember, getMemberRole } from '../lib/leagueService'
 import { useAuth } from './AuthContext'
 import { getTemplateById, getDefaultTemplate } from '../lib/formatTemplateService'
-import { saveRoundHistory, recalculateAndStoreHandicap } from '../lib/roundHistoryService'
+import { saveRoundHistory, recalculateAndStoreHandicap, calculateCrossLeagueHandicap } from '../lib/roundHistoryService'
 
 const LeagueContext = createContext(null)
 
@@ -890,6 +890,39 @@ export function LeagueProvider({ children }) {
     return result
   }
 
+  // Recalculate cross-league handicaps for all linked players
+  const refreshCrossLeagueHandicaps = async () => {
+    const sources = handicapSettings?.crossLeagueSources
+    if (!sources || sources.mode !== 'selected') return
+
+    const sourceIds = [leagueId, ...(sources.includedSourceIds || [])]
+    const options = {
+      includeIndividualRounds: sources.includeIndividualRounds !== false,
+      includeCasualRounds: sources.includeCasualRounds !== false
+    }
+
+    const linkedPlayers = players.filter(p => p.profileId || p.profile_id)
+    const updates = await Promise.all(
+      linkedPlayers.map(async (player) => {
+        const profileId = player.profileId || player.profile_id
+        try {
+          const hcp = await calculateCrossLeagueHandicap(profileId, sourceIds, options, courseTees, handicapSettings)
+          return { id: player.id, crossLeagueHandicap: hcp }
+        } catch {
+          return null
+        }
+      })
+    )
+
+    const validUpdates = updates.filter(Boolean)
+    if (validUpdates.length > 0) {
+      setPlayers(prev => prev.map(p => {
+        const update = validUpdates.find(u => u.id === p.id)
+        return update ? { ...p, crossLeagueHandicap: update.crossLeagueHandicap } : p
+      }))
+    }
+  }
+
   const saveLeagueRoundHistory = async (roundPlayers) => {
     // Skip saving for test leagues to avoid polluting real player data
     if (isTestLeague) return []
@@ -922,6 +955,9 @@ export function LeagueProvider({ children }) {
       entries.forEach(e => {
         recalculateAndStoreHandicap(e.profile_id, courseTees).catch(() => {})
       })
+
+      // Refresh cross-league handicaps if enabled (non-blocking)
+      refreshCrossLeagueHandicaps().catch(() => {})
 
       return result
     } catch (err) {
@@ -1031,6 +1067,7 @@ export function LeagueProvider({ children }) {
     setHandicapSettings,
     courseTees,
     setCourseTees,
+    refreshCrossLeagueHandicaps,
 
     // Utilities
     normalizeRound
