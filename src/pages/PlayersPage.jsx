@@ -3199,13 +3199,16 @@ function PlayersPage() {
 
   // Auto-select logged-in user's player, or first active player
   useEffect(() => {
+    // Always prefer logged-in user's player when available
+    if (myPlayer) {
+      setSelectedPlayerId(myPlayer.id)
+      return
+    }
     if (selectedPlayerId) {
       // Verify selected player still exists
       if (players.find(p => p.id === selectedPlayerId)) return
     }
-    if (myPlayer) {
-      setSelectedPlayerId(myPlayer.id)
-    } else if (sortedPlayers.length > 0) {
+    if (sortedPlayers.length > 0) {
       setSelectedPlayerId(sortedPlayers[0].id)
     }
   }, [myPlayer, sortedPlayers, players]) // eslint-disable-line react-hooks/exhaustive-deps
