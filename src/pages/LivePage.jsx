@@ -6860,9 +6860,11 @@ function LivePage() {
       })
 
       // Count holes completed (X counts as completed)
-      const holesCompleted = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18].filter(hole =>
-        scores[hole] !== undefined && scores[hole] !== null && scores[hole] !== ''
-      ).length
+      const holesCompleted = roundPlayer.manualTotal
+        ? 18 // Manual total counts as a complete round
+        : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18].filter(hole =>
+            scores[hole] !== undefined && scores[hole] !== null && scores[hole] !== ''
+          ).length
       const hasAllHoles = holesCompleted === 18
 
       // Calculate greenies won by this player
@@ -7013,8 +7015,13 @@ function LivePage() {
         .map(p => {
           const scores = p.scores || {}
           let front9 = 0, back9 = 0
-          for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += scores[h]
-          for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += scores[h]
+          if (p.manualTotal) {
+            front9 = p.manualTotal.front9 || 0
+            back9 = p.manualTotal.back9 || 0
+          } else {
+            for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += scores[h]
+            for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += scores[h]
+          }
           const playerData = players.find(pl => pl.id === p.id)
           return {
             profileId: playerData?.profileId || null,
