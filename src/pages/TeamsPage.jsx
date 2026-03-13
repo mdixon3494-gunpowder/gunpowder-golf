@@ -4,7 +4,63 @@ import { useLeague } from '../context/LeagueContext'
 import { getTeamName, calculateTeamSkill, calculateTeamBalance } from '../utils/teamGeneration'
 import { formatHandicap, formatCourseHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
 
-function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, courseTees }) {
+function AddLatePlayer({ availablePlayers, onAdd, courseTees }) {
+  const [open, setOpen] = useState(false)
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          width: '100%',
+          padding: '6px',
+          border: '1px dashed var(--color-border)',
+          background: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          color: 'var(--color-text-tertiary)',
+          marginTop: '4px'
+        }}
+      >
+        + Add Player
+      </button>
+    )
+  }
+
+  return (
+    <div style={{ marginTop: '4px', padding: '8px', background: 'var(--color-surface-sunken)', borderRadius: '6px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+        <span style={{ fontSize: '12px', fontWeight: '600' }}>Add player to team:</span>
+        <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--color-text-tertiary)' }}>&times;</button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '150px', overflowY: 'auto' }}>
+        {availablePlayers.map(p => {
+          const courseHcp = getCourseHandicapForTee(p.handicap, p.tee || p.defaultTee || 'blue', courseTees)
+          return (
+            <button
+              key={p.id}
+              onClick={() => { onAdd(p); setOpen(false) }}
+              style={{
+                padding: '6px 10px',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                textAlign: 'left'
+              }}
+            >
+              {p.name} {p.handicap != null ? `(${formatCourseHandicap(courseHcp)})` : ''}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, courseTees, swapSelection, onPlayerTap, canSwap, onAddPlayer, availablePlayers }) {
   const teamSkill = calculateTeamSkill(team)
   const avgSkill = team.length > 0 ? teamSkill / team.length : 0
 
@@ -87,14 +143,33 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, cour
           player.tee || player.defaultTee || 'blue',
           courseTees
         )
+        const isSelected = swapSelection?.playerId === player.id
+        const isSwapTarget = swapSelection && swapSelection.teamIndex !== index
         return (
-          <div key={player.id} className="team-member">
+          <div
+            key={player.id}
+            className="team-member"
+            onClick={canSwap ? () => onPlayerTap(player.id, index) : undefined}
+            style={{
+              cursor: canSwap ? 'pointer' : 'default',
+              background: isSelected ? 'var(--color-accent-blue)' : undefined,
+              color: isSelected ? 'var(--color-text-on-primary)' : undefined,
+              borderLeft: isSwapTarget ? '3px solid var(--color-accent-blue)' : undefined,
+              paddingLeft: isSwapTarget ? '9px' : undefined,
+              borderRadius: '4px',
+              transition: 'background 0.15s'
+            }}
+          >
             {player.name} ({player.handicap !== undefined && player.handicap !== null
               ? `${formatCourseHandicap(playerCourseHcp)}`
               : player.skillRating?.toFixed(1) || '5.0'})
           </div>
         )
       })}
+      {/* Add late player - admin only, before round starts */}
+      {isAdmin && availablePlayers?.length > 0 && (
+        <AddLatePlayer availablePlayers={availablePlayers} onAdd={(player) => onAddPlayer(player, index)} courseTees={courseTees} />
+      )}
     </div>
   )
 }
@@ -668,7 +743,64 @@ function TeamsPage() {
     setRoundFormatOverride
   } = useLeague()
 
+  const [swapSelection, setSwapSelection] = useState(null) // { playerId, teamIndex }
+
   const balance = teams.length > 0 ? calculateTeamBalance(teams) : null
+  const canSwap = isAdmin && !liveRound
+
+  const handlePlayerTap = (playerId, teamIndex) => {
+    if (!canSwap) return
+
+    if (!swapSelection) {
+      // First tap — select this player
+      setSwapSelection({ playerId, teamIndex })
+      return
+    }
+
+    if (swapSelection.playerId === playerId) {
+      // Tapped same player — deselect
+      setSwapSelection(null)
+      return
+    }
+
+    if (swapSelection.teamIndex === teamIndex) {
+      // Same team — switch selection to this player
+      setSwapSelection({ playerId, teamIndex })
+      return
+    }
+
+    // Different team — perform the swap
+    const newTeams = teams.map(t => [...t])
+    const team1 = newTeams[swapSelection.teamIndex]
+    const team2 = newTeams[teamIndex]
+    const idx1 = team1.findIndex(p => p.id === swapSelection.playerId)
+    const idx2 = team2.findIndex(p => p.id === playerId)
+
+    if (idx1 !== -1 && idx2 !== -1) {
+      const temp = team1[idx1]
+      team1[idx1] = team2[idx2]
+      team2[idx2] = temp
+      setTeams(newTeams)
+    }
+
+    setSwapSelection(null)
+  }
+
+  // Players not already on any team (available for late add)
+  const teamPlayerIds = new Set(teams.flat().map(p => p.id))
+  const availablePlayers = players
+    .filter(p => p.isActive !== false && !teamPlayerIds.has(p.id))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  const handleAddPlayer = (player, teamIndex) => {
+    const newTeams = teams.map(t => [...t])
+    newTeams[teamIndex].push({
+      ...player,
+      handicap: player.handicap ?? player.effectiveHandicap ?? null,
+      tee: player.defaultTee || 'blue'
+    })
+    setTeams(newTeams)
+  }
 
   const moveTeamUp = (idx) => {
     if (idx <= 0) return
@@ -783,6 +915,38 @@ function TeamsPage() {
             />
           )}
 
+          {/* Swap banner */}
+          {swapSelection && (
+            <div style={{
+              background: 'var(--color-info-light, #e3f2fd)',
+              border: '2px solid var(--color-accent-blue)',
+              padding: '10px 15px',
+              borderRadius: '8px',
+              marginBottom: '12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '13px'
+            }}>
+              <span>
+                <strong>{teams[swapSelection.teamIndex]?.find(p => p.id === swapSelection.playerId)?.name}</strong> selected — tap a player on another team to swap
+              </span>
+              <button
+                onClick={() => setSwapSelection(null)}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
           {/* Team list */}
           {teams.map((team, idx) => (
             <TeamCard
@@ -794,6 +958,11 @@ function TeamsPage() {
               onMoveDown={moveTeamDown}
               isAdmin={isAdmin}
               courseTees={courseTees}
+              swapSelection={swapSelection}
+              onPlayerTap={handlePlayerTap}
+              canSwap={canSwap}
+              onAddPlayer={handleAddPlayer}
+              availablePlayers={!liveRound ? availablePlayers : []}
             />
           ))}
 
