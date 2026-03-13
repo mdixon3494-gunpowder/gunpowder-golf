@@ -3202,6 +3202,7 @@ function PlayersPage() {
 
   // Determine effective selected player: myPlayer wins unless user manually picked someone else
   const effectiveSelectedId = useMemo(() => {
+    console.log('[PlayersPage] Selection debug:', { profileId: profile?.id, myPlayerId: myPlayer?.id, myPlayerName: myPlayer?.name, userHasSelected, selectedPlayerId, firstSorted: sortedPlayers[0]?.name, playerCount: players.length, playersWithProfile: players.filter(p => p.profileId || p.profile_id).map(p => ({ name: p.name, profileId: p.profileId || p.profile_id })) })
     if (myPlayer && !userHasSelected) return myPlayer.id
     if (selectedPlayerId && players.find(p => p.id === selectedPlayerId)) return selectedPlayerId
     if (myPlayer) return myPlayer.id
