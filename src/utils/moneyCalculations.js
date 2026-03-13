@@ -28,7 +28,7 @@ function check9Complete(round, startHole, endHole) {
   })
 }
 
-export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, skinsMatch) {
+export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings) {
   if (!round) return null
 
   const numTeams = round.teams.length
@@ -173,6 +173,14 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
   // Calculate greenie payouts with carryovers
   let carryover = 0
   const greeniePayouts = {}
+  const carryoverSettings = greenieCarryoverSettings || {}
+  const carryoverMode = carryoverSettings.carryoverMode || 'last_winner'
+  const noWinnersMode = carryoverSettings.noWinnersMode || 'hio_pot'
+
+  // Track first and last winners for carryover distribution
+  let firstWinnerId = null
+  let lastWinnerId = null
+  const allWinnerIds = new Set()
 
   par3Holes.forEach(hole => {
     const result = greenieResults[hole]
@@ -181,10 +189,45 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
     if (result.winner) {
       greeniePayouts[result.winner] = (greeniePayouts[result.winner] || 0) + totalPot
       carryover = 0
+      if (!firstWinnerId) firstWinnerId = result.winner
+      lastWinnerId = result.winner
+      allWinnerIds.add(result.winner)
     } else {
       carryover = totalPot
     }
   })
+
+  // Handle leftover carryover (unwon greenie money after last par 3)
+  if (carryover > 0) {
+    if (allWinnerIds.size > 0) {
+      // Some greenies were won — distribute leftover based on carryoverMode
+      if (carryoverMode === 'last_winner') {
+        greeniePayouts[lastWinnerId] = (greeniePayouts[lastWinnerId] || 0) + carryover
+        carryover = 0
+      } else if (carryoverMode === 'first_winner') {
+        greeniePayouts[firstWinnerId] = (greeniePayouts[firstWinnerId] || 0) + carryover
+        carryover = 0
+      } else if (carryoverMode === 'split') {
+        const splitAmount = carryover / allWinnerIds.size
+        allWinnerIds.forEach(id => {
+          greeniePayouts[id] = (greeniePayouts[id] || 0) + splitAmount
+        })
+        carryover = 0
+      }
+      // 'hio_pot' — carryover remains, added to HIO pot below
+    } else {
+      // No greenies won at all — use noWinnersMode
+      if (noWinnersMode === 'split') {
+        const splitAmount = carryover / totalPlayers
+        allPlayers.forEach(p => {
+          greeniePayouts[p.id] = (greeniePayouts[p.id] || 0) + splitAmount
+        })
+        carryover = 0
+      }
+      // 'hio_pot' — carryover remains, added to HIO pot below
+      // 'carry_next' — carryover remains as carryoverRemaining for next round
+    }
+  }
 
   // Calculate player settlements
   const playerSettlements = allPlayers.map(player => {

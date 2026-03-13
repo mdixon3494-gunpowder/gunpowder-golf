@@ -625,6 +625,123 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
   )
 }
 
+function GreenieCarryoverSection({ leagueSettings, onUpdate, isAdmin }) {
+  const settings = leagueSettings?.greenieCarryover || {}
+  const carryoverMode = settings.carryoverMode || 'last_winner'
+  const noWinnersMode = settings.noWinnersMode || 'hio_pot'
+
+  const updateSetting = (key, value) => {
+    onUpdate({
+      ...leagueSettings,
+      greenieCarryover: { ...settings, [key]: value }
+    })
+  }
+
+  const carryoverOptions = [
+    { value: 'last_winner', label: 'Last Greenie Winner', desc: 'Player who won the last greenie gets the leftover' },
+    { value: 'first_winner', label: 'First Greenie Winner', desc: 'Player who won the first greenie gets the leftover' },
+    { value: 'hio_pot', label: 'Hole-in-One Pot', desc: 'Leftover rolls into the hole-in-one pot' },
+    { value: 'split', label: 'Split Evenly', desc: 'Leftover is split equally among all players' }
+  ]
+
+  const noWinnersOptions = [
+    { value: 'hio_pot', label: 'Hole-in-One Pot', desc: 'All greenie money goes to the hole-in-one pot' },
+    { value: 'split', label: 'Split Evenly', desc: 'All greenie money is refunded equally to all players' },
+    { value: 'carry_next', label: 'Carry to Next Week', desc: 'All greenie money carries over to next round' }
+  ]
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '4px' }}>Unwon Greenie Payouts</h3>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
+        What happens to greenie money when the last par 3 has no winner (carryover leftover).
+      </p>
+
+      {/* Carryover mode — some greenies won but leftover remains */}
+      <div style={{ marginBottom: '16px' }}>
+        <label style={{ display: 'block', fontWeight: '600', fontSize: '13px', marginBottom: '8px' }}>
+          Leftover carryover goes to:
+        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {carryoverOptions.map(opt => (
+            <label
+              key={opt.value}
+              onClick={() => isAdmin && updateSetting('carryoverMode', opt.value)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: carryoverMode === opt.value ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                background: carryoverMode === opt.value ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+                cursor: isAdmin ? 'pointer' : 'default',
+                fontSize: '13px'
+              }}
+            >
+              <input
+                type="radio"
+                checked={carryoverMode === opt.value}
+                onChange={() => updateSetting('carryoverMode', opt.value)}
+                disabled={!isAdmin}
+                style={{ margin: 0 }}
+              />
+              <div>
+                <div style={{ fontWeight: '600' }}>{opt.label}</div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>{opt.desc}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* No winners mode — zero greenies won all round */}
+      <div>
+        <label style={{ display: 'block', fontWeight: '600', fontSize: '13px', marginBottom: '8px' }}>
+          If no greenies are won all round:
+        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {noWinnersOptions.map(opt => (
+            <label
+              key={opt.value}
+              onClick={() => isAdmin && updateSetting('noWinnersMode', opt.value)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: noWinnersMode === opt.value ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                background: noWinnersMode === opt.value ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+                cursor: isAdmin ? 'pointer' : 'default',
+                fontSize: '13px'
+              }}
+            >
+              <input
+                type="radio"
+                checked={noWinnersMode === opt.value}
+                onChange={() => updateSetting('noWinnersMode', opt.value)}
+                disabled={!isAdmin}
+                style={{ margin: 0 }}
+              />
+              <div>
+                <div style={{ fontWeight: '600' }}>{opt.label}</div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>{opt.desc}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PayoutSettingsSection({ payoutFormats, onUpdate, isAdmin }) {
   const [editing, setEditing] = useState(null)
   const [formData, setFormData] = useState({})
@@ -3784,6 +3901,11 @@ function SettingsPage({ onShowLeagueSelector }) {
             <PayoutSettingsSection
               payoutFormats={payoutFormats}
               onUpdate={setPayoutFormats}
+              isAdmin={isAdmin}
+            />
+            <GreenieCarryoverSection
+              leagueSettings={leagueSettings}
+              onUpdate={setLeagueSettings}
               isAdmin={isAdmin}
             />
           </>

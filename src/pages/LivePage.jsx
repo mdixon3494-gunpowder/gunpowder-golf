@@ -6125,8 +6125,8 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 }
 
 // Money Tracker Component
-function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch }) {
-  const settlement = calculateRoundSettlement(liveRound, payoutFormats, holeInOnePot, skinsMatch)
+function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings }) {
+  const settlement = calculateRoundSettlement(liveRound, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings)
 
   if (!settlement) {
     return (
@@ -7465,6 +7465,7 @@ function LivePage() {
           payoutFormats={payoutFormats}
           holeInOnePot={holeInOnePot}
           skinsMatch={skinsMatch}
+          greenieCarryoverSettings={leagueSettings?.greenieCarryover}
         />
       )}
       {subTab === 'manage' && (
