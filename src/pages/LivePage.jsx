@@ -207,8 +207,15 @@ function Leaderboard({ liveRound, view, setView, teamScoringRules, courseTees })
 }
 
 // Score Keypad Modal
-function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onPrevHole, onNextHole, onClear }) {
+function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onPrevHole, onNextHole, onClear, trackStats, holeStats, onUpdateHoleStats }) {
   const holeInfo = getHoleInfo(hole)
+  const stats = holeStats?.[hole] || {}
+  const isFairwayHole = holeInfo?.par >= 4 // FIR only on par 4+ holes
+
+  const updateStat = (key, val) => {
+    if (!onUpdateHoleStats) return
+    onUpdateHoleStats(hole, { ...stats, [key]: val })
+  }
 
   return (
     <div style={{
@@ -435,6 +442,129 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
             Done
           </button>
         </div>
+
+        {/* Stat Tracking */}
+        {trackStats && (
+          <div style={{
+            borderTop: '2px solid var(--color-border)',
+            paddingTop: '12px',
+            marginTop: '12px'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Hole Stats
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {/* FIR - only par 4+ */}
+              {isFairwayHole && (
+                <button
+                  onClick={() => updateStat('fir', !stats.fir)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '20px',
+                    border: `2px solid ${stats.fir ? 'var(--color-success)' : 'var(--color-border)'}`,
+                    background: stats.fir ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+                    color: stats.fir ? 'var(--color-success-dark)' : 'var(--color-text-secondary)',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  FIR {stats.fir ? '✓' : ''}
+                </button>
+              )}
+              {/* GIR */}
+              <button
+                onClick={() => updateStat('gir', !stats.gir)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '20px',
+                  border: `2px solid ${stats.gir ? 'var(--color-success)' : 'var(--color-border)'}`,
+                  background: stats.gir ? 'var(--color-success-light)' : 'var(--color-surface-sunken)',
+                  color: stats.gir ? 'var(--color-success-dark)' : 'var(--color-text-secondary)',
+                  fontWeight: '600',
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                GIR {stats.gir ? '✓' : ''}
+              </button>
+              {/* Scramble - only when GIR missed */}
+              {stats.gir === false && (
+                <button
+                  onClick={() => updateStat('scramble', !stats.scramble)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '20px',
+                    border: `2px solid ${stats.scramble ? 'var(--color-info)' : 'var(--color-border)'}`,
+                    background: stats.scramble ? 'var(--color-info-light)' : 'var(--color-surface-sunken)',
+                    color: stats.scramble ? 'var(--color-info)' : 'var(--color-text-secondary)',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Up&Down {stats.scramble ? '✓' : ''}
+                </button>
+              )}
+              {/* Penalty */}
+              <button
+                onClick={() => updateStat('penalty', (stats.penalty || 0) + 1)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '20px',
+                  border: `2px solid ${stats.penalty ? 'var(--color-danger)' : 'var(--color-border)'}`,
+                  background: stats.penalty ? 'var(--color-danger-light)' : 'var(--color-surface-sunken)',
+                  color: stats.penalty ? 'var(--color-danger)' : 'var(--color-text-secondary)',
+                  fontWeight: '600',
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                Pen {stats.penalty ? `(${stats.penalty})` : ''}
+              </button>
+              {stats.penalty > 0 && (
+                <button
+                  onClick={() => updateStat('penalty', Math.max(0, (stats.penalty || 0) - 1))}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '20px',
+                    border: '2px solid var(--color-border)',
+                    background: 'var(--color-surface-sunken)',
+                    color: 'var(--color-text-secondary)',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  -1
+                </button>
+              )}
+            </div>
+            {/* Putts */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-secondary)', minWidth: '40px' }}>Putts</span>
+              {[0, 1, 2, 3, 4].map(n => (
+                <button
+                  key={n}
+                  onClick={() => updateStat('putts', n)}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    border: `2px solid ${stats.putts === n ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: stats.putts === n ? 'var(--color-primary)' : 'var(--color-surface-sunken)',
+                    color: stats.putts === n ? 'white' : 'var(--color-text-secondary)',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -818,7 +948,7 @@ function ManualPlayerTotal({ team, onUpdatePlayerManualTotal }) {
 }
 
 // Score Entry Component - Legacy Style
-function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings, leagueSettings, courseTees, onUpdateManualTeamScore, onToggleManualMode, onUpdatePlayerManualTotal }) {
+function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings, leagueSettings, courseTees, onUpdateManualTeamScore, onToggleManualMode, onUpdatePlayerManualTotal, holeStats, onUpdateHoleStats }) {
   const [activeInput, setActiveInput] = useState(null)
   const [keypadValue, setKeypadValue] = useState('')
   const [isFirstKeypress, setIsFirstKeypress] = useState(true)
@@ -1666,6 +1796,9 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
           onPrevHole={goToPrevHole}
           onNextHole={goToNextHole}
           onClear={handleClearScore}
+          trackStats={isIndividualRound && liveRound?.trackStats}
+          holeStats={holeStats}
+          onUpdateHoleStats={onUpdateHoleStats}
         />
       )}
 
@@ -6437,6 +6570,7 @@ function LivePage() {
   const [showIndividualSummary, setShowIndividualSummary] = useState(false)
   const [individualSummaryData, setIndividualSummaryData] = useState(null)
   const [savingIndividualRound, setSavingIndividualRound] = useState(false)
+  const [holeStats, setHoleStats] = useState({})
 
   if (!liveRound) {
     return (
@@ -7110,7 +7244,8 @@ function LivePage() {
           startingHole: startHole,
           tee: player.tee || 'blue',
           handicap: player.handicap || 0,
-          breakdown
+          breakdown,
+          holeStats: liveRound.trackStats ? holeStats : null
         })
         setShowIndividualSummary(true)
         return
@@ -7417,6 +7552,8 @@ function LivePage() {
           onUpdateManualTeamScore={updateManualTeamScore}
           onToggleManualMode={toggleManualTeamMode}
           onUpdatePlayerManualTotal={updatePlayerManualTotal}
+          holeStats={holeStats}
+          onUpdateHoleStats={(hole, stats) => setHoleStats(prev => ({ ...prev, [hole]: stats }))}
         />
       )}
       {subTab === 'greenies' && (
@@ -7808,6 +7945,77 @@ function LivePage() {
                 ))}
               </div>
             </div>
+
+            {/* Stat Summary */}
+            {individualSummaryData.holeStats && Object.keys(individualSummaryData.holeStats).length > 0 && (() => {
+              const hs = individualSummaryData.holeStats
+              const holesPlayed = individualSummaryData.holesPlayed
+              const startHole = individualSummaryData.startingHole
+              const endHole = holesPlayed === 9 ? startHole + 8 : 18
+              const allHolesData = getAllHoles()
+
+              let firHoles = 0, firHit = 0, girHoles = 0, girHit = 0
+              let totalPutts = 0, puttsCount = 0, totalPenalty = 0
+              let scrambleChances = 0, scrambleMade = 0
+
+              for (let h = startHole; h <= endHole; h++) {
+                const s = hs[h]
+                if (!s) continue
+                const hInfo = allHolesData.find(hd => hd.hole === h)
+                if (hInfo?.par >= 4) { firHoles++; if (s.fir) firHit++ }
+                girHoles++
+                if (s.gir) girHit++
+                if (s.putts != null) { totalPutts += s.putts; puttsCount++ }
+                if (s.penalty) totalPenalty += s.penalty
+                if (s.gir === false) { scrambleChances++; if (s.scramble) scrambleMade++ }
+              }
+
+              return (
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-tertiary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Round Stats
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                    {firHoles > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                          {firHoles > 0 ? `${Math.round(firHit / firHoles * 100)}%` : '--'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>FIR ({firHit}/{firHoles})</div>
+                      </div>
+                    )}
+                    <div style={{ textAlign: 'center', padding: '8px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-success)' }}>
+                        {girHoles > 0 ? `${Math.round(girHit / girHoles * 100)}%` : '--'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>GIR ({girHit}/{girHoles})</div>
+                    </div>
+                    {puttsCount > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-info)' }}>
+                          {(totalPutts / puttsCount).toFixed(1)}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>Putts/Hole ({totalPutts})</div>
+                      </div>
+                    )}
+                    {scrambleChances > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-accent-blue)' }}>
+                          {`${Math.round(scrambleMade / scrambleChances * 100)}%`}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>Scramble ({scrambleMade}/{scrambleChances})</div>
+                      </div>
+                    )}
+                    {totalPenalty > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-danger)' }}>{totalPenalty}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>Penalties</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Save Button */}
             <button

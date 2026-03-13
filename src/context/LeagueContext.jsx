@@ -879,7 +879,8 @@ export function LeagueProvider({ children }) {
       format_name: null,
       metadata: {
         tee: roundData.tee || 'blue',
-        startingHole: roundData.startingHole || 1
+        startingHole: roundData.startingHole || 1,
+        ...(roundData.holeStats ? { holeStats: roundData.holeStats } : {})
       }
     }
     const result = await saveRoundHistory([entry])

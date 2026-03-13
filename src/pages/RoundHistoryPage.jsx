@@ -60,6 +60,33 @@ function RoundHistoryPage({ profile, onBack }) {
   const front9Par = GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + h.par, 0)
   const back9Par = GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + h.par, 0)
 
+  // Aggregate stats across all rounds with holeStats
+  const roundsWithStats = rounds.filter(r => r.metadata?.holeStats && Object.keys(r.metadata.holeStats).length > 0)
+  const aggregateStats = (() => {
+    if (roundsWithStats.length === 0) return null
+    let firHoles = 0, firHit = 0, girHoles = 0, girHit = 0
+    let totalPutts = 0, puttsCount = 0, totalPenalty = 0
+    let scrambleChances = 0, scrambleMade = 0
+
+    roundsWithStats.forEach(r => {
+      const hs = r.metadata.holeStats
+      const start = r.metadata?.startingHole || 1
+      const end = r.holes_played === 9 ? start + 8 : 18
+      for (let h = start; h <= end; h++) {
+        const s = hs[h] || hs[String(h)]
+        if (!s) continue
+        const hInfo = allHoles.find(hd => hd.hole === h)
+        if (hInfo?.par >= 4) { firHoles++; if (s.fir) firHit++ }
+        girHoles++; if (s.gir) girHit++
+        if (s.putts != null) { totalPutts += s.putts; puttsCount++ }
+        if (s.penalty) totalPenalty += s.penalty
+        if (s.gir === false) { scrambleChances++; if (s.scramble) scrambleMade++ }
+      }
+    })
+
+    return { firHoles, firHit, girHoles, girHit, totalPutts, puttsCount, totalPenalty, scrambleChances, scrambleMade, roundCount: roundsWithStats.length }
+  })()
+
   const getParForRound = (round) => {
     if (round.holes_played === 9) {
       const start = round.metadata?.startingHole || 1
@@ -168,6 +195,63 @@ function RoundHistoryPage({ profile, onBack }) {
                 </div>
               </div>
 
+              {/* Aggregate Stats */}
+              {aggregateStats && (
+                <div style={{
+                  background: 'var(--color-surface)',
+                  padding: '16px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--color-border)',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-tertiary)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Stats ({aggregateStats.roundCount} round{aggregateStats.roundCount !== 1 ? 's' : ''})
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px' }}>
+                    {aggregateStats.firHoles > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px 4px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                          {Math.round(aggregateStats.firHit / aggregateStats.firHoles * 100)}%
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)' }}>FIR</div>
+                      </div>
+                    )}
+                    {aggregateStats.girHoles > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px 4px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-success)' }}>
+                          {Math.round(aggregateStats.girHit / aggregateStats.girHoles * 100)}%
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)' }}>GIR</div>
+                      </div>
+                    )}
+                    {aggregateStats.puttsCount > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px 4px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-info)' }}>
+                          {(aggregateStats.totalPutts / aggregateStats.puttsCount).toFixed(1)}
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)' }}>Putts/Hole</div>
+                      </div>
+                    )}
+                    {aggregateStats.scrambleChances > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px 4px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-accent-blue)' }}>
+                          {Math.round(aggregateStats.scrambleMade / aggregateStats.scrambleChances * 100)}%
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)' }}>Scramble</div>
+                      </div>
+                    )}
+                    {aggregateStats.totalPenalty > 0 && (
+                      <div style={{ textAlign: 'center', padding: '8px 4px', background: 'var(--color-surface-sunken)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-danger)' }}>
+                          {(aggregateStats.totalPenalty / aggregateStats.roundCount).toFixed(1)}
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)' }}>Pen/Rnd</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Round List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {rounds.map(round => {
@@ -241,7 +325,7 @@ function RoundHistoryPage({ profile, onBack }) {
                         )}
                       </button>
 
-                      {/* Expanded hole-by-hole scores */}
+                      {/* Expanded hole-by-hole scores + stats */}
                       {isExpanded && round.scores && (
                         <div style={{ borderTop: '1px solid var(--color-border)', padding: '12px' }}>
                           {/* Front 9 */}
@@ -357,6 +441,33 @@ function RoundHistoryPage({ profile, onBack }) {
                               </table>
                             </div>
                           )}
+
+                          {/* Per-round stats */}
+                          {round.metadata?.holeStats && Object.keys(round.metadata.holeStats).length > 0 && (() => {
+                            const hs = round.metadata.holeStats
+                            const start = startingHole
+                            const end = round.holes_played === 9 ? start + 8 : 18
+                            let firH = 0, firY = 0, girH = 0, girY = 0, tp = 0, pc = 0, pen = 0, sc = 0, sm = 0
+                            for (let h = start; h <= end; h++) {
+                              const s = hs[h] || hs[String(h)]
+                              if (!s) continue
+                              const hi = allHoles.find(hd => hd.hole === h)
+                              if (hi?.par >= 4) { firH++; if (s.fir) firY++ }
+                              girH++; if (s.gir) girY++
+                              if (s.putts != null) { tp += s.putts; pc++ }
+                              if (s.penalty) pen += s.penalty
+                              if (s.gir === false) { sc++; if (s.scramble) sm++ }
+                            }
+                            return (
+                              <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {firH > 0 && <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '10px', background: 'var(--color-surface-sunken)', color: 'var(--color-text-secondary)' }}>FIR {firY}/{firH} ({Math.round(firY/firH*100)}%)</span>}
+                                {girH > 0 && <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '10px', background: 'var(--color-surface-sunken)', color: 'var(--color-text-secondary)' }}>GIR {girY}/{girH} ({Math.round(girY/girH*100)}%)</span>}
+                                {pc > 0 && <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '10px', background: 'var(--color-surface-sunken)', color: 'var(--color-text-secondary)' }}>Putts {tp} ({(tp/pc).toFixed(1)}/hole)</span>}
+                                {sc > 0 && <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '10px', background: 'var(--color-surface-sunken)', color: 'var(--color-text-secondary)' }}>Scramble {sm}/{sc}</span>}
+                                {pen > 0 && <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '10px', background: 'var(--color-danger-light)', color: 'var(--color-danger)' }}>Penalties {pen}</span>}
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
                     </div>

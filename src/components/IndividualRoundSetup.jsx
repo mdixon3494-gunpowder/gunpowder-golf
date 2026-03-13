@@ -13,6 +13,7 @@ function IndividualRoundSetup({ onBack }) {
   const [holesPlayed, setHolesPlayed] = useState(18)
   const [tee, setTee] = useState('blue')
   const [handicap, setHandicap] = useState(0)
+  const [trackStats, setTrackStats] = useState(false)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState(null)
 
@@ -76,6 +77,7 @@ function IndividualRoundSetup({ onBack }) {
         date: new Date().toLocaleDateString('en-CA'),
         holesPlayed,
         startingHole,
+        trackStats,
         teams: [{
           id: 0,
           name: profile.display_name,
@@ -110,6 +112,7 @@ function IndividualRoundSetup({ onBack }) {
           startingHole,
           tee,
           handicap,
+          trackStats,
           createdBy: profile.id
         }
       }
@@ -315,6 +318,49 @@ function IndividualRoundSetup({ onBack }) {
                 textAlign: 'center'
               }}
             />
+          </div>
+
+          {/* Stat Tracking */}
+          <div style={{
+            background: 'var(--color-surface)',
+            padding: '20px',
+            borderRadius: '12px',
+            marginBottom: '16px',
+            border: '1px solid var(--color-border)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: '0', fontSize: '16px', color: 'var(--color-text-primary)' }}>Track Stats</h3>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
+                  FIR, GIR, putts, penalties
+                </div>
+              </div>
+              <button
+                onClick={() => setTrackStats(!trackStats)}
+                style={{
+                  width: '50px',
+                  height: '28px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: trackStats ? 'var(--color-primary)' : 'var(--color-border)',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'background 0.2s'
+                }}
+              >
+                <div style={{
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '50%',
+                  background: 'white',
+                  position: 'absolute',
+                  top: '3px',
+                  left: trackStats ? '25px' : '3px',
+                  transition: 'left 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
           </div>
 
           {/* Error */}
