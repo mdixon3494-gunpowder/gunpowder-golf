@@ -6964,22 +6964,27 @@ function LivePage() {
         }
       }
 
-      // Update recent teammates for variety in team generation
+      // Update teammate history for variety in team generation (last 5 rounds)
       // Find the team this player was on
       const playerTeam = liveRound.teams.find(t => t.players.some(p => p.id === player.id))
       if (playerTeam) {
-        // Get IDs of teammates (excluding self)
+        // Get IDs of teammates (excluding self and DNF)
         const currentTeammateIds = playerTeam.players
           .filter(p => p.id !== player.id && !p.isDNF)
           .map(p => p.id)
 
-        // Previous round's teammates (if any)
-        const previousTeammates = player.lastRoundTeammates || []
+        // Append to teammate history (keep last 5 rounds)
+        const prevHistory = player.teammateHistory || []
+        const newHistory = [
+          { roundId: liveRound.id, teammates: currentTeammateIds },
+          ...prevHistory
+        ].slice(0, 5)
 
-        // recentTeammates = last 2 rounds combined (current + previous)
         updatedPlayer = {
           ...updatedPlayer,
-          recentTeammates: [...new Set([...currentTeammateIds, ...previousTeammates])],
+          teammateHistory: newHistory,
+          // Keep legacy fields for backward compat
+          recentTeammates: [...new Set(newHistory.flatMap(h => h.teammates))],
           lastRoundTeammates: currentTeammateIds
         }
       }

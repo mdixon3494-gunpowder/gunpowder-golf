@@ -1,6 +1,7 @@
 /**
- * Team Generation Algorithm - A-B-C-D Flight System with Smart Pairing
+ * Team Generation Algorithm - A-B-C-D Flight System with Randomization & Recency Checks
  * Creates balanced teams by assigning one player from each skill flight to each team
+ * Randomizes selection within flights, then checks teammate recency to avoid repeats
  * Handles pairing requests and incomplete manual teams with mirror-flight balancing
  */
 
@@ -57,36 +58,104 @@ function getMirrorFlight(flight, numFlights = 4) {
 }
 
 /**
- * Calculate variety penalty for placing a player on a team
+ * Shuffle an array in-place (Fisher-Yates)
  */
-function getVarietyPenalty(player, team) {
-  if (!player.recentTeammates || player.recentTeammates.length === 0) return 0
-  const recentCount = team.filter(p => player.recentTeammates.includes(p.id)).length
-  return recentCount * 5
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
 }
 
 /**
- * Select best player from a flight pool for a specific team
- * Considers variety bonus to avoid recent teammates
+ * Check if placing a player on a team violates recency rules.
+ * Returns true if there's a conflict:
+ *   - Played with any teammate 2+ rounds in a row (consecutive)
+ *   - Played with any teammate 3+ of the last 5 rounds
+ */
+function hasRecencyConflict(player, teamPlayerIds) {
+  const history = player.teammateHistory || []
+  if (history.length === 0) return false
+
+  for (const teammateId of teamPlayerIds) {
+    // Check consecutive rounds (last 2)
+    let consecutive = 0
+    for (let i = 0; i < Math.min(history.length, 2); i++) {
+      if (history[i].teammates.includes(teammateId)) {
+        consecutive++
+      } else {
+        break
+      }
+    }
+    if (consecutive >= 2) return true
+
+    // Check frequency in last 5 rounds
+    let count = 0
+    for (let i = 0; i < Math.min(history.length, 5); i++) {
+      if (history[i].teammates.includes(teammateId)) count++
+    }
+    if (count >= 3) return true
+  }
+
+  return false
+}
+
+/**
+ * Count recency violations for a player with a team (for scoring, not binary)
+ */
+function recencyScore(player, teamPlayerIds) {
+  const history = player.teammateHistory || []
+  if (history.length === 0) return 0
+
+  let score = 0
+  for (const teammateId of teamPlayerIds) {
+    // Consecutive penalty (heavier)
+    let consecutive = 0
+    for (let i = 0; i < Math.min(history.length, 2); i++) {
+      if (history[i].teammates.includes(teammateId)) consecutive++
+      else break
+    }
+    if (consecutive >= 2) score += 10
+
+    // Frequency penalty
+    let count = 0
+    for (let i = 0; i < Math.min(history.length, 5); i++) {
+      if (history[i].teammates.includes(teammateId)) count++
+    }
+    if (count >= 3) score += 5
+    else if (count >= 2) score += 1
+  }
+  return score
+}
+
+/**
+ * Select best player from a shuffled flight pool for a specific team.
+ * Picks first player with no recency conflict; falls back to lowest-conflict player.
  */
 function selectFromFlight(flightPool, team) {
   if (flightPool.length === 0) return null
   if (flightPool.length === 1) return flightPool.shift()
 
-  let bestIdx = 0
-  let bestScore = -Infinity
+  const teamIds = team.map(p => p.id)
 
+  // Try to find a player with no recency conflict
   for (let i = 0; i < flightPool.length; i++) {
-    const player = flightPool[i]
-    const varietyPenalty = getVarietyPenalty(player, team)
-    const score = -varietyPenalty
-
-    if (score > bestScore) {
-      bestScore = score
-      bestIdx = i
+    if (!hasRecencyConflict(flightPool[i], teamIds)) {
+      return flightPool.splice(i, 1)[0]
     }
   }
 
+  // All have conflicts — pick the one with the least severe conflict
+  let bestIdx = 0
+  let bestScore = Infinity
+  for (let i = 0; i < flightPool.length; i++) {
+    const s = recencyScore(flightPool[i], teamIds)
+    if (s < bestScore) {
+      bestScore = s
+      bestIdx = i
+    }
+  }
   return flightPool.splice(bestIdx, 1)[0]
 }
 
@@ -155,6 +224,83 @@ function analyzeTeamFlights(team, allPlayersSorted, numFlights, targetSize) {
   }
 }
 
+/**
+ * Post-fill swap: try to resolve recency conflicts by swapping same-flight players between teams.
+ * Only swaps if the swap doesn't create a new conflict for the other team.
+ */
+function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds) {
+  let improved = true
+  let iterations = 0
+  const maxIterations = 50 // Safety limit
+
+  while (improved && iterations < maxIterations) {
+    improved = false
+    iterations++
+
+    for (let ti = 0; ti < finalTeams.length; ti++) {
+      const team = finalTeams[ti]
+
+      for (let pi = 0; pi < team.length; pi++) {
+        const player = team[pi]
+        // Skip paired/manual players — don't swap them
+        if (pairedPlayerIds.has(player.id)) continue
+
+        const teammateIds = team.filter((_, idx) => idx !== pi).map(p => p.id)
+        if (!hasRecencyConflict(player, teammateIds)) continue
+
+        // This player has a conflict — try swapping with same-flight player on another team
+        const playerFlight = getPlayerFlightByHandicap(player, sortedPlayers, numFlights)
+
+        let bestSwap = null
+        let bestSwapScore = Infinity
+
+        for (let tj = 0; tj < finalTeams.length; tj++) {
+          if (tj === ti) continue
+          const otherTeam = finalTeams[tj]
+
+          for (let pj = 0; pj < otherTeam.length; pj++) {
+            const candidate = otherTeam[pj]
+            // Skip paired/manual players
+            if (pairedPlayerIds.has(candidate.id)) continue
+            // Must be same flight
+            if (getPlayerFlightByHandicap(candidate, sortedPlayers, numFlights) !== playerFlight) continue
+
+            // Check if swap would be acceptable for both teams
+            const newTeamI = [...team.slice(0, pi), candidate, ...team.slice(pi + 1)]
+            const newTeamJ = [...otherTeam.slice(0, pj), player, ...otherTeam.slice(pj + 1)]
+
+            const newTeamIIds = newTeamI.filter(p => p.id !== candidate.id).map(p => p.id)
+            const newTeamJIds = newTeamJ.filter(p => p.id !== player.id).map(p => p.id)
+
+            // Don't create new conflicts for the candidate
+            const candidateScore = recencyScore(candidate, newTeamIIds)
+            const playerNewScore = recencyScore(player, newTeamJIds)
+            const totalScore = candidateScore + playerNewScore
+
+            if (totalScore < bestSwapScore) {
+              bestSwapScore = totalScore
+              bestSwap = { ti, pi, tj, pj }
+            }
+          }
+        }
+
+        // Execute the best swap if it improves things
+        if (bestSwap) {
+          const currentScore = recencyScore(player, teammateIds)
+          if (bestSwapScore < currentScore) {
+            const temp = finalTeams[bestSwap.ti][bestSwap.pi]
+            finalTeams[bestSwap.ti][bestSwap.pi] = finalTeams[bestSwap.tj][bestSwap.pj]
+            finalTeams[bestSwap.tj][bestSwap.pj] = temp
+            improved = true
+            break // Restart scan after a swap
+          }
+        }
+      }
+      if (improved) break // Restart outer loop
+    }
+  }
+}
+
 export function generateTeams(activePlayers, pairingRequests = [], manualTeams = []) {
   // Separate complete and incomplete manual teams
   const completeManualTeams = manualTeams.filter(mt => mt.players.length >= 4)
@@ -167,6 +313,9 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
   const manualTeamPlayerIds = new Set(
     manualTeams.flatMap(team => team.players.map(p => p.id))
   )
+
+  // Track paired/manual player IDs (exempt from recency swaps)
+  const pairedPlayerIds = new Set(manualTeamPlayerIds)
 
   // Filter out players in manual teams
   const remainingPlayers = activePlayers.filter(p => !manualTeamPlayerIds.has(p.id))
@@ -206,6 +355,8 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
 
       paired.add(p1.id)
       paired.add(p2.id)
+      pairedPlayerIds.add(p1.id)
+      pairedPlayerIds.add(p2.id)
     }
   })
 
@@ -324,7 +475,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
   // Get unpaired players for flight pools
   const unpairedPlayers = sortedPlayers.filter(p => !paired.has(p.id))
 
-  // Create flight pools
+  // Create flight pools — SHUFFLED for randomization within each flight
   const flightPools = []
   if (unpairedPlayers.length > 0) {
     const baseFlightSize = Math.floor(unpairedPlayers.length / numFlights)
@@ -333,7 +484,9 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     let playerIdx = 0
     for (let f = 0; f < numFlights; f++) {
       const flightSize = baseFlightSize + (f < extraPlayers ? 1 : 0)
-      flightPools.push(unpairedPlayers.slice(playerIdx, playerIdx + flightSize))
+      const pool = unpairedPlayers.slice(playerIdx, playerIdx + flightSize)
+      shuffle(pool) // Randomize within each flight
+      flightPools.push(pool)
       playerIdx += flightSize
     }
   } else {
@@ -451,6 +604,9 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
       }
     }
   }
+
+  // === Phase 6: Post-fill recency conflict resolution via same-flight swaps ===
+  resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds)
 
   // Sort teams: 4-person teams first, then by size descending
   finalTeams.sort((a, b) => b.length - a.length)
