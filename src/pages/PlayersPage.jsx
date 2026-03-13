@@ -16,6 +16,7 @@ import {
   DEFAULT_COURSE_TEES,
   DEFAULT_HANDICAP_SETTINGS
 } from '../utils/handicapCalculation'
+import { getDisplayName, getShortName } from '../utils/playerNames'
 
 function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapScope, leagueId, courseTees, handicapSettings }) {
   // Calculate all three handicaps for display (these are always calculated from rounds)
@@ -48,7 +49,7 @@ function PlayerCard({ player, onEdit, onView, onToggleActive, isAdmin, handicapS
     <div className="player-card">
       <div className="player-info">
         <div className="player-name">
-          {player.name}
+          {getDisplayName(player)}
           {player.isActive === false && (
             <span style={{
               marginLeft: '10px',
@@ -682,6 +683,7 @@ function AddPlayerForm({ onAdd, onCancel, courseTees, existingPlayers, leagueId 
 
 function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTees, leagueId, handicapSettings, onUpdateHandicapSettings }) {
   const [name, setName] = useState(player.name)
+  const [nickname, setNickname] = useState(player.nickname || '')
   const [skillRating, setSkillRating] = useState(player.skillRating?.toString() || '5')
   const [handicap, setHandicap] = useState(player.handicap?.toString() || '')
   const [defaultTee, setDefaultTee] = useState(player.defaultTee || 'blue')
@@ -718,6 +720,7 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
     onSave({
       ...player,
       name: name.trim(),
+      nickname: nickname.trim() || null,
       skillRating: parseFloat(skillRating) || 5,
       handicap: handicap ? parseFloat(handicap) : null,
       handicapSource: handicap ? 'manual' : player.handicapSource,
@@ -984,6 +987,18 @@ function EditPlayerModal({ player, onSave, onClose, onDelete, isAdmin, courseTee
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>
+                <div className="input-group" style={{ marginBottom: '0' }}>
+                  <label>Nickname</label>
+                  <input
+                    type="text"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    placeholder="e.g. The Legend"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div className="input-group" style={{ marginBottom: '0' }}>
                   <label>Manual Handicap Override</label>
                   <div style={{ display: 'flex', gap: '8px' }}>

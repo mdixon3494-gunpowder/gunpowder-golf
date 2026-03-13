@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { getTeamName, calculateTeamSkill, calculateTeamBalance } from '../utils/teamGeneration'
 import { formatHandicap, formatCourseHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
+import { getDisplayName } from '../utils/playerNames'
 
 function AddLatePlayer({ availablePlayers, onAdd, courseTees }) {
   const [open, setOpen] = useState(false)
@@ -160,7 +161,7 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, cour
               transition: 'background 0.15s'
             }}
           >
-            {player.name} ({player.handicap !== undefined && player.handicap !== null
+            {getDisplayName(player)} ({player.handicap !== undefined && player.handicap !== null
               ? `${formatCourseHandicap(playerCourseHcp)}`
               : player.skillRating?.toFixed(1) || '5.0'})
           </div>

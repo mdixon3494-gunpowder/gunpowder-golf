@@ -7,6 +7,7 @@ import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculation
 import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore, calculateBigBoysScore, resolveManualTeamScore } from '../utils/formatScoring'
 import NassauTracker from '../components/NassauTracker'
 import WolfTracker from '../components/WolfTracker'
+import { getDisplayName, getShortName } from '../utils/playerNames'
 import {
   recalculatePlayerHandicaps,
   DEFAULT_COURSE_TEES,
@@ -894,7 +895,7 @@ function ManualPlayerTotal({ team, onUpdatePlayerManualTotal }) {
                 flexWrap: 'wrap'
               }}>
                 <span style={{ fontWeight: '600', fontSize: '13px', minWidth: '70px' }}>
-                  {player.name.split(' ')[0]}
+                  {getShortName(player)}
                 </span>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                   <label style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>F9:</label>
@@ -1593,7 +1594,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {player.name.split(' ')[0]}{isDNF ? ' ❌' : ''}
+                      {getShortName(player)}{isDNF ? ' ❌' : ''}
                     </td>
                     {GUNPOWDER_SCORECARD.front9.map(hole => {
                       const score = player.scores[hole.hole]
@@ -1723,7 +1724,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {player.name.split(' ')[0]}{isDNF ? ' ❌' : ''}
+                      {getShortName(player)}{isDNF ? ' ❌' : ''}
                     </td>
                     {GUNPOWDER_SCORECARD.back9.map(hole => {
                       const score = player.scores[hole.hole]
@@ -4413,7 +4414,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         borderRight: '1px solid var(--color-border-light)',
                         whiteSpace: 'nowrap'
                       }}>
-                        {player.name.split(' ')[0]}
+                        {getShortName(player)}
                       </td>
                       {displayHoles.map(h => {
                         const score = player.scores?.[h.hole]
