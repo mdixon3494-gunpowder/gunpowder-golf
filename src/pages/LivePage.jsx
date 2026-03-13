@@ -6396,17 +6396,10 @@ function LivePage() {
   }
   const [leaderboardView, setLeaderboardView] = useState(getInitialLeaderboardView)
 
-  // Detect Quick Skins mode from data structure if flag is out of sync
-  const isQuickSkinsGame = liveRound && 'quickSkinsGreenieSettings' in liveRound
-  const effectiveQuickSkinsMode = quickSkinsMode || isQuickSkinsGame
-
-  // Auto-correct quickSkinsMode if out of sync
-  useEffect(() => {
-    if (isQuickSkinsGame && !quickSkinsMode) {
-      console.log('Auto-correcting quickSkinsMode flag')
-      setQuickSkinsMode(true)
-    }
-  }, [isQuickSkinsGame, quickSkinsMode, setQuickSkinsMode])
+  // Quick Skins mode is set by context flag only (from CasualGameSetup flow)
+  // Do NOT detect from quickSkinsGreenieSettings — normal league rounds with
+  // side skins also store greenie settings on liveRound
+  const effectiveQuickSkinsMode = quickSkinsMode
 
   const [subTab, setSubTab] = useState(effectiveQuickSkinsMode ? 'skins' : 'leaderboard')
   const [selectedTeamId, setSelectedTeamId] = useState(liveRound?.teams[0]?.id || 0)
