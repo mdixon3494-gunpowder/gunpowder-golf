@@ -647,11 +647,11 @@ function GeneratePage() {
       id: Date.now(),
       ...pairing
     }
-    setPairingRequests([...pairingRequests, newRequest])
+    setPairingRequests(prev => [...prev, newRequest])
   }
 
   const removePairingRequest = (requestId) => {
-    setPairingRequests(pairingRequests.filter(r => r.id !== requestId))
+    setPairingRequests(prev => prev.filter(r => r.id !== requestId))
   }
 
   const handleGenerateTeams = () => {
