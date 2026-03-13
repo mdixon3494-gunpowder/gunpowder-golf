@@ -3196,24 +3196,38 @@ function PlayersPage() {
       // Build lookup of all known profiles (from league_members + claimed profiles)
       const allProfiles = new Map()
       members.forEach(m => {
-        if (m.profiles?.display_name) {
-          allProfiles.set(m.profile_id, { name: m.profiles.display_name, source: 'member' })
+        if (m.profiles?.display_name || m.profiles?.email) {
+          allProfiles.set(m.profile_id, {
+            name: m.profiles.display_name || '',
+            email: m.profiles.email || '',
+            source: 'member'
+          })
         }
       })
       claimedProfiles.forEach(p => {
-        if (p.display_name && !allProfiles.has(p.id)) {
-          allProfiles.set(p.id, { name: p.display_name, source: 'profile' })
+        if ((p.display_name || p.email) && !allProfiles.has(p.id)) {
+          allProfiles.set(p.id, { name: p.display_name || '', email: p.email || '', source: 'profile' })
         }
       })
 
-      // Direction 1: Backfill profileIds onto JSONB players by name match
+      // Direction 1: Backfill profileIds onto JSONB players by name match (or email username)
       let changed = false
       const updatedPlayers = players.map(player => {
         if (player.profileId || player.profile_id) return player
+        const playerNameLower = player.name.toLowerCase().trim()
         for (const [profileId, info] of allProfiles) {
-          if (info.name.toLowerCase().trim() === player.name.toLowerCase().trim()) {
+          // Exact name match
+          if (info.name && info.name.toLowerCase().trim() === playerNameLower) {
             changed = true
             return { ...player, profileId, profile_id: profileId }
+          }
+          // Email username match: "jeremy.lorinczy@..." matches "Jeremy Lorinczy"
+          if (info.email) {
+            const emailUser = info.email.split('@')[0].replace(/[._]/g, ' ').toLowerCase().trim()
+            if (emailUser === playerNameLower) {
+              changed = true
+              return { ...player, profileId, profile_id: profileId }
+            }
           }
         }
         return player

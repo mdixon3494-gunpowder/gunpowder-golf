@@ -53,11 +53,26 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner, rosterPla
     const memberByProfileId = new Map()
     members.forEach(m => memberByProfileId.set(m.profile_id, m))
 
+    // Also index members by display_name for fallback matching
+    const memberByName = new Map()
+    members.forEach(m => {
+      const name = (m.profiles?.display_name || '').toLowerCase().trim()
+      if (name) memberByName.set(name, m)
+    })
+
     const activePlayers = rosterPlayers.filter(p => p.isActive !== false)
+    const matchedProfileIds = new Set()
 
     return activePlayers.map(player => {
       const profileId = player.profileId || player.profile_id
-      const member = profileId ? memberByProfileId.get(profileId) : null
+      let member = profileId ? memberByProfileId.get(profileId) : null
+      // Fallback: match by name (handles cases where profileId isn't backfilled yet)
+      if (!member) {
+        const nameLower = (player.name || '').toLowerCase().trim()
+        member = memberByName.get(nameLower) || null
+      }
+      const resolvedProfileId = member?.profile_id || profileId
+      if (resolvedProfileId) matchedProfileIds.add(resolvedProfileId)
       const isLinked = !!member
 
       return {
@@ -67,13 +82,13 @@ function MemberManagement({ leagueId, currentProfileId, isLeagueOwner, rosterPla
         handicap: player.handicap,
         tee: player.tee,
         // Profile/member data
-        profileId,
+        profileId: resolvedProfileId,
         member,
         isLinked,
         role: member?.role || null,
         avatar: member?.profiles?.avatar_url || null,
         email: member?.profiles?.email || null,
-        isCurrentUser: profileId === currentProfileId
+        isCurrentUser: resolvedProfileId === currentProfileId
       }
     }).sort((a, b) => {
       // Linked first, then alphabetical
