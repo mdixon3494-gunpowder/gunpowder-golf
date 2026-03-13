@@ -3183,16 +3183,14 @@ function PlayersPage() {
 
   const handicapScope = handicapSettings?.handicapScope || 'true'
 
-  // Sync profileIds from league_members table onto JSONB player data (one-time backfill)
+  // Two-way sync between league_members table and JSONB player data
   useEffect(() => {
     if (!leagueId || !players.length) return
-    getLeagueMembers(leagueId).then(members => {
-      if (!members.length) return
+    getLeagueMembers(leagueId).then(async (members) => {
+      // Direction 1: Backfill profileIds from league_members onto JSONB players (by name match)
       let changed = false
       const updatedPlayers = players.map(player => {
-        // Skip if player already has a profileId
         if (player.profileId || player.profile_id) return player
-        // Find a league_member whose profile display_name matches this player's name
         const match = members.find(m =>
           m.profiles?.display_name &&
           m.profiles.display_name.toLowerCase().trim() === player.name.toLowerCase().trim()
@@ -3206,6 +3204,22 @@ function PlayersPage() {
       if (changed) {
         console.log('[PlayersPage] Synced profileIds from league_members to player data')
         setPlayers(updatedPlayers)
+      }
+
+      // Direction 2: Add missing league_members rows for JSONB players that have profileIds
+      const memberProfileIds = new Set(members.map(m => m.profile_id))
+      const playersToSync = (changed ? updatedPlayers : players).filter(p => {
+        const pid = p.profileId || p.profile_id
+        return pid && !memberProfileIds.has(pid)
+      })
+      for (const p of playersToSync) {
+        const pid = p.profileId || p.profile_id
+        try {
+          await addLeagueMember(leagueId, pid, 'player')
+          console.log('[PlayersPage] Added missing league_member for:', p.name)
+        } catch (e) {
+          console.warn('[PlayersPage] Failed to sync league_member for:', p.name, e)
+        }
       }
     }).catch(() => {})
   }, [leagueId]) // eslint-disable-line react-hooks/exhaustive-deps
