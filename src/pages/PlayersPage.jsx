@@ -3197,23 +3197,18 @@ function PlayersPage() {
     [players]
   )
 
-  // Auto-select logged-in user's player, or first active player
-  useEffect(() => {
-    // Always prefer logged-in user's player when available
-    if (myPlayer) {
-      setSelectedPlayerId(myPlayer.id)
-      return
-    }
-    if (selectedPlayerId) {
-      // Verify selected player still exists
-      if (players.find(p => p.id === selectedPlayerId)) return
-    }
-    if (sortedPlayers.length > 0) {
-      setSelectedPlayerId(sortedPlayers[0].id)
-    }
-  }, [myPlayer, sortedPlayers, players]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Track whether user has manually changed the dropdown
+  const [userHasSelected, setUserHasSelected] = useState(false)
 
-  const selectedPlayer = players.find(p => p.id === selectedPlayerId) || null
+  // Determine effective selected player: myPlayer wins unless user manually picked someone else
+  const effectiveSelectedId = useMemo(() => {
+    if (myPlayer && !userHasSelected) return myPlayer.id
+    if (selectedPlayerId && players.find(p => p.id === selectedPlayerId)) return selectedPlayerId
+    if (myPlayer) return myPlayer.id
+    return sortedPlayers[0]?.id || null
+  }, [myPlayer, selectedPlayerId, userHasSelected, sortedPlayers, players])
+
+  const selectedPlayer = players.find(p => p.id === effectiveSelectedId) || null
 
   // Build dropdown options: active players + any selected inactive player
   const dropdownPlayers = useMemo(() => {
@@ -3263,8 +3258,9 @@ function PlayersPage() {
     setPlayers(players.filter(p => p.id !== playerId))
     setEditingPlayer(null)
     // If deleted player was selected, reset selection
-    if (playerId === selectedPlayerId) {
+    if (playerId === effectiveSelectedId) {
       setSelectedPlayerId(myPlayer?.id || sortedPlayers[0]?.id || null)
+      setUserHasSelected(false)
     }
   }
 
@@ -3300,8 +3296,8 @@ function PlayersPage() {
           {/* Player selector dropdown */}
           <div style={{ marginBottom: '16px' }}>
             <select
-              value={selectedPlayerId || ''}
-              onChange={(e) => setSelectedPlayerId(e.target.value === '' ? null : isNaN(e.target.value) ? e.target.value : Number(e.target.value))}
+              value={effectiveSelectedId || ''}
+              onChange={(e) => { setSelectedPlayerId(e.target.value === '' ? null : isNaN(e.target.value) ? e.target.value : Number(e.target.value)); setUserHasSelected(true) }}
               style={{
                 width: '100%',
                 padding: '12px 14px',
@@ -3315,7 +3311,7 @@ function PlayersPage() {
                 minHeight: '48px'
               }}
             >
-              {!selectedPlayerId && <option value="">Select a player...</option>}
+              {!effectiveSelectedId && <option value="">Select a player...</option>}
               {dropdownPlayers.map(p => (
                 <option key={p.id} value={p.id}>
                   {p.name}{p.isActive === false ? ' (Inactive)' : ''}{p.id === myPlayer?.id ? ' (You)' : ''}
