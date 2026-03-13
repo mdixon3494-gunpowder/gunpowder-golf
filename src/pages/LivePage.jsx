@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
-import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore, calculateBigBoysScore } from '../utils/formatScoring'
+import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore, calculateBigBoysScore, resolveManualTeamScore } from '../utils/formatScoring'
 import NassauTracker from '../components/NassauTracker'
 import WolfTracker from '../components/WolfTracker'
 import {
@@ -183,7 +183,7 @@ function Leaderboard({ liveRound, view, setView, teamScoringRules, courseTees })
                   {idx + 1}
                 </span>
                 <div>
-                  <div style={{ fontWeight: '600' }}>{entry.name}</div>
+                  <div style={{ fontWeight: '600' }}>{entry.name}{entry.isManualTeamScore ? <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--color-skins)', marginLeft: '6px' }}>M</span> : null}</div>
                   <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     {entry.holesCompleted === 18 ? (
                       <span style={{ color: 'var(--color-primary)', fontWeight: '600' }}>F</span>
@@ -440,8 +440,360 @@ function ScoreKeypad({ playerName, hole, value, onKeyPress, onClose, onDone, onP
   )
 }
 
+// Manual Team Score Entry Component
+function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMode }) {
+  const [entryMode, setEntryMode] = useState(team.manualTeamScores?.holes ? 'byHole' : 'by9')
+  const manual = team.manualTeamScores || {}
+
+  const updateHoleScore = (hole, value) => {
+    const holes = { ...(manual.holes || {}) }
+    if (value === '' || value === null) {
+      delete holes[hole]
+    } else {
+      holes[hole] = parseInt(value) || 0
+    }
+    onUpdateManualTeamScore(team.id, { ...manual, holes })
+  }
+
+  const update9Score = (key, value) => {
+    onUpdateManualTeamScore(team.id, { ...manual, [key]: value === '' ? null : parseInt(value) || 0 })
+  }
+
+  const front9Par = GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + h.par, 0)
+  const back9Par = GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + h.par, 0)
+
+  // Calculate totals for hole-by-hole mode
+  const holeScores = manual.holes || {}
+  const holeFront = GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + (parseInt(holeScores[h.hole]) || 0), 0)
+  const holeBack = GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + (parseInt(holeScores[h.hole]) || 0), 0)
+
+  return (
+    <div style={{ marginBottom: '15px' }}>
+      {/* Mode toggle header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', gap: '4px', background: 'var(--color-surface-sunken)', borderRadius: '8px', padding: '3px' }}>
+          <button
+            onClick={() => setEntryMode('by9')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              background: entryMode === 'by9' ? 'var(--color-primary)' : 'transparent',
+              color: entryMode === 'by9' ? 'white' : 'var(--color-text-secondary)'
+            }}
+          >
+            By 9
+          </button>
+          <button
+            onClick={() => setEntryMode('byHole')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600',
+              background: entryMode === 'byHole' ? 'var(--color-primary)' : 'transparent',
+              color: entryMode === 'byHole' ? 'white' : 'var(--color-text-secondary)'
+            }}
+          >
+            By Hole
+          </button>
+        </div>
+        <button
+          onClick={() => onToggleManualMode(team.id)}
+          style={{
+            padding: '6px 12px',
+            background: 'var(--color-surface-sunken)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            color: 'var(--color-text-secondary)'
+          }}
+        >
+          Switch to Player Scores
+        </button>
+      </div>
+
+      {entryMode === 'by9' ? (
+        /* Front 9 / Back 9 total entry */
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ flex: 1, minWidth: '120px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>FRONT 9 (par {front9Par})</div>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={manual.front9 != null ? manual.front9 : ''}
+              onChange={(e) => update9Score('front9', e.target.value)}
+              placeholder={String(front9Par)}
+              style={{
+                width: '80px',
+                padding: '10px',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                border: '2px solid var(--color-border)',
+                borderRadius: '8px',
+                background: 'var(--color-surface-sunken)'
+              }}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: '120px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>BACK 9 (par {back9Par})</div>
+            <input
+              type="number"
+              inputMode="numeric"
+              value={manual.back9 != null ? manual.back9 : ''}
+              onChange={(e) => update9Score('back9', e.target.value)}
+              placeholder={String(back9Par)}
+              style={{
+                width: '80px',
+                padding: '10px',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                border: '2px solid var(--color-border)',
+                borderRadius: '8px',
+                background: 'var(--color-surface-sunken)'
+              }}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: '120px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>TOTAL (par {front9Par + back9Par})</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-primary-dark)' }}>
+              {(manual.front9 || 0) + (manual.back9 || 0) || '-'}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Hole-by-hole team score entry */
+        <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+          {/* Front 9 */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '340px' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-primary)', color: 'white' }}>
+                  <th style={{ padding: '6px 4px', textAlign: 'left', minWidth: '50px' }}>Front 9</th>
+                  {GUNPOWDER_SCORECARD.front9.map(h => (
+                    <th key={h.hole} style={{ padding: '6px 3px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
+                  ))}
+                  <th style={{ padding: '6px 4px', textAlign: 'center', background: 'var(--color-primary-dark)', minWidth: '32px' }}>OUT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ background: 'var(--color-surface-sunken)' }}>
+                  <td style={{ padding: '5px 4px', fontWeight: 'bold', fontSize: '10px' }}>Par</td>
+                  {GUNPOWDER_SCORECARD.front9.map(h => (
+                    <td key={h.hole} style={{ padding: '5px 3px', textAlign: 'center', fontSize: '10px' }}>{h.par}</td>
+                  ))}
+                  <td style={{ padding: '5px 4px', textAlign: 'center', fontWeight: 'bold', fontSize: '10px' }}>{front9Par}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '4px', fontWeight: 'bold', fontSize: '10px' }}>Team</td>
+                  {GUNPOWDER_SCORECARD.front9.map(h => (
+                    <td key={h.hole} style={{ padding: '2px 1px', textAlign: 'center' }}>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={holeScores[h.hole] != null ? holeScores[h.hole] : ''}
+                        onChange={(e) => updateHoleScore(h.hole, e.target.value)}
+                        style={{
+                          width: '28px',
+                          padding: '4px 2px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          textAlign: 'center',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '4px',
+                          background: holeScores[h.hole] != null ? 'var(--color-info-light)' : 'var(--color-surface-sunken)'
+                        }}
+                      />
+                    </td>
+                  ))}
+                  <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: 'var(--color-skins-light)', fontSize: '12px' }}>
+                    {holeFront || '-'}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {/* Back 9 */}
+          <div style={{ overflowX: 'auto', borderTop: '2px solid var(--color-border)' }}>
+            <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '340px' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-primary)', color: 'white' }}>
+                  <th style={{ padding: '6px 4px', textAlign: 'left', minWidth: '50px' }}>Back 9</th>
+                  {GUNPOWDER_SCORECARD.back9.map(h => (
+                    <th key={h.hole} style={{ padding: '6px 3px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
+                  ))}
+                  <th style={{ padding: '6px 4px', textAlign: 'center', background: 'var(--color-primary-dark)', minWidth: '32px' }}>IN</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ background: 'var(--color-surface-sunken)' }}>
+                  <td style={{ padding: '5px 4px', fontWeight: 'bold', fontSize: '10px' }}>Par</td>
+                  {GUNPOWDER_SCORECARD.back9.map(h => (
+                    <td key={h.hole} style={{ padding: '5px 3px', textAlign: 'center', fontSize: '10px' }}>{h.par}</td>
+                  ))}
+                  <td style={{ padding: '5px 4px', textAlign: 'center', fontWeight: 'bold', fontSize: '10px' }}>{back9Par}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '4px', fontWeight: 'bold', fontSize: '10px' }}>Team</td>
+                  {GUNPOWDER_SCORECARD.back9.map(h => (
+                    <td key={h.hole} style={{ padding: '2px 1px', textAlign: 'center' }}>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={holeScores[h.hole] != null ? holeScores[h.hole] : ''}
+                        onChange={(e) => updateHoleScore(h.hole, e.target.value)}
+                        style={{
+                          width: '28px',
+                          padding: '4px 2px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          textAlign: 'center',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '4px',
+                          background: holeScores[h.hole] != null ? 'var(--color-info-light)' : 'var(--color-surface-sunken)'
+                        }}
+                      />
+                    </td>
+                  ))}
+                  <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: 'var(--color-skins-light)', fontSize: '12px' }}>
+                    {holeBack || '-'}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {/* Total */}
+          <div style={{ padding: '10px', textAlign: 'center', background: 'var(--color-surface-sunken)', borderTop: '1px solid var(--color-border)' }}>
+            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Total: {holeFront + holeBack || '-'}</span>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginLeft: '8px' }}>(par {front9Par + back9Par})</span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Manual Player Total Score Component
+function ManualPlayerTotal({ team, onUpdatePlayerManualTotal }) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div style={{
+      marginTop: '12px',
+      border: '1px solid var(--color-border)',
+      borderRadius: '10px',
+      overflow: 'hidden'
+    }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          width: '100%',
+          padding: '10px 15px',
+          background: 'var(--color-surface-sunken)',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '13px'
+        }}
+      >
+        <span style={{ fontWeight: '600', color: 'var(--color-text-secondary)' }}>
+          Quick Score Entry
+          {team.players.some(p => p.manualTotal) && (
+            <span style={{ marginLeft: '6px', fontSize: '11px', color: 'var(--color-primary)', background: 'var(--color-info-light)', padding: '2px 6px', borderRadius: '4px' }}>
+              {team.players.filter(p => p.manualTotal).length} manual
+            </span>
+          )}
+        </span>
+        <span style={{ color: 'var(--color-text-tertiary)' }}>{expanded ? '▲' : '▼'}</span>
+      </button>
+
+      {expanded && (
+        <div style={{ padding: '12px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
+            Enter a total score for players who didn't keep hole-by-hole scores. This overrides per-hole totals for stats.
+          </p>
+          {team.players.filter(p => !p.isDNF).map(player => {
+            const mt = player.manualTotal || {}
+            return (
+              <div key={player.id} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 0',
+                borderBottom: '1px solid var(--color-border)',
+                flexWrap: 'wrap'
+              }}>
+                <span style={{ fontWeight: '600', fontSize: '13px', minWidth: '70px' }}>
+                  {player.name.split(' ')[0]}
+                </span>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>F9:</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={mt.front9 != null ? mt.front9 : ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? null : parseInt(e.target.value) || 0
+                      const updated = { ...mt, front9: val }
+                      if (updated.front9 != null && updated.back9 != null) {
+                        updated.total = updated.front9 + updated.back9
+                      }
+                      onUpdatePlayerManualTotal(team.id, player.id, updated.front9 == null && updated.back9 == null && updated.total == null ? null : updated)
+                    }}
+                    style={{ width: '48px', padding: '5px 3px', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px' }}
+                  />
+                  <label style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>B9:</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={mt.back9 != null ? mt.back9 : ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? null : parseInt(e.target.value) || 0
+                      const updated = { ...mt, back9: val }
+                      if (updated.front9 != null && updated.back9 != null) {
+                        updated.total = updated.front9 + updated.back9
+                      }
+                      onUpdatePlayerManualTotal(team.id, player.id, updated.front9 == null && updated.back9 == null && updated.total == null ? null : updated)
+                    }}
+                    style={{ width: '48px', padding: '5px 3px', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', border: '1px solid var(--color-border)', borderRadius: '4px' }}
+                  />
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--color-primary-dark)', minWidth: '30px', textAlign: 'center' }}>
+                    = {(mt.front9 || 0) + (mt.back9 || 0) || '-'}
+                  </span>
+                  {mt.front9 != null || mt.back9 != null ? (
+                    <button
+                      onClick={() => onUpdatePlayerManualTotal(team.id, player.id, null)}
+                      style={{ padding: '3px 8px', fontSize: '11px', background: 'var(--color-danger-light)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Score Entry Component - Legacy Style
-function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings, leagueSettings, courseTees }) {
+function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings, leagueSettings, courseTees, onUpdateManualTeamScore, onToggleManualMode, onUpdatePlayerManualTotal }) {
   const [activeInput, setActiveInput] = useState(null)
   const [keypadValue, setKeypadValue] = useState('')
   const [isFirstKeypress, setIsFirstKeypress] = useState(true)
@@ -718,7 +1070,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                   textAlign: 'left'
                 }}
               >
-                {t.isFinished ? '✓ ' : ''}{t.name}
+                {t.isFinished ? '✓ ' : ''}{t.name}{t.isManualTeamScore ? ' (Manual)' : ''}
                 <div style={{ fontSize: '12px', fontWeight: 'normal', marginTop: '3px', opacity: 0.9 }}>
                   {t.players.map(p => p.name).join(', ')}
                 </div>
@@ -777,11 +1129,34 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
             </select>
           </div>
           {selectedTeam.isFinished && <span style={{ fontSize: '14px', fontWeight: '600' }}>✓ Done</span>}
+          {selectedTeam.isManualTeamScore && (
+            <span style={{ fontSize: '11px', fontWeight: '600', background: 'var(--color-skins)', color: 'white', padding: '2px 8px', borderRadius: '10px' }}>MANUAL</span>
+          )}
         </div>
         )}
 
-        {/* Team Score Summary - Hide in Quick Skins mode */}
-        {!isQuickSkins && (
+        {/* Manual mode toggle - hidden for individual rounds and quick skins */}
+        {!isIndividualRound && !isQuickSkins && !selectedTeam.isManualTeamScore && (
+          <button
+            onClick={() => onToggleManualMode(selectedTeam.id)}
+            style={{
+              marginTop: '8px',
+              padding: '5px 12px',
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.4)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '11px',
+              color: 'inherit',
+              opacity: 0.8
+            }}
+          >
+            Switch to Manual Team Score
+          </button>
+        )}
+
+        {/* Team Score Summary - Hide in Quick Skins mode and Manual mode */}
+        {!isQuickSkins && !selectedTeam.isManualTeamScore && (
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -819,6 +1194,15 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
         )}
       </div>
 
+      {/* Manual Team Score Mode */}
+      {selectedTeam.isManualTeamScore ? (
+        <ManualTeamScoreEntry
+          team={selectedTeam}
+          onUpdateManualTeamScore={onUpdateManualTeamScore}
+          onToggleManualMode={onToggleManualMode}
+        />
+      ) : (
+      <>
       {/* Player Tracking Selector - hidden for individual rounds */}
       {!isIndividualRound && (
       <div style={{
@@ -1214,6 +1598,16 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
         </div>
         )}
       </div>
+
+      {/* Manual Player Total - for non-manual teams */}
+      {!selectedTeam.isManualTeamScore && !isQuickSkins && (
+        <ManualPlayerTotal
+          team={selectedTeam}
+          onUpdatePlayerManualTotal={onUpdatePlayerManualTotal}
+        />
+      )}
+      </>
+      )}
 
       {/* Mark Team Done Button */}
       <div style={{ marginTop: '20px' }}>
@@ -6063,6 +6457,42 @@ function LivePage() {
     })
   }
 
+  const updateManualTeamScore = (teamId, manualData) => {
+    setLiveRound({
+      ...liveRound,
+      teams: liveRound.teams.map(team => {
+        if (team.id !== teamId) return team
+        return { ...team, manualTeamScores: manualData, isManualTeamScore: true }
+      })
+    })
+  }
+
+  const toggleManualTeamMode = (teamId) => {
+    setLiveRound({
+      ...liveRound,
+      teams: liveRound.teams.map(team => {
+        if (team.id !== teamId) return team
+        return { ...team, isManualTeamScore: !team.isManualTeamScore }
+      })
+    })
+  }
+
+  const updatePlayerManualTotal = (teamId, playerId, manualTotal) => {
+    setLiveRound({
+      ...liveRound,
+      teams: liveRound.teams.map(team => {
+        if (team.id !== teamId) return team
+        return {
+          ...team,
+          players: team.players.map(player => {
+            if (player.id !== playerId) return player
+            return { ...player, manualTotal: manualTotal }
+          })
+        }
+      })
+    })
+  }
+
   const updateGreenie = (hole, player, isFinal = false) => {
     // Find the current greenie for this hole (to add to history)
     let previousGreenie = null
@@ -6128,8 +6558,8 @@ function LivePage() {
     const team = liveRound.teams.find(t => t.id === teamId)
     if (!team) return
 
-    // If trying to mark as finished (not undoing), check for incomplete scores
-    if (!team.isFinished) {
+    // If trying to mark as finished (not undoing), check for incomplete scores (skip for manual teams)
+    if (!team.isFinished && !team.isManualTeamScore) {
       const incompletePlayers = []
 
       team.players.forEach(player => {
@@ -6324,7 +6754,11 @@ function LivePage() {
       ...(liveRound.formatConfig ? { formatConfig: liveRound.formatConfig } : {}),
       teams: liveRound.teams.map(team => {
         let front9Score, back9Score
-        if (formatKey && FORMAT_CONFIGS[formatKey]) {
+        if (team.isManualTeamScore && team.manualTeamScores) {
+          // Manual team scores: use raw gross scores (relative-to-par conversion happens in leaderboard)
+          front9Score = resolveManualTeamScore(team, 1, 9) || 0
+          back9Score = resolveManualTeamScore(team, 10, 18) || 0
+        } else if (formatKey && FORMAT_CONFIGS[formatKey]) {
           front9Score = calculateFormatScore(formatKey, team, 1, 9, { ...formatSettings, teamScoringRules: teamRules, courseTees })
           back9Score = calculateFormatScore(formatKey, team, 10, 18, { ...formatSettings, teamScoringRules: teamRules, courseTees })
         } else {
@@ -6349,8 +6783,15 @@ function LivePage() {
 
       const scores = roundPlayer.scores
       let front9 = 0, back9 = 0
-      for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += scores[h]
-      for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += scores[h]
+
+      // Check for manual total override
+      if (roundPlayer.manualTotal) {
+        front9 = roundPlayer.manualTotal.front9 || 0
+        back9 = roundPlayer.manualTotal.back9 || 0
+      } else {
+        for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += scores[h]
+        for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += scores[h]
+      }
       const total = front9 + back9
 
       if (total === 0) return player
@@ -6943,6 +7384,9 @@ function LivePage() {
           handicapSettings={handicapSettings}
           leagueSettings={leagueSettings}
           courseTees={courseTees}
+          onUpdateManualTeamScore={updateManualTeamScore}
+          onToggleManualMode={toggleManualTeamMode}
+          onUpdatePlayerManualTotal={updatePlayerManualTotal}
         />
       )}
       {subTab === 'greenies' && (

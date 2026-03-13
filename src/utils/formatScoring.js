@@ -1,5 +1,55 @@
-import { getHoleInfo, getAllHoles } from '../lib/courseData'
+import { getHoleInfo, getAllHoles, getFront9Par, getBack9Par } from '../lib/courseData'
 import { getNetDoubleBogeyMax } from '../utils/handicapCalculation'
+
+// ── Manual Team Score Resolution ─────────────────────────────────────
+
+/**
+ * Resolve manual team scores for a hole range.
+ * Returns gross score total, or null if no manual data covers this range.
+ */
+export function resolveManualTeamScore(team, startHole, endHole) {
+  const manual = team.manualTeamScores
+  if (!manual) return null
+
+  // Hole-by-hole data takes priority
+  if (manual.holes) {
+    const holeKeys = Object.keys(manual.holes).map(Number).filter(h => h >= startHole && h <= endHole)
+    if (holeKeys.length > 0) {
+      return holeKeys.reduce((sum, h) => sum + (parseInt(manual.holes[h]) || 0), 0)
+    }
+  }
+
+  // Front 9 / Back 9 totals
+  if (startHole <= 9 && endHole <= 9 && manual.front9 != null) return parseInt(manual.front9) || 0
+  if (startHole >= 10 && endHole >= 10 && manual.back9 != null) return parseInt(manual.back9) || 0
+
+  // Full 18
+  if (startHole === 1 && endHole === 18) {
+    const f = manual.front9 != null ? parseInt(manual.front9) || 0 : null
+    const b = manual.back9 != null ? parseInt(manual.back9) || 0 : null
+    if (f != null || b != null) return (f || 0) + (b || 0)
+  }
+
+  return null
+}
+
+/**
+ * Convert a gross manual score to the appropriate display value for the format.
+ * Relative modes (bigboys, bestball) show score relative to par.
+ * Gross/net modes show raw total.
+ */
+function convertManualScoreForDisplay(grossScore, startHole, endHole, displayMode) {
+  if (grossScore === null) return 0
+  if (displayMode === 'relative') {
+    const par = startHole <= 9 && endHole <= 9
+      ? getFront9Par()
+      : startHole >= 10 && endHole >= 10
+        ? getBack9Par()
+        : getFront9Par() + getBack9Par()
+    return grossScore - par
+  }
+  return grossScore
+}
 
 // ── Format Configurations ──────────────────────────────────────────────
 export const FORMAT_CONFIGS = {
@@ -436,15 +486,22 @@ export function getLeaderboardData(liveRound, teamScoringRules = null, courseTee
   // No format config → exact legacy behavior (Big Boys)
   if (!format || !config) {
     const entries = liveRound.teams.map(team => {
-      const front9 = calculateBigBoysScore(team, 1, 9, rules, courseTees)
-      const back9 = calculateBigBoysScore(team, 10, 18, rules, courseTees)
+      let front9, back9
+      if (team.isManualTeamScore && team.manualTeamScores) {
+        front9 = convertManualScoreForDisplay(resolveManualTeamScore(team, 1, 9), 1, 9, 'relative')
+        back9 = convertManualScoreForDisplay(resolveManualTeamScore(team, 10, 18), 10, 18, 'relative')
+      } else {
+        front9 = calculateBigBoysScore(team, 1, 9, rules, courseTees)
+        back9 = calculateBigBoysScore(team, 10, 18, rules, courseTees)
+      }
       const entry = {
         id: team.id,
         name: team.name,
         front9,
         back9,
         total: front9 + back9,
-        holesCompleted: getTeamHolesCompleted(team)
+        holesCompleted: getTeamHolesCompleted(team),
+        isManualTeamScore: team.isManualTeamScore || false
       }
       return applyDQ(entry, team, 'bigboys')
     })
@@ -534,9 +591,13 @@ export function getLeaderboardData(liveRound, teamScoringRules = null, courseTee
   }
 
   // Team formats: bestball, scramble, retirees
+  const displayMode = config.leaderboard
   const entries = liveRound.teams.map(team => {
     let front9, back9
-    if (format === 'bestball') {
+    if (team.isManualTeamScore && team.manualTeamScores) {
+      front9 = convertManualScoreForDisplay(resolveManualTeamScore(team, 1, 9), 1, 9, displayMode)
+      back9 = convertManualScoreForDisplay(resolveManualTeamScore(team, 10, 18), 10, 18, displayMode)
+    } else if (format === 'bestball') {
       front9 = calculateBestBallScore(team, 1, 9, settings.useHandicaps, rules, courseTees)
       back9 = calculateBestBallScore(team, 10, 18, settings.useHandicaps, rules, courseTees)
     } else if (format === 'scramble') {
@@ -555,12 +616,12 @@ export function getLeaderboardData(liveRound, teamScoringRules = null, courseTee
       front9,
       back9,
       total: front9 + back9,
-      holesCompleted: getTeamHolesCompleted(team)
+      holesCompleted: getTeamHolesCompleted(team),
+      isManualTeamScore: team.isManualTeamScore || false
     }
     return applyDQ(entry, team, format)
   })
 
-  const displayMode = config.leaderboard
   // For relative modes (bestball without handicaps), sort ascending (lower=better)
   // For net/gross raw totals, sort ascending (lower=better)
   const sortDirection = format === 'stableford' ? 'desc' : 'asc'
@@ -571,6 +632,25 @@ export function getLeaderboardData(liveRound, teamScoringRules = null, courseTee
 // ── Helpers ────────────────────────────────────────────────────────────
 
 function getTeamHolesCompleted(team) {
+  // Manual team scores: determine completion from manual data
+  if (team.isManualTeamScore && team.manualTeamScores) {
+    const manual = team.manualTeamScores
+    if (manual.holes) {
+      let completed = 0
+      for (let h = 1; h <= 18; h++) {
+        if (manual.holes[h] != null && manual.holes[h] !== '') completed = h
+        else break
+      }
+      return completed
+    }
+    // By-9 totals: treat as 9 or 18 complete
+    const hasFront = manual.front9 != null && manual.front9 !== ''
+    const hasBack = manual.back9 != null && manual.back9 !== ''
+    if (hasFront && hasBack) return 18
+    if (hasFront) return 9
+    return 0
+  }
+
   const activePlayers = team.players.filter(p => !p.isDNF)
   if (activePlayers.length === 0) return 0
   let holesCompleted = 0
