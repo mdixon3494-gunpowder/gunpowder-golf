@@ -895,7 +895,7 @@ function ManualPlayerTotal({ team, onUpdatePlayerManualTotal }) {
                 flexWrap: 'wrap'
               }}>
                 <span style={{ fontWeight: '600', fontSize: '13px', minWidth: '70px' }}>
-                  {getShortName(player)}
+                  {getShortName(player, team.players)}
                 </span>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                   <label style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>F9:</label>
@@ -1493,7 +1493,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       cursor: 'pointer'
                     }}
                   >
-                    {isTracked ? '✓ ' : ''}{player.name}
+                    {isTracked ? '✓ ' : ''}{getDisplayName(player)}
                   </button>
                 )
               })}
@@ -1506,7 +1506,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
       {/* Enter Next Score Button */}
       {nextNeeded && (
         <button
-          onClick={() => openKeypad(selectedTeam.id, nextNeeded.player.id, nextNeeded.hole, '', nextNeeded.player.name)}
+          onClick={() => openKeypad(selectedTeam.id, nextNeeded.player.id, nextNeeded.hole, '', getShortName(nextNeeded.player, selectedTeam.players))}
           style={{
             width: '100%',
             padding: '18px',
@@ -1594,7 +1594,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {getShortName(player)}{isDNF ? ' ❌' : ''}
+                      {getShortName(player, selectedTeam.players)}{isDNF ? ' ❌' : ''}
                     </td>
                     {GUNPOWDER_SCORECARD.front9.map(hole => {
                       const score = player.scores[hole.hole]
@@ -1638,7 +1638,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       return (
                         <td
                           key={hole.hole}
-                          onClick={() => !isDNF && openKeypad(selectedTeam.id, player.id, hole.hole, score, player.name)}
+                          onClick={() => !isDNF && openKeypad(selectedTeam.id, player.id, hole.hole, score, getShortName(player, selectedTeam.players))}
                           style={{
                             padding: '2px',
                             textAlign: 'center',
@@ -1724,7 +1724,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {getShortName(player)}{isDNF ? ' ❌' : ''}
+                      {getShortName(player, selectedTeam.players)}{isDNF ? ' ❌' : ''}
                     </td>
                     {GUNPOWDER_SCORECARD.back9.map(hole => {
                       const score = player.scores[hole.hole]
@@ -1768,7 +1768,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       return (
                         <td
                           key={hole.hole}
-                          onClick={() => !isDNF && openKeypad(selectedTeam.id, player.id, hole.hole, score, player.name)}
+                          onClick={() => !isDNF && openKeypad(selectedTeam.id, player.id, hole.hole, score, getShortName(player, selectedTeam.players))}
                           style={{
                             padding: '2px',
                             textAlign: 'center',
@@ -1949,7 +1949,7 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                         alignItems: 'center'
                       }}
                     >
-                      <span>{player.name}</span>
+                      <span>{getDisplayName(player)}</span>
                       <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>{team.name}</span>
                     </button>
                   )
@@ -2529,7 +2529,7 @@ function DNFManager({ liveRound, onMarkDNF, onUndoDNF, isAdmin }) {
                     fontWeight: isDNF ? 'bold' : 'normal'
                   }}
                 >
-                  {player.name} {isDNF ? '(DNF - tap to undo)' : ''}
+                  {getDisplayName(player)} {isDNF ? '(DNF - tap to undo)' : ''}
                 </button>
               )
             })}
@@ -4323,7 +4323,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                       opacity: isSettled ? 0.7 : 1
                     }}
                   >
-                    {inSkins && !isSettled ? '✓ ' : ''}{player.name}
+                    {inSkins && !isSettled ? '✓ ' : ''}{getDisplayName(player)}
                     {inSkins && !isSettled && joinHole > 1 && <span style={{ fontSize: '10px', marginLeft: '4px' }}>(h{joinHole}+)</span>}
                     {isSettled && <span style={{ fontSize: '10px', marginLeft: '4px' }}>({leftHole > 0 ? `settled h${leftHole}` : 'left before playing'})</span>}
                   </button>
@@ -4414,7 +4414,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                         borderRight: '1px solid var(--color-border-light)',
                         whiteSpace: 'nowrap'
                       }}>
-                        {getShortName(player)}
+                        {getShortName(player, skinsPlayers)}
                       </td>
                       {displayHoles.map(h => {
                         const score = player.scores?.[h.hole]
@@ -4689,7 +4689,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                     return (
                       <div key={player.id} style={{ background: 'var(--color-success-light)', borderRadius: '4px', marginBottom: '6px', padding: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontWeight: '600' }}>{player.name}</span>
+                          <span style={{ fontWeight: '600' }}>{getDisplayName(player)}</span>
                           <span style={{ color: 'var(--color-primary)', fontWeight: '700' }}>${summary.totalPot?.toFixed(2)}</span>
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -4756,7 +4756,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>
-                        <strong>{player.name}</strong>
+                        <strong>{getDisplayName(player)}</strong>
                         {(joinHole > 1 || leftHole) && (
                           <span style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', marginLeft: '4px' }}>
                             (h{joinHole}{leftHole ? `-${leftHole}` : '-18'})
