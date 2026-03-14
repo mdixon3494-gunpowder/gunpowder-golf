@@ -2,11 +2,15 @@ import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 
 function LoginScreen({ onSwitchToSignup, onSkip }) {
-  const { signInWithGoogle, signInWithEmail } = useAuth()
+  const { signInWithGoogle, signInWithEmail, resetPassword } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetStatus, setResetStatus] = useState(null)
+  const [resetLoading, setResetLoading] = useState(false)
 
   const handleEmailSignIn = async (e) => {
     e.preventDefault()
@@ -23,6 +27,24 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
       setError(err.message || 'Sign in failed. Please check your credentials.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+    if (!resetEmail.trim()) {
+      setResetStatus({ type: 'error', message: 'Please enter your email address' })
+      return
+    }
+    setResetLoading(true)
+    setResetStatus(null)
+    try {
+      await resetPassword(resetEmail)
+      setResetStatus({ type: 'success', message: 'Password reset email sent! Check your inbox.' })
+    } catch (err) {
+      setResetStatus({ type: 'error', message: err.message || 'Failed to send reset email' })
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -98,7 +120,7 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
               />
             </div>
 
-            <div className="input-group" style={{ marginBottom: '15px', textAlign: 'left' }}>
+            <div className="input-group" style={{ marginBottom: '10px', textAlign: 'left' }}>
               <label>Password</label>
               <input
                 type="password"
@@ -107,6 +129,24 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
                 placeholder="Enter password"
                 autoComplete="current-password"
               />
+            </div>
+
+            <div style={{ textAlign: 'right', marginBottom: '15px' }}>
+              <button
+                type="button"
+                onClick={() => { setShowForgotPassword(true); setResetEmail(email); setResetStatus(null) }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-tertiary)',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontSize: '13px',
+                  padding: 0
+                }}
+              >
+                Forgot Password?
+              </button>
             </div>
 
             {error && (
@@ -164,6 +204,74 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
           )}
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }} onClick={() => setShowForgotPassword(false)}>
+          <div style={{
+            background: 'var(--color-surface)',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '100%'
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '8px' }}>Reset Password</h3>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
+              Enter your email and we'll send you a link to reset your password.
+            </p>
+
+            <form onSubmit={handleForgotPassword}>
+              <div className="input-group" style={{ marginBottom: '15px', textAlign: 'left' }}>
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => { setResetEmail(e.target.value); setResetStatus(null) }}
+                  placeholder="your@email.com"
+                  autoComplete="email"
+                />
+              </div>
+
+              {resetStatus && (
+                <div className={`alert alert-${resetStatus.type === 'success' ? 'success' : 'error'}`} style={{ marginBottom: '15px', textAlign: 'left' }}>
+                  {resetStatus.message}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setShowForgotPassword(false)}
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={resetLoading}
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  {resetLoading ? 'Sending...' : 'Send Reset Link'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

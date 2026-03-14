@@ -19,6 +19,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [needsProfileClaim, setNeedsProfileClaim] = useState(false)
+  const [needsPasswordUpdate, setNeedsPasswordUpdate] = useState(false)
 
   // Initialize auth state
   useEffect(() => {
@@ -46,7 +47,12 @@ export function AuthProvider({ children }) {
       async (event, session) => {
         if (!mounted) return
 
-        if (event === 'SIGNED_IN' && session?.user) {
+        if (event === 'PASSWORD_RECOVERY') {
+          setNeedsPasswordUpdate(true)
+          if (session?.user) {
+            setUser(session.user)
+          }
+        } else if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user)
           await loadProfile(session.user)
         } else if (event === 'SIGNED_OUT') {
@@ -220,6 +226,18 @@ export function AuthProvider({ children }) {
     return data
   }
 
+  const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/gunpowder-golf/`
+    })
+    if (error) throw error
+  }
+
+  const updatePassword = async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+  }
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
@@ -268,6 +286,10 @@ export function AuthProvider({ children }) {
     signInWithEmail,
     signUp,
     signOut,
+    resetPassword,
+    updatePassword,
+    needsPasswordUpdate,
+    setNeedsPasswordUpdate,
     createAndSetProfile,
     setClaimedProfile,
     unlinkMyProfile,

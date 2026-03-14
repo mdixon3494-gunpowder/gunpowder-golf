@@ -14,6 +14,7 @@ import ErrorBoundary from './components/common/ErrorBoundary'
 import { ToastProvider } from './components/common/Toast'
 import LoginScreen from './components/auth/LoginScreen'
 import SignupScreen from './components/auth/SignupScreen'
+import ResetPasswordScreen from './components/auth/ResetPasswordScreen'
 import ClaimProfileScreen from './components/auth/ClaimProfileScreen'
 import { backfillRoundHistory } from './lib/migrations/003_backfill_round_history'
 
@@ -29,7 +30,7 @@ import GPSPage from './pages/GPSPage'
 import RoundHistoryPage from './pages/RoundHistoryPage'
 
 function AppContent() {
-  const { loading: authLoading, isAuthenticated, needsProfileClaim, profile } = useAuth()
+  const { loading: authLoading, isAuthenticated, needsProfileClaim, needsPasswordUpdate, profile } = useAuth()
   const { loading: leagueLoading, isSetup, switchLeague, leagueId, syncSiteOwnerFromProfile } = useLeague()
   const [searchParams, setSearchParams] = useSearchParams()
   const [authScreen, setAuthScreen] = useState('login') // 'login' | 'signup'
@@ -93,6 +94,11 @@ function AppContent() {
         </div>
       </div>
     )
+  }
+
+  // Password recovery flow
+  if (needsPasswordUpdate) {
+    return <ResetPasswordScreen />
   }
 
   // Not authenticated and hasn't skipped - show auth screens
