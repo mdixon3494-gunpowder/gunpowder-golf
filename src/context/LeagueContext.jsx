@@ -137,8 +137,6 @@ export function LeagueProvider({ children }) {
 
   // Skins
   const [skinsMatch, setSkinsMatch] = useState(null)
-  const [quickSkinsMode, setQuickSkinsMode] = useState(false)
-  const [quickSkinsHistory, setQuickSkinsHistory] = useState([])
 
   // Nassau
   const [nassauMatch, setNassauMatch] = useState(null)
@@ -240,8 +238,6 @@ export function LeagueProvider({ children }) {
     if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
     if (data.defaultStartingHole) setDefaultStartingHole(data.defaultStartingHole)
     if (data.playerMoneyRecords) setPlayerMoneyRecords(data.playerMoneyRecords)
-    if (data.quickSkinsHistory) setQuickSkinsHistory(data.quickSkinsHistory)
-    if (data.quickSkinsMode) setQuickSkinsMode(data.quickSkinsMode)
     if (data.handicapSettings) setHandicapSettings({ ...DEFAULT_HANDICAP_SETTINGS, ...data.handicapSettings })
     if (data.courseTees) setCourseTees({ ...DEFAULT_COURSE_TEES, ...data.courseTees })
     if (data.courseMapping) setCourseMapping(data.courseMapping)
@@ -337,8 +333,6 @@ export function LeagueProvider({ children }) {
           skinsMatch,
           nassauMatch,
           wolfMatch,
-          quickSkinsHistory,
-          quickSkinsMode,
           handicapSettings,
           courseTees,
           courseMapping,
@@ -351,7 +345,7 @@ export function LeagueProvider({ children }) {
     }
   }, [players, history, pairingRequests, liveRound, teams, leagueId, isSetup,
       leagueSettings, pendingPlayerRequests, payoutFormats, holeInOnePot,
-      moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, nassauMatch, wolfMatch, quickSkinsHistory, quickSkinsMode,
+      moneyVisibility, defaultStartingHole, playerMoneyRecords, skinsMatch, nassauMatch, wolfMatch,
       handicapSettings, courseTees, courseMapping, auditLog, pendingOwnershipTransfer])
 
   // Mark data as loaded
@@ -399,12 +393,6 @@ export function LeagueProvider({ children }) {
             setLiveRound(null)
             setTimeout(() => { isUpdatingFromRealtime.current = false }, 100)
             return
-          }
-
-          // Update quickSkinsMode if changed
-          if (parsedNewData.quickSkinsMode !== undefined && parsedNewData.quickSkinsMode !== quickSkinsMode) {
-            console.log('Quick Skins mode changed on another device')
-            setQuickSkinsMode(parsedNewData.quickSkinsMode)
           }
 
           // Update live round if changed
@@ -536,8 +524,6 @@ export function LeagueProvider({ children }) {
     setSkinsMatch(null)
     setNassauMatch(null)
     setWolfMatch(null)
-    setQuickSkinsHistory([])
-    setQuickSkinsMode(false)
     setHandicapSettings(DEFAULT_HANDICAP_SETTINGS)
     setCourseTees(DEFAULT_COURSE_TEES)
     setCheckedInPlayers([])
@@ -693,8 +679,6 @@ export function LeagueProvider({ children }) {
       moneyVisibility,
       defaultStartingHole,
       playerMoneyRecords: JSON.parse(JSON.stringify(playerMoneyRecords)),
-      quickSkinsHistory: JSON.parse(JSON.stringify(quickSkinsHistory)),
-      quickSkinsMode,
       handicapSettings: JSON.parse(JSON.stringify(handicapSettings)),
       courseTees: JSON.parse(JSON.stringify(courseTees)),
       isTestLeague: true,
@@ -1055,7 +1039,6 @@ export function LeagueProvider({ children }) {
     // Skins
     skinsMatch,
     setSkinsMatch,
-    quickSkinsMode,
 
     // Nassau
     nassauMatch,
@@ -1064,9 +1047,6 @@ export function LeagueProvider({ children }) {
     // Wolf
     wolfMatch,
     setWolfMatch,
-    setQuickSkinsMode,
-    quickSkinsHistory,
-    setQuickSkinsHistory,
 
     // Check-in state
     checkedInPlayers,

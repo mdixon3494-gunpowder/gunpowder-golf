@@ -8,7 +8,7 @@ import { generateTeams, getTeamName } from '../utils/teamGeneration'
 
 function CasualGameSetup({ onBack }) {
   const { profile } = useAuth()
-  const { switchLeague, setSkinsMatch, setQuickSkinsMode, setNassauMatch, setWolfMatch } = useLeague()
+  const { switchLeague, setSkinsMatch, setNassauMatch, setWolfMatch } = useLeague()
 
   // Game info
   const defaultName = `Casual - ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
@@ -299,7 +299,7 @@ function CasualGameSetup({ onBack }) {
         liveRound,
         history: [],
         leagueSettings: { contactInfoVisibility: 'admin' },
-        ...(isSkins ? { quickSkinsMode: true, skinsMatch: skinsMatchData } : {}),
+        ...(isSkins ? { skinsMatch: skinsMatchData } : {}),
         ...(nassauMatchData ? { nassauMatch: nassauMatchData } : {}),
         ...(wolfMatchData ? { wolfMatch: wolfMatchData } : {}),
         casualGameInfo: {

@@ -1149,22 +1149,23 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
         // All tracked players have scores for this hole - show greenie prompt if par 3
         if (isPar3Hole && onUpdateGreenie) {
-          // Check if greenie already set for this hole (across all teams)
-          const existingGreenie = liveRound.teams.some(t => t.greenies?.[activeInput.hole])
-          if (!existingGreenie) {
-            // Check if this is the last team to finish this hole
-            const otherTeamsFinishedHole = liveRound.teams
-              .filter(t => t.id !== activeInput.teamId)
-              .every(t => {
-                const activePlayers = t.players.filter(p => !p.isDNF)
-                return activePlayers.every(p => {
-                  const score = p.scores[activeInput.hole]
-                  return score !== undefined && score !== null && score !== ''
-                })
+          // Check if this is the last team to finish this hole
+          const otherTeamsFinishedHole = liveRound.teams
+            .filter(t => t.id !== activeInput.teamId)
+            .every(t => {
+              const activePlayers = t.players.filter(p => !p.isDNF)
+              return activePlayers.every(p => {
+                const score = p.scores[activeInput.hole]
+                return score !== undefined && score !== null && score !== ''
               })
-            setMarkGreenieAsFinal(false) // User must explicitly check to mark as final
-            setGreeniePrompt({ hole: activeInput.hole, isLastTeam: otherTeamsFinishedHole })
-          }
+            })
+          // Pre-select current greenie winner if one exists
+          const existingWinner = liveRound.teams
+            .flatMap(t => t.players)
+            .find(p => liveRound.teams.some(t => t.greenies?.[activeInput.hole]?.playerId === p.id))
+          setGreenieSelectedPlayer(existingWinner || null)
+          setMarkGreenieAsFinal(false)
+          setGreeniePrompt({ hole: activeInput.hole, isLastTeam: otherTeamsFinishedHole })
         }
       }
     }
@@ -6582,10 +6583,6 @@ function LivePage() {
     isAdmin,
     payoutFormats,
     holeInOnePot,
-    quickSkinsMode,
-    setQuickSkinsMode,
-    quickSkinsHistory,
-    setQuickSkinsHistory,
     defaultStartingHole,
     handicapSettings,
     setHandicapSettings,
@@ -6607,12 +6604,9 @@ function LivePage() {
   }
   const [leaderboardView, setLeaderboardView] = useState(getInitialLeaderboardView)
 
-  // Quick Skins mode is set by context flag only (from CasualGameSetup flow)
-  // Do NOT detect from quickSkinsGreenieSettings — normal league rounds with
-  // side skins also store greenie settings on liveRound
-  const effectiveQuickSkinsMode = quickSkinsMode
+  const isSkins = liveRound?.formatConfig?.format === 'skins'
 
-  const [subTab, setSubTab] = useState(effectiveQuickSkinsMode ? 'skins' : 'leaderboard')
+  const [subTab, setSubTab] = useState(isSkins ? 'skins' : 'leaderboard')
   const [selectedTeamId, setSelectedTeamId] = useState(liveRound?.teams[0]?.id || 0)
   const [showFinishConfirm, setShowFinishConfirm] = useState(false)
   const [finishPin, setFinishPin] = useState('')
@@ -7331,11 +7325,11 @@ function LivePage() {
           }
         })
 
-      // Initialize handicap choices (all checked by default)
+      // Initialize handicap choices (unchecked by default — casual rounds often have incomplete scores)
       const defaultChoices = {}
       roundPlayersForHistory
         .filter(p => p.profileId && !p.isGuest)
-        .forEach(p => { defaultChoices[p.profileId] = true })
+        .forEach(p => { defaultChoices[p.profileId] = false })
       setCasualHandicapChoices(defaultChoices)
       setCasualRoundData(roundPlayersForHistory)
       setShowCasualSaveModal(true)
@@ -7412,65 +7406,6 @@ function LivePage() {
     navigate('/scorecard')
   }
 
-  // End Quick Skins game
-  const endQuickSkins = async (saveResults = false) => {
-    if (saveResults) {
-      // Save the results before clearing
-      const quickSkinsRecord = {
-        id: Date.now(),
-        date: liveRound?.date || new Date().toISOString(),
-        skinsMatch: { ...skinsMatch },
-        teams: liveRound?.teams || [],
-        players: liveRound?.teams?.flatMap(t => t.players) || [],
-        quickSkinsGreenieSettings: liveRound?.quickSkinsGreenieSettings || null
-      }
-      setQuickSkinsHistory([quickSkinsRecord, ...(quickSkinsHistory || []).slice(0, 19)]) // Keep last 20
-
-      // For casual skins games, also save round history for app users
-      if (isCasualGame) {
-        const roundPlayersForHistory = (liveRound?.teams || []).flatMap(t => t.players)
-          .filter(p => !p.isDNF)
-          .map(p => {
-            const scores = p.scores || {}
-            let front9 = 0, back9 = 0
-            for (let h = 1; h <= 9; h++) if (scores[h] && scores[h] !== 'X') front9 += scores[h]
-            for (let h = 10; h <= 18; h++) if (scores[h] && scores[h] !== 'X') back9 += scores[h]
-            const playerData = players.find(pl => pl.id === p.id)
-            return {
-              id: p.id,
-              profileId: playerData?.profileId || null,
-              isGuest: playerData?.isGuest || false,
-              name: p.name,
-              scores,
-              front9,
-              back9,
-              total: front9 + back9,
-              handicap: p.handicap || 0
-            }
-          })
-        try {
-          await saveCasualRoundHistory(roundPlayersForHistory, {})
-        } catch (err) {
-          console.error('Failed to save casual skins round history:', err)
-        }
-      }
-
-      setLiveRound(null)
-      setSkinsMatch(null)
-      setNassauMatch(null)
-      setWolfMatch(null)
-      setQuickSkinsMode(false)
-      navigate('/history')
-    } else if (confirm('End Quick Skins game without saving? All data will be lost.')) {
-      setLiveRound(null)
-      setSkinsMatch(null)
-      setNassauMatch(null)
-      setWolfMatch(null)
-      setQuickSkinsMode(false)
-      navigate(isCasualGame ? '/history' : '/settings')
-    }
-  }
-
   // Define tabs based on mode
   const sideGames = leagueSettings?.sideGames || {}
   const showSkinTab = (match) => match?.participants?.length && (isCasualGame || (sideGames.enabled && sideGames.allowSkins !== false))
@@ -7478,17 +7413,8 @@ function LivePage() {
 
   const subTabs = isIndividualRound
     ? [{ id: 'scoring', label: 'Scores' }]
-    : effectiveQuickSkinsMode
-    ? [
-        { id: 'scoring', label: 'Scores' },
-        { id: 'skins', label: 'Skins' },
-        ...(liveRound?.quickSkinsGreenieSettings ? [{ id: 'greenies', label: 'Greenies' }] : []),
-        ...(showNassauTab(nassauMatch) ? [{ id: 'nassau', label: isCasualGame ? 'Nassau' : 'Side Nassau' }] : []),
-        ...(wolfMatch?.participants?.length ? [{ id: 'wolf', label: 'Wolf' }] : []),
-        ...(isCasualGame ? [{ id: 'manage', label: 'Manage' }] : [])
-      ]
     : [
-        { id: 'leaderboard', label: 'Board' },
+        ...(!isSkins ? [{ id: 'leaderboard', label: 'Board' }] : []),
         { id: 'scoring', label: 'Scores' },
         { id: 'greenies', label: 'Greenies' },
         ...(showSkinTab(skinsMatch) ? [{ id: 'skins', label: isCasualGame ? 'Skins' : 'Side Skins' }] : []),
@@ -7500,63 +7426,7 @@ function LivePage() {
 
   return (
     <div>
-      {/* Quick Skins Mode Banner */}
-      {effectiveQuickSkinsMode && (
-        <div style={{
-          background: 'var(--color-skins)',
-          color: 'white',
-          padding: '15px',
-          borderRadius: '10px',
-          marginBottom: '15px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div>
-              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>Quick Skins Game</div>
-              <div style={{ fontSize: '12px', opacity: 0.9 }}>
-                Informal skins match
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={() => endQuickSkins(true)}
-              style={{
-                flex: 1,
-                background: 'rgba(255,255,255,0.95)',
-                border: 'none',
-                color: 'var(--color-primary)',
-                padding: '10px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '14px'
-              }}
-            >
-              Finish & Save
-            </button>
-            {!isCasualGame && (
-              <button
-                onClick={() => endQuickSkins(false)}
-                style={{
-                  flex: 1,
-                  background: 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  color: 'white',
-                  padding: '10px 16px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: '600',
-                  fontSize: '14px'
-                }}
-              >
-                End Without Saving
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      <h2 style={{ marginBottom: '20px' }}>{effectiveQuickSkinsMode ? 'Quick Skins Game' : 'Live Round Scoring'}</h2>
+      <h2 style={{ marginBottom: '20px' }}>Live Round Scoring</h2>
 
       <div style={{
         display: 'flex',
@@ -7597,7 +7467,7 @@ function LivePage() {
           players={players}
           onMarkTeamFinished={markTeamFinished}
           onUpdateGreenie={updateGreenie}
-          isQuickSkins={effectiveQuickSkinsMode}
+          isQuickSkins={isSkins}
           isIndividualRound={isIndividualRound}
           handicapSettings={handicapSettings}
           leagueSettings={leagueSettings}
@@ -7680,7 +7550,7 @@ function LivePage() {
       )}
 
       {/* Admin Actions - Collapsible section for Finish Round */}
-      {(isAdmin || isCasualGame || isIndividualRound) && !effectiveQuickSkinsMode && (
+      {(isAdmin || isCasualGame || isIndividualRound) && (
         <div style={{ marginTop: '30px' }}>
           {!showFinishConfirm ? (
             <details style={{
