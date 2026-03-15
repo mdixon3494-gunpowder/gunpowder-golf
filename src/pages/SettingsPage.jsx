@@ -1012,10 +1012,12 @@ function HoleInOnePotSection({ holeInOnePot, onUpdate, isAdmin }) {
   )
 }
 
-function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
+function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin, leagueId }) {
   const nextRoundDate = leagueSettings?.nextRoundDate || ''
   const nextRoundTime = leagueSettings?.nextRoundTime || ''
   const nextRoundMessage = leagueSettings?.nextRoundMessage || ''
+  const [notifySent, setNotifySent] = useState(false)
+  const [notifying, setNotifying] = useState(false)
 
   const handleUpdate = (field, value) => {
     onUpdate({
@@ -1031,6 +1033,27 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
       nextRoundTime: '',
       nextRoundMessage: ''
     })
+  }
+
+  const handleNotify = async () => {
+    setNotifying(true)
+    try {
+      const { sendPushNotification } = await import('../lib/notificationService')
+      let body = ''
+      if (nextRoundDate || nextRoundTime) {
+        body = formatDate(nextRoundDate)
+        if (nextRoundTime) body += ` at ${formatTime(nextRoundTime)}`
+      }
+      if (nextRoundMessage) {
+        body += body ? ` — ${nextRoundMessage}` : nextRoundMessage
+      }
+      await sendPushNotification(leagueId, 'Next Round', body, { tag: 'round-announcement' })
+      setNotifySent(true)
+      setTimeout(() => setNotifySent(false), 3000)
+    } catch (err) {
+      console.error('Failed to send announcement notification:', err)
+    }
+    setNotifying(false)
   }
 
   const hasAnnouncement = nextRoundDate || nextRoundTime || nextRoundMessage
@@ -1171,20 +1194,41 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin }) {
       )}
 
       {hasAnnouncement && (
-        <button
-          onClick={handleClear}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--color-danger)',
-            color: 'var(--color-danger)',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '13px'
-          }}
-        >
-          Clear Announcement
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {leagueId && (
+            <button
+              onClick={handleNotify}
+              disabled={notifying}
+              style={{
+                background: 'var(--color-primary)',
+                border: 'none',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: notifying ? 'default' : 'pointer',
+                fontSize: '13px',
+                fontWeight: '600',
+                opacity: notifying ? 0.6 : 1
+              }}
+            >
+              {notifySent ? 'Sent!' : notifying ? 'Sending...' : 'Notify Members'}
+            </button>
+          )}
+          <button
+            onClick={handleClear}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--color-danger)',
+              color: 'var(--color-danger)',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px'
+            }}
+          >
+            Clear Announcement
+          </button>
+        </div>
       )}
     </div>
   )
@@ -3601,6 +3645,7 @@ function SettingsPage({ onShowLeagueSelector }) {
                 leagueSettings={leagueSettings}
                 onUpdate={setLeagueSettings}
                 isAdmin={isAdmin}
+                leagueId={leagueId}
               />
             )}
             <RoundSettingsSection
