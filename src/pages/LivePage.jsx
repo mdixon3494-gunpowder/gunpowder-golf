@@ -6649,14 +6649,29 @@ function LivePage() {
         const holeInfo = getHoleInfo(hole)
         if (holeInfo) {
           const diff = score - holeInfo.par
-          let msg = null
-          if (score === 1) msg = `HOLE IN ONE! ${player.name} aced hole ${hole}!`
-          else if (diff <= -2) msg = `EAGLE! ${player.name} got an eagle on hole ${hole}!`
-          else if (diff === -1) msg = `Birdie! ${player.name} birdied hole ${hole}`
-          if (msg) {
-            import('../lib/notificationService').then(({ sendPushNotification }) => {
-              sendPushNotification(leagueId, leagueName || 'Gunpowder Golf', msg, { tag: `score-${hole}-${playerId}`, category: 'score_alerts' })
-            }).catch(() => {})
+          let trigger = null
+          let defaultMsg = null
+          if (score === 1) { trigger = 'ace'; defaultMsg = `HOLE IN ONE! ${player.name} aced hole ${hole}!` }
+          else if (diff <= -2) { trigger = 'eagle'; defaultMsg = `EAGLE! ${player.name} got an eagle on hole ${hole}!` }
+          else if (diff === -1) { trigger = 'birdie'; defaultMsg = `Birdie! ${player.name} birdied hole ${hole}` }
+          else if (diff === 1) { trigger = 'bogey' }
+          else if (diff === 2) { trigger = 'double_bogey' }
+          else if (diff >= 3) { trigger = 'worse' }
+
+          if (trigger) {
+            // Check for custom player messages
+            const customMsgs = leagueSettings?.customPlayerNotifications?.[playerId]?.[trigger]
+            let msg = defaultMsg
+            if (customMsgs && customMsgs.length > 0) {
+              const template = customMsgs[Math.floor(Math.random() * customMsgs.length)]
+              msg = template.replace(/\{player\}/g, player.name).replace(/\{hole\}/g, hole)
+            }
+            // Only send if there's a message (bogey/double/worse only fire with custom messages)
+            if (msg) {
+              import('../lib/notificationService').then(({ sendPushNotification }) => {
+                sendPushNotification(leagueId, leagueName || 'Gunpowder Golf', msg, { tag: `score-${hole}-${playerId}`, category: 'score_alerts' })
+              }).catch(() => {})
+            }
           }
         }
       }

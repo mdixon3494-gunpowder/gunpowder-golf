@@ -2620,6 +2620,160 @@ function CrossLeagueSourcesSection({ handicapSettings, onUpdateHandicap, isAdmin
   )
 }
 
+const SCORE_TRIGGERS = [
+  { key: 'ace', label: 'Hole-in-One' },
+  { key: 'eagle', label: 'Eagle' },
+  { key: 'birdie', label: 'Birdie' },
+  { key: 'bogey', label: 'Bogey' },
+  { key: 'double_bogey', label: 'Double Bogey' },
+  { key: 'worse', label: 'Triple Bogey+' }
+]
+
+function CustomPlayerNotificationsSection({ players, leagueSettings, onUpdate }) {
+  const [selectedPlayerId, setSelectedPlayerId] = useState('')
+  const [newMessage, setNewMessage] = useState('')
+  const [activeTrigger, setActiveTrigger] = useState('birdie')
+
+  const custom = leagueSettings?.customPlayerNotifications || {}
+  const configuredPlayerIds = Object.keys(custom).filter(id => {
+    const triggers = custom[id]
+    return triggers && Object.values(triggers).some(msgs => msgs && msgs.length > 0)
+  })
+
+  const addMessage = () => {
+    if (!selectedPlayerId || !newMessage.trim()) return
+    const updated = { ...custom }
+    if (!updated[selectedPlayerId]) updated[selectedPlayerId] = {}
+    if (!updated[selectedPlayerId][activeTrigger]) updated[selectedPlayerId][activeTrigger] = []
+    updated[selectedPlayerId][activeTrigger] = [...updated[selectedPlayerId][activeTrigger], newMessage.trim()]
+    onUpdate({ ...leagueSettings, customPlayerNotifications: updated })
+    setNewMessage('')
+  }
+
+  const removeMessage = (playerId, trigger, index) => {
+    const updated = { ...custom }
+    updated[playerId][trigger] = updated[playerId][trigger].filter((_, i) => i !== index)
+    if (updated[playerId][trigger].length === 0) delete updated[playerId][trigger]
+    if (Object.keys(updated[playerId]).length === 0) delete updated[playerId]
+    onUpdate({ ...leagueSettings, customPlayerNotifications: updated })
+  }
+
+  const getPlayerName = (id) => players.find(p => p.id === id)?.name || id
+
+  return (
+    <div style={{
+      background: 'var(--color-surface-sunken)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '6px' }}>Custom Player Notifications</h3>
+      <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginBottom: '15px' }}>
+        Set custom trash talk messages for when players score birdies, eagles, or aces.
+        Use <strong>{'{player}'}</strong> and <strong>{'{hole}'}</strong> as placeholders.
+      </p>
+
+      {/* Configured players */}
+      {configuredPlayerIds.map(pid => (
+        <div key={pid} style={{
+          background: 'var(--color-surface)',
+          borderRadius: '8px',
+          padding: '12px',
+          marginBottom: '10px',
+          border: '1px solid var(--color-border)'
+        }}>
+          <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '8px' }}>
+            {getPlayerName(pid)}
+          </div>
+          {SCORE_TRIGGERS.map(trigger => {
+            const msgs = custom[pid]?.[trigger.key] || []
+            if (msgs.length === 0) return null
+            return (
+              <div key={trigger.key} style={{ marginBottom: '6px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', marginBottom: '3px' }}>
+                  {trigger.label}
+                </div>
+                {msgs.map((msg, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    fontSize: '13px', padding: '3px 0'
+                  }}>
+                    <span style={{ flex: 1, color: 'var(--color-text-secondary)' }}>{msg}</span>
+                    <button
+                      onClick={() => removeMessage(pid, trigger.key, i)}
+                      style={{
+                        background: 'none', border: 'none', color: 'var(--color-danger)',
+                        cursor: 'pointer', fontSize: '16px', padding: '0 4px', lineHeight: 1
+                      }}
+                    >x</button>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      ))}
+
+      {/* Add new message */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        <select
+          value={selectedPlayerId}
+          onChange={e => setSelectedPlayerId(e.target.value)}
+          style={{
+            flex: 1, padding: '8px', borderRadius: '6px',
+            border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+            color: 'var(--color-text)', fontSize: '13px'
+          }}
+        >
+          <option value="">Select player...</option>
+          {players.filter(p => p.active !== false).map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        <select
+          value={activeTrigger}
+          onChange={e => setActiveTrigger(e.target.value)}
+          style={{
+            padding: '8px', borderRadius: '6px',
+            border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+            color: 'var(--color-text)', fontSize: '13px'
+          }}
+        >
+          {SCORE_TRIGGERS.map(t => (
+            <option key={t.key} value={t.key}>{t.label}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <input
+          type="text"
+          placeholder="e.g. Even a blind squirrel finds a nut, {player}!"
+          value={newMessage}
+          onChange={e => setNewMessage(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addMessage()}
+          style={{
+            flex: 1, padding: '8px 12px', borderRadius: '6px',
+            border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+            color: 'var(--color-text)', fontSize: '13px', boxSizing: 'border-box'
+          }}
+        />
+        <button
+          onClick={addMessage}
+          disabled={!selectedPlayerId || !newMessage.trim()}
+          style={{
+            padding: '8px 14px', borderRadius: '6px', border: 'none',
+            background: 'var(--color-primary)', color: 'white',
+            fontWeight: '600', fontSize: '13px',
+            cursor: !selectedPlayerId || !newMessage.trim() ? 'default' : 'pointer',
+            opacity: !selectedPlayerId || !newMessage.trim() ? 0.5 : 1
+          }}
+        >Add</button>
+      </div>
+    </div>
+  )
+}
+
 function SendNotificationSection({ leagueId, leagueName }) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -3725,6 +3879,7 @@ function SettingsPage({ onShowLeagueSelector }) {
               onUpdate={setLeagueSettings}
               isAdmin={isAdmin}
             />
+            {isAdmin && <CustomPlayerNotificationsSection players={players} leagueSettings={leagueSettings} onUpdate={setLeagueSettings} />}
             {isAdmin && <SendNotificationSection leagueId={leagueId} leagueName={leagueName} />}
           </>
         )
