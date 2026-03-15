@@ -6655,7 +6655,7 @@ function LivePage() {
           else if (diff === -1) msg = `Birdie! ${player.name} birdied hole ${hole}`
           if (msg) {
             import('../lib/notificationService').then(({ sendPushNotification }) => {
-              sendPushNotification(leagueId, leagueName || 'Gunpowder Golf', msg, { tag: `score-${hole}-${playerId}` })
+              sendPushNotification(leagueId, leagueName || 'Gunpowder Golf', msg, { tag: `score-${hole}-${playerId}`, category: 'score_alerts' })
             }).catch(() => {})
           }
         }
@@ -6768,7 +6768,7 @@ function LivePage() {
           import('../lib/notificationService').then(({ sendPushNotification }) => {
             sendPushNotification(leagueId, leagueName || 'Greenie Won!',
               `${player.name} wins the greenie on hole ${hole}!`,
-              { tag: `greenie-${hole}` }
+              { tag: `greenie-${hole}`, category: 'greenie_alerts' }
             )
           }).catch(() => {})
         }
@@ -7376,7 +7376,7 @@ function LivePage() {
       import('../lib/notificationService').then(({ sendPushNotification }) => {
         sendPushNotification(leagueId, leagueName || 'Round Complete!',
           'Scores are in. Check the results!',
-          { tag: 'round-finish', url: '/gunpowder-golf/' }
+          { tag: 'round-finish', url: '/gunpowder-golf/', category: 'round_alerts' }
         )
       }).catch(() => {})
     }

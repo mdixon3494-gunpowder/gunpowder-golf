@@ -2,6 +2,14 @@ import { supabase } from './supabase'
 
 const VAPID_PUBLIC_KEY = 'BAFbvI97ylavqApyw-9CLnQlu-4pZHGKCbdtGmqTqFg_vmDWehuyr5OCsEDAWmjB_EiAFtPwlpdyE8e06j0vLGU'
 
+// Notification categories
+export const NOTIFICATION_CATEGORIES = {
+  round_alerts: { label: 'Round Alerts', description: 'Round start, finish, check-in closing' },
+  score_alerts: { label: 'Score Alerts', description: 'Birdies, eagles, hole-in-ones' },
+  greenie_alerts: { label: 'Greenie Alerts', description: 'Greenie winners' },
+  admin_messages: { label: 'Admin Messages', description: 'Announcements, custom messages' }
+}
+
 // Convert VAPID key from base64url to Uint8Array
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4)
@@ -35,6 +43,27 @@ export async function isSubscribed(profileId, leagueId) {
   return data && data.length > 0
 }
 
+// Get notification preferences for a subscription
+export async function getPreferences(profileId, leagueId) {
+  const { data } = await supabase
+    .from('push_subscriptions')
+    .select('preferences')
+    .eq('profile_id', profileId)
+    .eq('league_id', leagueId)
+  return data?.[0]?.preferences || {}
+}
+
+// Update notification preferences
+export async function updatePreferences(profileId, leagueId, preferences) {
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .update({ preferences, updated_at: new Date().toISOString() })
+    .eq('profile_id', profileId)
+    .eq('league_id', leagueId)
+  if (error) console.error('Failed to update notification preferences:', error)
+  return !error
+}
+
 // Request permission and subscribe
 export async function subscribeToPush(profileId, leagueId) {
   const permission = await Notification.requestPermission()
@@ -65,6 +94,7 @@ export async function subscribeToPush(profileId, leagueId) {
     profile_id: profileId,
     league_id: leagueId,
     subscription: subscription.toJSON(),
+    preferences: {},
     created_at: now,
     updated_at: now
   })

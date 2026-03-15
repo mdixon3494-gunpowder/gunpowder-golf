@@ -526,7 +526,7 @@ function CheckInWarningButton({ leagueId, leagueName }) {
       const { sendPushNotification } = await import('../lib/notificationService')
       await sendPushNotification(leagueId, leagueName || 'Check-In Closing Soon',
         `Check-in closes in ${minutes} minute${minutes === 1 ? '' : 's'}! Get checked in now.`,
-        { tag: 'checkin-warning' }
+        { tag: 'checkin-warning', category: 'round_alerts' }
       )
       setSent(minutes)
       setTimeout(() => setSent(null), 3000)

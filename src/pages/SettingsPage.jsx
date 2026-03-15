@@ -1047,7 +1047,7 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin, leagu
       if (nextRoundMessage) {
         body += body ? ` — ${nextRoundMessage}` : nextRoundMessage
       }
-      await sendPushNotification(leagueId, leagueName || 'Next Round', body, { tag: 'round-announcement' })
+      await sendPushNotification(leagueId, leagueName || 'Next Round', body, { tag: 'round-announcement', category: 'admin_messages' })
       setNotifySent(true)
       setTimeout(() => setNotifySent(false), 3000)
     } catch (err) {
@@ -2634,7 +2634,7 @@ function SendNotificationSection({ leagueId, leagueName }) {
       const { sendPushNotification } = await import('../lib/notificationService')
       const result = await sendPushNotification(leagueId,
         title.trim() || leagueName || 'Gunpowder Golf', body.trim(),
-        { tag: 'custom-' + Date.now() }
+        { tag: 'custom-' + Date.now(), category: 'admin_messages' }
       )
       const data = result?.data
       setStatus(`Sent to ${data?.sent || 0} subscriber${data?.sent === 1 ? '' : 's'}`)
@@ -2716,6 +2716,8 @@ function NotificationSettingsSection({ profileId, leagueId }) {
   const [subscribed, setSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
+  const [preferences, setPreferences] = useState({})
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
 
   useEffect(() => {
     if (!supported || !profileId || !leagueId) {
@@ -2725,14 +2727,18 @@ function NotificationSettingsSection({ profileId, leagueId }) {
     let cancelled = false
     const init = async () => {
       try {
-        const { getPermissionStatus } = await import('../lib/notificationService')
+        const { getPermissionStatus, isSubscribed, getPreferences } = await import('../lib/notificationService')
         if (cancelled) return
         setPermStatus(getPermissionStatus())
-        // Check subscription with timeout to avoid Supabase hang on new tables
         const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(false), 5000))
-        const { isSubscribed } = await import('../lib/notificationService')
         const sub = await Promise.race([isSubscribed(profileId, leagueId), timeoutPromise])
-        if (!cancelled) setSubscribed(!!sub)
+        if (!cancelled) {
+          setSubscribed(!!sub)
+          if (sub) {
+            const prefs = await Promise.race([getPreferences(profileId, leagueId), new Promise(resolve => setTimeout(() => resolve({}), 5000))])
+            if (!cancelled) { setPreferences(prefs || {}); setPrefsLoaded(true) }
+          }
+        }
       } catch (err) {
         console.warn('Notification check failed:', err)
       }
@@ -2752,12 +2758,16 @@ function NotificationSettingsSection({ profileId, leagueId }) {
         const { unsubscribeFromPush } = await import('../lib/notificationService')
         await unsubscribeFromPush(profileId, leagueId)
         setSubscribed(false)
+        setPreferences({})
+        setPrefsLoaded(false)
       } else {
         const { subscribeToPush, getPermissionStatus } = await import('../lib/notificationService')
         const sub = await subscribeToPush(profileId, leagueId)
         setPermStatus(getPermissionStatus())
         if (sub) {
           setSubscribed(true)
+          setPreferences({})
+          setPrefsLoaded(true)
         } else if (getPermissionStatus() === 'granted') {
           setError('Failed to save subscription. Try again.')
         }
@@ -2769,10 +2779,26 @@ function NotificationSettingsSection({ profileId, leagueId }) {
     setToggling(false)
   }
 
+  const handlePrefToggle = async (category) => {
+    const newPrefs = { ...preferences, [category]: preferences[category] === false ? true : false }
+    // Remove keys that are true (default) to keep preferences clean
+    if (newPrefs[category] === true) delete newPrefs[category]
+    setPreferences(newPrefs)
+    const { updatePreferences } = await import('../lib/notificationService')
+    updatePreferences(profileId, leagueId, newPrefs)
+  }
+
   const isStandalone = typeof window !== 'undefined' && (
     window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
   )
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+
+  const categoryList = [
+    { key: 'round_alerts', label: 'Round Alerts', desc: 'Round start, finish, check-in closing' },
+    { key: 'score_alerts', label: 'Score Alerts', desc: 'Birdies, eagles, hole-in-ones' },
+    { key: 'greenie_alerts', label: 'Greenie Alerts', desc: 'Greenie winners' },
+    { key: 'admin_messages', label: 'Admin Messages', desc: 'Announcements, custom messages' }
+  ]
 
   return (
     <div style={{
@@ -2814,33 +2840,63 @@ function NotificationSettingsSection({ profileId, leagueId }) {
       ) : loading ? (
         <p style={{ color: 'var(--color-text-tertiary)', fontSize: '14px' }}>Checking...</p>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: '600' }}>
-              {subscribed ? 'Notifications enabled' : 'Notifications disabled'}
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: '600' }}>
+                {subscribed ? 'Notifications enabled' : 'Notifications disabled'}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
+                {subscribed ? 'You\'ll be notified about round updates' : 'Enable to get round alerts and score updates'}
+              </div>
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
-              {subscribed ? 'You\'ll be notified about round updates' : 'Enable to get round alerts and score updates'}
-            </div>
+            <button
+              onClick={handleToggle}
+              disabled={toggling}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                background: subscribed ? 'var(--color-danger)' : 'var(--color-primary)',
+                color: 'white',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: toggling ? 'default' : 'pointer',
+                opacity: toggling ? 0.7 : 1
+              }}
+            >
+              {toggling ? '...' : subscribed ? 'Disable' : 'Enable'}
+            </button>
           </div>
-          <button
-            onClick={handleToggle}
-            disabled={toggling}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              background: subscribed ? 'var(--color-danger)' : 'var(--color-primary)',
-              color: 'white',
-              fontWeight: '600',
-              fontSize: '13px',
-              cursor: toggling ? 'default' : 'pointer',
-              opacity: toggling ? 0.7 : 1
-            }}
-          >
-            {toggling ? '...' : subscribed ? 'Disable' : 'Enable'}
-          </button>
-        </div>
+
+          {subscribed && prefsLoaded && (
+            <div style={{ marginTop: '15px', borderTop: '1px solid var(--color-border)', paddingTop: '12px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: 'var(--color-text-secondary)' }}>
+                Notification Preferences
+              </div>
+              {categoryList.map(cat => (
+                <label
+                  key={cat.key}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '8px 0', cursor: 'pointer'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={preferences[cat.key] !== false}
+                    onChange={() => handlePrefToggle(cat.key)}
+                    style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '14px' }}>{cat.label}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>{cat.desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

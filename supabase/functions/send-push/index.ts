@@ -25,10 +25,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { league_id, title, body, profile_ids, tag, url } = await req.json()
+    const { league_id, title, body, profile_ids, tag, url, category } = await req.json()
 
     // Build query for subscriptions
-    let query = supabase.from('push_subscriptions').select('subscription, profile_id')
+    let query = supabase.from('push_subscriptions').select('subscription, profile_id, preferences')
     if (league_id) query = query.eq('league_id', league_id)
     if (profile_ids?.length) query = query.in('profile_id', profile_ids)
 
@@ -45,14 +45,25 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Filter by category preference (missing key = default ON)
+    const filtered = category
+      ? subs.filter(s => (s.preferences || {})[category] !== false)
+      : subs
+
+    if (filtered.length === 0) {
+      return new Response(JSON.stringify({ sent: 0, filtered: subs.length }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      })
+    }
+
     const payload = JSON.stringify({ title, body, tag, url })
     const results = await Promise.allSettled(
-      subs.map(s => webpush.sendNotification(s.subscription, payload))
+      filtered.map(s => webpush.sendNotification(s.subscription, payload))
     )
 
     // Clean up expired subscriptions (410 Gone)
     const expired = results
-      .map((r, i) => r.status === 'rejected' && (r.reason as any)?.statusCode === 410 ? subs[i] : null)
+      .map((r, i) => r.status === 'rejected' && (r.reason as any)?.statusCode === 410 ? filtered[i] : null)
       .filter(Boolean)
 
     if (expired.length > 0) {

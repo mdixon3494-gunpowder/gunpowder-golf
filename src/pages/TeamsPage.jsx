@@ -913,7 +913,7 @@ function TeamsPage() {
         const playerCount = teams.reduce((sum, t) => sum + t.length, 0)
         sendPushNotification(leagueId, leagueName || 'Round Started!',
           `${teamCount} teams, ${playerCount} players. Let's go!`,
-          { tag: 'round-start' }
+          { tag: 'round-start', category: 'round_alerts' }
         )
       }).catch(() => {})
     }
