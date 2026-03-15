@@ -126,7 +126,7 @@ function NextRoundBanner({ leagueSettings }) {
    LEAGUE SWITCHER
    ================================ */
 function LeagueSwitcher({ leagueId, leagueSettings, onShowLeagueSelector, switchLeague, isAdmin, leaveLeague }) {
-  const { isAuthenticated, profile } = useAuth()
+  const { isAuthenticated, profile, signOut } = useAuth()
   const [leagues, setLeagues] = useState([])
   const [isOpen, setIsOpen] = useState(false)
   const [switching, setSwitching] = useState(false)
@@ -210,8 +210,34 @@ function LeagueSwitcher({ leagueId, leagueSettings, onShowLeagueSelector, switch
       )
     }
     return (
-      <div className="header-left">
-        <span className="league-switcher-name">{displayName}</span>
+      <div ref={dropdownRef} className="header-left" style={{ position: 'relative' }}>
+        <button
+          className="league-switcher-btn"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <span className="league-switcher-name">{displayName}</span>
+          <span className="league-switcher-chevron">{Icons.chevronDown}</span>
+        </button>
+        {isOpen && (
+          <div className="league-switcher-dropdown">
+            <button
+              className="league-switcher-option"
+              onClick={() => { setIsOpen(false); onShowLeagueSelector() }}
+            >
+              <div className="league-switcher-option-name">Switch League</div>
+              <div className="league-switcher-option-meta">
+                <span className="text-xs text-tertiary">Enter a different league code</span>
+              </div>
+            </button>
+            <button
+              className="league-switcher-option"
+              onClick={() => { setIsOpen(false); signOut() }}
+              style={{ borderTop: '1px solid var(--color-border)' }}
+            >
+              <div className="league-switcher-option-name" style={{ color: 'var(--color-danger)' }}>Sign Out</div>
+            </button>
+          </div>
+        )}
       </div>
     )
   }
@@ -264,6 +290,13 @@ function LeagueSwitcher({ leagueId, leagueSettings, onShowLeagueSelector, switch
             onClick={() => { setIsOpen(false); onShowLeagueSelector() }}
           >
             All Leagues
+          </button>
+          <button
+            className="league-switcher-option"
+            onClick={() => { setIsOpen(false); signOut() }}
+            style={{ borderTop: '1px solid var(--color-border)' }}
+          >
+            <div className="league-switcher-option-name" style={{ color: 'var(--color-danger)' }}>Sign Out</div>
           </button>
         </div>
       )}

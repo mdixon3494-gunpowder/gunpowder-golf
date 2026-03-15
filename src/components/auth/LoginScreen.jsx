@@ -40,7 +40,7 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
     setResetStatus(null)
     try {
       await resetPassword(resetEmail)
-      setResetStatus({ type: 'success', message: 'Password reset email sent! Check your inbox.' })
+      setResetStatus({ type: 'success', message: 'Password reset email sent! Check your inbox — the email will be from Supabase.' })
     } catch (err) {
       setResetStatus({ type: 'error', message: err.message || 'Failed to send reset email' })
     } finally {
@@ -229,7 +229,7 @@ function LoginScreen({ onSwitchToSignup, onSkip }) {
           }} onClick={e => e.stopPropagation()}>
             <h3 style={{ marginBottom: '8px' }}>Reset Password</h3>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '20px' }}>
-              Enter your email and we'll send you a link to reset your password.
+              Enter your email and we'll send you a link to reset your password. The email will come from <strong>Supabase</strong> (noreply@mail.supabase.io).
             </p>
 
             <form onSubmit={handleForgotPassword}>
