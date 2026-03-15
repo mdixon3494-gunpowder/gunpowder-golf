@@ -2576,6 +2576,132 @@ function CrossLeagueSourcesSection({ handicapSettings, onUpdateHandicap, isAdmin
   )
 }
 
+function NotificationSettingsSection({ profileId, leagueId }) {
+  const [supported] = useState(() => {
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
+  })
+  const [permStatus, setPermStatus] = useState('default')
+  const [subscribed, setSubscribed] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [toggling, setToggling] = useState(false)
+
+  useEffect(() => {
+    if (!supported || !profileId || !leagueId) {
+      setLoading(false)
+      return
+    }
+    let cancelled = false
+    const init = async () => {
+      try {
+        const { getPermissionStatus } = await import('../lib/notificationService')
+        if (cancelled) return
+        setPermStatus(getPermissionStatus())
+        // Check subscription with timeout to avoid Supabase hang on new tables
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(false), 5000))
+        const { isSubscribed } = await import('../lib/notificationService')
+        const sub = await Promise.race([isSubscribed(profileId, leagueId), timeoutPromise])
+        if (!cancelled) setSubscribed(!!sub)
+      } catch (err) {
+        console.warn('Notification check failed:', err)
+      }
+      if (!cancelled) setLoading(false)
+    }
+    init()
+    return () => { cancelled = true }
+  }, [supported, profileId, leagueId])
+
+  const handleToggle = async () => {
+    setToggling(true)
+    try {
+      if (subscribed) {
+        const { unsubscribeFromPush } = await import('../lib/notificationService')
+        await unsubscribeFromPush(profileId, leagueId)
+        setSubscribed(false)
+      } else {
+        const { subscribeToPush, getPermissionStatus } = await import('../lib/notificationService')
+        const sub = await subscribeToPush(profileId, leagueId)
+        setPermStatus(getPermissionStatus())
+        setSubscribed(!!sub)
+      }
+    } catch (err) {
+      console.error('Notification toggle failed:', err)
+    }
+    setToggling(false)
+  }
+
+  const isStandalone = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+  )
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+
+  return (
+    <div style={{
+      background: 'var(--color-surface-sunken)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '10px' }}>Push Notifications</h3>
+
+      {!supported ? (
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+          Push notifications are not supported in this browser.
+        </p>
+      ) : !profileId ? (
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+          Sign in to enable push notifications.
+        </p>
+      ) : isIOS && !isStandalone ? (
+        <div>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '10px' }}>
+            To receive notifications on iOS, you need to add this app to your Home Screen:
+          </p>
+          <ol style={{ color: 'var(--color-text-secondary)', fontSize: '13px', paddingLeft: '20px', lineHeight: '1.8' }}>
+            <li>Tap the <strong>Share</strong> button in Safari</li>
+            <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
+            <li>Open the app from your Home Screen</li>
+          </ol>
+        </div>
+      ) : permStatus === 'denied' ? (
+        <p style={{ color: 'var(--color-danger)', fontSize: '14px' }}>
+          Notifications are blocked. Please enable them in your browser/device settings for this site.
+        </p>
+      ) : loading ? (
+        <p style={{ color: 'var(--color-text-tertiary)', fontSize: '14px' }}>Checking...</p>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: '600' }}>
+              {subscribed ? 'Notifications enabled' : 'Notifications disabled'}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginTop: '2px' }}>
+              {subscribed ? 'You\'ll be notified about round updates' : 'Enable to get round alerts and score updates'}
+            </div>
+          </div>
+          <button
+            onClick={handleToggle}
+            disabled={toggling}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: subscribed ? 'var(--color-danger)' : 'var(--color-primary)',
+              color: 'white',
+              fontWeight: '600',
+              fontSize: '13px',
+              cursor: toggling ? 'default' : 'pointer',
+              opacity: toggling ? 0.7 : 1
+            }}
+          >
+            {toggling ? '...' : subscribed ? 'Disable' : 'Enable'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AccountSection({ user, profile, onSignOut, onUnlinkProfile, onLeaveLeague, onSignIn }) {
   const [signingOut, setSigningOut] = useState(false)
   const [unlinking, setUnlinking] = useState(false)
@@ -3363,6 +3489,7 @@ function SettingsPage({ onShowLeagueSelector }) {
                 window.location.reload()
               }}
             />
+            <NotificationSettingsSection profileId={profile?.id} leagueId={leagueId} />
             <AdminLoginSection isAdmin={isAdmin} onLogin={adminLogin} onLogout={adminLogout} />
           </>
         )

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gunpowder-golf-v19'
+const CACHE_NAME = 'gunpowder-golf-v21'
 const urlsToCache = [
   '/gunpowder-golf/',
   '/gunpowder-golf/index.html'
@@ -94,4 +94,32 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting()
   }
+})
+
+// Handle incoming push notifications
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() || {}
+  const title = data.title || 'Gunpowder Golf'
+  const options = {
+    body: data.body || '',
+    icon: '/gunpowder-golf/golf-icon.svg',
+    badge: '/gunpowder-golf/golf-icon.svg',
+    data: { url: data.url || '/gunpowder-golf/' },
+    tag: data.tag || 'default',
+    renotify: !!data.tag
+  }
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+// Handle notification click — open/focus app
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/gunpowder-golf/'
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(windowClients => {
+      const existing = windowClients.find(c => c.url.includes('/gunpowder-golf/'))
+      if (existing) return existing.focus()
+      return clients.openWindow(url)
+    })
+  )
 })
