@@ -47,12 +47,18 @@ export async function subscribeToPush(profileId, leagueId) {
   })
 
   // Store in Supabase
-  await supabase.from('push_subscriptions').upsert({
+  const { error } = await supabase.from('push_subscriptions').upsert({
     profile_id: profileId,
     league_id: leagueId,
     subscription: subscription.toJSON(),
     updated_at: new Date().toISOString()
   }, { onConflict: 'profile_id,league_id' })
+
+  if (error) {
+    console.error('Failed to save push subscription:', error)
+  } else {
+    console.log('Push subscription saved for profile:', profileId, 'league:', leagueId)
+  }
 
   return subscription
 }
