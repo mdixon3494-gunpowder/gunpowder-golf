@@ -545,7 +545,7 @@ function CheckInWarningButton({ leagueId }) {
       <span style={{ fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap' }}>
         {sent ? `Sent! (${sent} min)` : 'Notify:'}
       </span>
-      {[5, 10, 15, 30].map(min => (
+      {[1, 5, 10, 15, 30].map(min => (
         <button
           key={min}
           onClick={() => sendWarning(min)}
