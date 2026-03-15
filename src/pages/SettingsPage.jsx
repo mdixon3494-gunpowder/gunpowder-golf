@@ -1047,7 +1047,7 @@ function NextRoundAnnouncementSection({ leagueSettings, onUpdate, isAdmin, leagu
       if (nextRoundMessage) {
         body += body ? ` — ${nextRoundMessage}` : nextRoundMessage
       }
-      await sendPushNotification(leagueId, 'Next Round', body, { tag: 'round-announcement' })
+      await sendPushNotification(leagueId, leagueName || 'Next Round', body, { tag: 'round-announcement' })
       setNotifySent(true)
       setTimeout(() => setNotifySent(false), 3000)
     } catch (err) {
@@ -2620,7 +2620,7 @@ function CrossLeagueSourcesSection({ handicapSettings, onUpdateHandicap, isAdmin
   )
 }
 
-function SendNotificationSection({ leagueId }) {
+function SendNotificationSection({ leagueId, leagueName }) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
@@ -2633,7 +2633,7 @@ function SendNotificationSection({ leagueId }) {
     try {
       const { sendPushNotification } = await import('../lib/notificationService')
       const result = await sendPushNotification(leagueId,
-        title.trim() || 'Gunpowder Golf', body.trim(),
+        title.trim() || leagueName || 'Gunpowder Golf', body.trim(),
         { tag: 'custom-' + Date.now() }
       )
       const data = result?.data
@@ -3598,7 +3598,8 @@ function SettingsPage({ onShowLeagueSelector }) {
     auditLog,
     addAuditEntry,
     pendingOwnershipTransfer,
-    setPendingOwnershipTransfer
+    setPendingOwnershipTransfer,
+    leagueName
   } = useLeague()
 
   const [activeCategory, setActiveCategory] = useState(null)
@@ -3668,7 +3669,7 @@ function SettingsPage({ onShowLeagueSelector }) {
               onUpdate={setLeagueSettings}
               isAdmin={isAdmin}
             />
-            {isAdmin && <SendNotificationSection leagueId={leagueId} />}
+            {isAdmin && <SendNotificationSection leagueId={leagueId} leagueName={leagueName} />}
           </>
         )
       case 'league':

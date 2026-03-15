@@ -175,6 +175,7 @@ export function LeagueProvider({ children }) {
 
   // League type: 'league' | 'casual' | 'individual'
   const [leagueType, setLeagueType] = useState('league')
+  const [leagueName, setLeagueName] = useState('')
 
   // Test league flag (cloned leagues)
   const [isTestLeague, setIsTestLeague] = useState(false)
@@ -263,10 +264,11 @@ export function LeagueProvider({ children }) {
       try {
         const { data: meta } = await supabase
           .from('leagues')
-          .select('type')
+          .select('type, name')
           .eq('id', newLeagueId)
           .single()
         if (meta?.type) type = meta.type
+        if (meta?.name) setLeagueName(meta.name)
       } catch (err) {
         console.warn('Could not fetch league type:', err)
       }
@@ -292,10 +294,11 @@ export function LeagueProvider({ children }) {
           try {
             const { data: meta } = await supabase
               .from('leagues')
-              .select('type')
+              .select('type, name')
               .eq('id', existingLeagueId)
               .single()
             if (meta?.type) type = meta.type
+        if (meta?.name) setLeagueName(meta.name)
           } catch (err) {
             console.warn('Could not fetch league type:', err)
           }
@@ -973,6 +976,7 @@ export function LeagueProvider({ children }) {
     loading,
     saveStatus,
     leagueType,
+    leagueName,
     isCasualGame,
     isIndividualRound,
     createNewLeague,

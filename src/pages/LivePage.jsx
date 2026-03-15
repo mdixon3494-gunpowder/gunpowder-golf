@@ -6588,6 +6588,7 @@ function LivePage() {
     setHandicapSettings,
     courseTees,
     leagueId,
+    leagueName,
     leagueSettings,
     isCasualGame,
     isIndividualRound,
@@ -6653,7 +6654,7 @@ function LivePage() {
           else if (diff === -1) msg = `Birdie! ${player.name} birdied hole ${hole}`
           if (msg) {
             import('../lib/notificationService').then(({ sendPushNotification }) => {
-              sendPushNotification(leagueId, 'Gunpowder Golf', msg, { tag: `score-${hole}-${playerId}` })
+              sendPushNotification(leagueId, leagueName || 'Gunpowder Golf', msg, { tag: `score-${hole}-${playerId}` })
             }).catch(() => {})
           }
         }
@@ -6764,7 +6765,7 @@ function LivePage() {
         // Notify when greenie is marked final
         if (isFinal && leagueId && !isCasualGame) {
           import('../lib/notificationService').then(({ sendPushNotification }) => {
-            sendPushNotification(leagueId, 'Greenie Won!',
+            sendPushNotification(leagueId, leagueName || 'Greenie Won!',
               `${player.name} wins the greenie on hole ${hole}!`,
               { tag: `greenie-${hole}` }
             )
@@ -7372,7 +7373,7 @@ function LivePage() {
     // Notify league members round is complete
     if (leagueId && !isCasualGame) {
       import('../lib/notificationService').then(({ sendPushNotification }) => {
-        sendPushNotification(leagueId, 'Round Complete!',
+        sendPushNotification(leagueId, leagueName || 'Round Complete!',
           'Scores are in. Check the results!',
           { tag: 'round-finish', url: '/gunpowder-golf/' }
         )

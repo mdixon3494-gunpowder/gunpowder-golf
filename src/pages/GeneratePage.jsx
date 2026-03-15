@@ -516,7 +516,7 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
   )
 }
 
-function CheckInWarningButton({ leagueId }) {
+function CheckInWarningButton({ leagueId, leagueName }) {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(null)
 
@@ -524,7 +524,7 @@ function CheckInWarningButton({ leagueId }) {
     setSending(true)
     try {
       const { sendPushNotification } = await import('../lib/notificationService')
-      await sendPushNotification(leagueId, 'Check-In Closing Soon',
+      await sendPushNotification(leagueId, leagueName || 'Check-In Closing Soon',
         `Check-in closes in ${minutes} minute${minutes === 1 ? '' : 's'}! Get checked in now.`,
         { tag: 'checkin-warning' }
       )
@@ -586,6 +586,7 @@ function GeneratePage() {
     handicapSettings,
     courseTees,
     leagueId,
+    leagueName,
     leagueSettings,
     roundFormatOverride,
     setRoundFormatOverride
@@ -994,7 +995,7 @@ function GeneratePage() {
 
           {/* Check-in Closing Warning */}
           {leagueId && (
-            <CheckInWarningButton leagueId={leagueId} />
+            <CheckInWarningButton leagueId={leagueId} leagueName={leagueName} />
           )}
 
           {/* Generate Button */}

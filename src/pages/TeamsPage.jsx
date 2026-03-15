@@ -741,6 +741,7 @@ function TeamsPage() {
     isCasualGame,
     leagueSettings,
     leagueId,
+    leagueName,
     roundFormatOverride,
     setRoundFormatOverride
   } = useLeague()
@@ -909,7 +910,7 @@ function TeamsPage() {
       import('../lib/notificationService').then(({ sendPushNotification }) => {
         const teamCount = teams.length
         const playerCount = teams.reduce((sum, t) => sum + t.length, 0)
-        sendPushNotification(leagueId, 'Round Started!',
+        sendPushNotification(leagueId, leagueName || 'Round Started!',
           `${teamCount} teams, ${playerCount} players. Let's go!`,
           { tag: 'round-start' }
         )
