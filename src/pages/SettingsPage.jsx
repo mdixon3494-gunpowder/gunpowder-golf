@@ -2610,8 +2610,11 @@ function NotificationSettingsSection({ profileId, leagueId }) {
     return () => { cancelled = true }
   }, [supported, profileId, leagueId])
 
+  const [error, setError] = useState(null)
+
   const handleToggle = async () => {
     setToggling(true)
+    setError(null)
     try {
       if (subscribed) {
         const { unsubscribeFromPush } = await import('../lib/notificationService')
@@ -2621,10 +2624,15 @@ function NotificationSettingsSection({ profileId, leagueId }) {
         const { subscribeToPush, getPermissionStatus } = await import('../lib/notificationService')
         const sub = await subscribeToPush(profileId, leagueId)
         setPermStatus(getPermissionStatus())
-        setSubscribed(!!sub)
+        if (sub) {
+          setSubscribed(true)
+        } else if (getPermissionStatus() === 'granted') {
+          setError('Failed to save subscription. Try again.')
+        }
       }
     } catch (err) {
       console.error('Notification toggle failed:', err)
+      setError('Something went wrong. Try again.')
     }
     setToggling(false)
   }
@@ -2643,6 +2651,10 @@ function NotificationSettingsSection({ profileId, leagueId }) {
       border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '10px' }}>Push Notifications</h3>
+
+      {error && (
+        <p style={{ color: 'var(--color-danger)', fontSize: '13px', marginBottom: '10px' }}>{error}</p>
+      )}
 
       {!supported ? (
         <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>

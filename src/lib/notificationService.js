@@ -40,26 +40,43 @@ export async function subscribeToPush(profileId, leagueId) {
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return null
 
+  // Verify auth session exists
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    console.error('Push subscribe failed: no auth session')
+    return null
+  }
+
   const registration = await navigator.serviceWorker.ready
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
   })
 
-  // Store in Supabase
-  const { error } = await supabase.from('push_subscriptions').upsert({
+  // Delete existing row first, then insert (more reliable with RLS than upsert)
+  await supabase
+    .from('push_subscriptions')
+    .delete()
+    .eq('profile_id', profileId)
+    .eq('league_id', leagueId)
+
+  const now = new Date().toISOString()
+  const { error } = await supabase.from('push_subscriptions').insert({
     profile_id: profileId,
     league_id: leagueId,
     subscription: subscription.toJSON(),
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'profile_id,league_id' })
+    created_at: now,
+    updated_at: now
+  })
 
   if (error) {
     console.error('Failed to save push subscription:', error)
-  } else {
-    console.log('Push subscription saved for profile:', profileId, 'league:', leagueId)
+    // Undo browser subscription since DB save failed
+    await subscription.unsubscribe()
+    return null
   }
 
+  console.log('Push subscription saved for profile:', profileId, 'league:', leagueId)
   return subscription
 }
 
