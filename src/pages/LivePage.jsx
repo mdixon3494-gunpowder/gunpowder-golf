@@ -6760,6 +6760,16 @@ function LivePage() {
             [hole]: { playerId: player.id, playerName: player.name, isFinal, history: newHistory }
           }
         }
+
+        // Notify when greenie is marked final
+        if (isFinal && leagueId && !isCasualGame) {
+          import('../lib/notificationService').then(({ sendPushNotification }) => {
+            sendPushNotification(leagueId, 'Greenie Won!',
+              `${player.name} wins the greenie on hole ${hole}!`,
+              { tag: `greenie-${hole}` }
+            )
+          }).catch(() => {})
+        }
       }
     } else if (newHistory.length > 0) {
       // Clearing but preserving history - store on first team
