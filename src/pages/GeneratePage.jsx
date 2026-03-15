@@ -516,6 +516,54 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
   )
 }
 
+function CheckInWarningButton({ leagueId }) {
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(null)
+
+  const sendWarning = async (minutes) => {
+    setSending(true)
+    try {
+      const { sendPushNotification } = await import('../lib/notificationService')
+      await sendPushNotification(leagueId, 'Check-In Closing Soon',
+        `Check-in closes in ${minutes} minute${minutes === 1 ? '' : 's'}! Get checked in now.`,
+        { tag: 'checkin-warning' }
+      )
+      setSent(minutes)
+      setTimeout(() => setSent(null), 3000)
+    } catch (err) {
+      console.error('Failed to send check-in warning:', err)
+    }
+    setSending(false)
+  }
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px',
+      padding: '12px', background: 'var(--color-surface)', borderRadius: '8px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <span style={{ fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+        {sent ? `Sent! (${sent} min)` : 'Notify:'}
+      </span>
+      {[5, 10, 15, 30].map(min => (
+        <button
+          key={min}
+          onClick={() => sendWarning(min)}
+          disabled={sending}
+          style={{
+            padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--color-border)',
+            background: 'var(--color-surface-sunken)', color: 'var(--color-text-secondary)',
+            fontSize: '12px', fontWeight: '600', cursor: sending ? 'default' : 'pointer',
+            opacity: sending ? 0.6 : 1, flex: 1
+          }}
+        >
+          {min}m
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function GeneratePage() {
   const navigate = useNavigate()
   const {
@@ -942,6 +990,11 @@ function GeneratePage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Check-in Closing Warning */}
+          {leagueId && (
+            <CheckInWarningButton leagueId={leagueId} />
           )}
 
           {/* Generate Button */}

@@ -6638,6 +6638,28 @@ function LivePage() {
   }
 
   const updateScore = (teamId, playerId, hole, score) => {
+    // Detect notable scores for push notifications (new entries only, not edits)
+    if (leagueId && !isCasualGame && score !== null && score !== 'X' && typeof score === 'number') {
+      const team = liveRound.teams.find(t => t.id === teamId)
+      const player = team?.players.find(p => p.id === playerId)
+      const prevScore = player?.scores[hole]
+      if (player && (prevScore === undefined || prevScore === null || prevScore === '')) {
+        const holeInfo = getHoleInfo(hole)
+        if (holeInfo) {
+          const diff = score - holeInfo.par
+          let msg = null
+          if (score === 1) msg = `HOLE IN ONE! ${player.name} aced hole ${hole}!`
+          else if (diff <= -2) msg = `EAGLE! ${player.name} got an eagle on hole ${hole}!`
+          else if (diff === -1) msg = `Birdie! ${player.name} birdied hole ${hole}`
+          if (msg) {
+            import('../lib/notificationService').then(({ sendPushNotification }) => {
+              sendPushNotification(leagueId, 'Gunpowder Golf', msg, { tag: `score-${hole}-${playerId}` })
+            }).catch(() => {})
+          }
+        }
+      }
+    }
+
     setLiveRound({
       ...liveRound,
       teams: liveRound.teams.map(team => {
@@ -7335,6 +7357,16 @@ function LivePage() {
       setShowCasualSaveModal(true)
       // Don't clear liveRound yet - keep scorecard visible
       return
+    }
+
+    // Notify league members round is complete
+    if (leagueId && !isCasualGame) {
+      import('../lib/notificationService').then(({ sendPushNotification }) => {
+        sendPushNotification(leagueId, 'Round Complete!',
+          'Scores are in. Check the results!',
+          { tag: 'round-finish', url: '/gunpowder-golf/' }
+        )
+      }).catch(() => {})
     }
 
     setLiveRound(null)

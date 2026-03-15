@@ -740,6 +740,7 @@ function TeamsPage() {
     courseTees,
     isCasualGame,
     leagueSettings,
+    leagueId,
     roundFormatOverride,
     setRoundFormatOverride
   } = useLeague()
@@ -902,6 +903,18 @@ function TeamsPage() {
     }
 
     setLiveRound(round)
+
+    // Notify league members
+    if (leagueId && !isCasualGame) {
+      import('../lib/notificationService').then(({ sendPushNotification }) => {
+        const teamCount = teams.length
+        const playerCount = teams.reduce((sum, t) => sum + t.length, 0)
+        sendPushNotification(leagueId, 'Round Started!',
+          `${teamCount} teams, ${playerCount} players. Let's go!`,
+          { tag: 'round-start' }
+        )
+      }).catch(() => {})
+    }
 
     // Clear check-in state and format override
     setCheckedInPlayers([])

@@ -394,5 +394,13 @@ export async function requestToJoinLeague(leagueId, profileId, displayName) {
     throw updateError
   }
 
+  // Notify league members about join request
+  import('./notificationService').then(({ sendPushNotification }) => {
+    sendPushNotification(leagueId, 'Join Request',
+      `${displayName} wants to join the league`,
+      { tag: 'join-request' }
+    )
+  }).catch(() => {})
+
   return { alreadyRequested: false }
 }
