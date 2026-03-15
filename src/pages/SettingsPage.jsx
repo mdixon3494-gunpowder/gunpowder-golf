@@ -2576,6 +2576,94 @@ function CrossLeagueSourcesSection({ handicapSettings, onUpdateHandicap, isAdmin
   )
 }
 
+function SendNotificationSection({ leagueId }) {
+  const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
+  const [sending, setSending] = useState(false)
+  const [status, setStatus] = useState(null)
+
+  const handleSend = async () => {
+    if (!body.trim()) return
+    setSending(true)
+    setStatus(null)
+    try {
+      const { sendPushNotification } = await import('../lib/notificationService')
+      const result = await sendPushNotification(leagueId,
+        title.trim() || 'Gunpowder Golf', body.trim(),
+        { tag: 'custom-' + Date.now() }
+      )
+      const data = result?.data
+      setStatus(`Sent to ${data?.sent || 0} subscriber${data?.sent === 1 ? '' : 's'}`)
+      setTitle('')
+      setBody('')
+      setTimeout(() => setStatus(null), 4000)
+    } catch (err) {
+      console.error('Failed to send notification:', err)
+      setStatus('Failed to send')
+    }
+    setSending(false)
+  }
+
+  return (
+    <div style={{
+      background: 'var(--color-surface-sunken)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '10px' }}>Send Notification</h3>
+      <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', marginBottom: '12px' }}>
+        Send a custom push notification to all subscribed league members.
+      </p>
+      <input
+        type="text"
+        placeholder="Title (optional)"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        style={{
+          width: '100%', padding: '8px 12px', borderRadius: '6px',
+          border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+          color: 'var(--color-text)', fontSize: '14px', marginBottom: '8px',
+          boxSizing: 'border-box'
+        }}
+      />
+      <textarea
+        placeholder="Message"
+        value={body}
+        onChange={e => setBody(e.target.value)}
+        rows={2}
+        style={{
+          width: '100%', padding: '8px 12px', borderRadius: '6px',
+          border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+          color: 'var(--color-text)', fontSize: '14px', marginBottom: '10px',
+          boxSizing: 'border-box', resize: 'vertical'
+        }}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={handleSend}
+          disabled={sending || !body.trim()}
+          style={{
+            padding: '8px 20px', borderRadius: '8px', border: 'none',
+            background: 'var(--color-primary)', color: 'white',
+            fontWeight: '600', fontSize: '13px',
+            cursor: sending || !body.trim() ? 'default' : 'pointer',
+            opacity: sending || !body.trim() ? 0.6 : 1
+          }}
+        >
+          {sending ? 'Sending...' : 'Send'}
+        </button>
+        {status && (
+          <span style={{ fontSize: '13px', color: status.includes('Failed') ? 'var(--color-danger)' : 'var(--color-primary)' }}>
+            {status}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function NotificationSettingsSection({ profileId, leagueId }) {
   const [supported] = useState(() => {
     return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
@@ -3473,7 +3561,7 @@ function SettingsPage({ onShowLeagueSelector }) {
 
   const categories = [
     { key: 'account', label: 'Account', subtitle: 'Sign in/out, admin login' },
-    { key: 'gameSetup', label: 'Game Setup', subtitle: 'Announcements, round settings' },
+    { key: 'gameSetup', label: 'Game Setup', subtitle: 'Announcements, round settings, notifications' },
     { key: 'league', label: 'League', subtitle: 'Info, invites, members, join settings' },
     { key: 'handicaps', label: 'Handicaps', subtitle: 'Scope, mode, tees, caps, freeze' },
     { key: 'payouts', label: 'Payouts & Pots', subtitle: 'Payout formats, hole-in-one pot' },
@@ -3535,6 +3623,7 @@ function SettingsPage({ onShowLeagueSelector }) {
               onUpdate={setLeagueSettings}
               isAdmin={isAdmin}
             />
+            {isAdmin && <SendNotificationSection leagueId={leagueId} />}
           </>
         )
       case 'league':
