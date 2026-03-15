@@ -123,6 +123,17 @@ export async function unsubscribeFromPush(profileId, leagueId) {
     .eq('league_id', leagueId)
 }
 
+// Check if current time falls within quiet hours
+export function isQuietHours(leagueSettings) {
+  const start = leagueSettings?.quietHoursStart
+  const end = leagueSettings?.quietHoursEnd
+  if (start == null || end == null) return false
+  const hour = new Date().getHours()
+  if (start < end) return hour >= start && hour < end
+  // Wraps midnight (e.g., 22 to 6)
+  return hour >= start || hour < end
+}
+
 // Send notification via Edge Function
 export async function sendPushNotification(leagueId, title, body, options = {}) {
   return supabase.functions.invoke('send-push', {

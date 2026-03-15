@@ -6668,7 +6668,8 @@ function LivePage() {
             }
             // Only send if there's a message (bogey/double/worse only fire with custom messages)
             if (msg) {
-              import('../lib/notificationService').then(({ sendPushNotification }) => {
+              import('../lib/notificationService').then(({ sendPushNotification, isQuietHours }) => {
+                if (isQuietHours(leagueSettings)) return
                 sendPushNotification(leagueId, leagueName || 'Gunpowder Golf', msg, { tag: `score-${hole}-${playerId}`, category: 'score_alerts' })
               }).catch(() => {})
             }
@@ -6705,7 +6706,8 @@ function LivePage() {
           const newLeader = after.entries[0]
           // Only notify if leader changed and new leader has a clear lead (not tied)
           if (prevLeader.name !== newLeader.name && newLeader.total !== after.entries[1].total) {
-            import('../lib/notificationService').then(({ sendPushNotification }) => {
+            import('../lib/notificationService').then(({ sendPushNotification, isQuietHours }) => {
+              if (isQuietHours(leagueSettings)) return
               sendPushNotification(leagueId, leagueName || 'Gunpowder Golf',
                 `${newLeader.name} takes the lead!`,
                 { tag: 'lead-change', category: 'score_alerts' }
@@ -6804,7 +6806,8 @@ function LivePage() {
 
         // Notify when greenie is marked final
         if (isFinal && leagueId && !isCasualGame && !isTestLeague) {
-          import('../lib/notificationService').then(({ sendPushNotification }) => {
+          import('../lib/notificationService').then(({ sendPushNotification, isQuietHours }) => {
+            if (isQuietHours(leagueSettings)) return
             sendPushNotification(leagueId, leagueName || 'Greenie Won!',
               `${player.name} wins the greenie on hole ${hole}!`,
               { tag: `greenie-${hole}`, category: 'greenie_alerts' }
@@ -7412,7 +7415,8 @@ function LivePage() {
 
     // Notify league members round is complete
     if (leagueId && !isCasualGame) {
-      import('../lib/notificationService').then(({ sendPushNotification }) => {
+      import('../lib/notificationService').then(({ sendPushNotification, isQuietHours }) => {
+        if (isQuietHours(leagueSettings)) return
         sendPushNotification(leagueId, leagueName || 'Round Complete!',
           'Scores are in. Check the results!',
           { tag: 'round-finish', url: '/gunpowder-golf/', category: 'round_alerts' }

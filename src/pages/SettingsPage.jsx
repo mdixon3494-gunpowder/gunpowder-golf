@@ -2774,6 +2774,92 @@ function CustomPlayerNotificationsSection({ players, leagueSettings, onUpdate })
   )
 }
 
+function QuietHoursSection({ leagueSettings, onUpdate }) {
+  const start = leagueSettings?.quietHoursStart
+  const end = leagueSettings?.quietHoursEnd
+  const enabled = start != null && end != null
+
+  const toggle = () => {
+    if (enabled) {
+      const { quietHoursStart, quietHoursEnd, ...rest } = leagueSettings
+      onUpdate(rest)
+    } else {
+      onUpdate({ ...leagueSettings, quietHoursStart: 22, quietHoursEnd: 7 })
+    }
+  }
+
+  const formatHour = (h) => {
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12} ${ampm}`
+  }
+
+  return (
+    <div style={{
+      background: 'var(--color-surface-sunken)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: enabled ? '12px' : '0' }}>
+        <div>
+          <h3 style={{ margin: 0 }}>Quiet Hours</h3>
+          <p style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', margin: '4px 0 0' }}>
+            Suppress auto notifications during these hours. Admin messages still go through.
+          </p>
+        </div>
+        <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', flexShrink: 0 }}>
+          <input type="checkbox" checked={enabled} onChange={toggle}
+            style={{ opacity: 0, width: 0, height: 0 }} />
+          <span style={{
+            position: 'absolute', cursor: 'pointer', inset: 0, borderRadius: '24px',
+            background: enabled ? 'var(--color-primary)' : 'var(--color-border)',
+            transition: 'background 0.2s'
+          }}>
+            <span style={{
+              position: 'absolute', height: '18px', width: '18px', left: enabled ? '23px' : '3px',
+              bottom: '3px', background: 'white', borderRadius: '50%', transition: 'left 0.2s'
+            }} />
+          </span>
+        </label>
+      </div>
+
+      {enabled && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <select
+            value={start}
+            onChange={e => onUpdate({ ...leagueSettings, quietHoursStart: parseInt(e.target.value) })}
+            style={{
+              flex: 1, padding: '8px', borderRadius: '6px',
+              border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+              color: 'var(--color-text)', fontSize: '13px'
+            }}
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              <option key={i} value={i}>{formatHour(i)}</option>
+            ))}
+          </select>
+          <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>to</span>
+          <select
+            value={end}
+            onChange={e => onUpdate({ ...leagueSettings, quietHoursEnd: parseInt(e.target.value) })}
+            style={{
+              flex: 1, padding: '8px', borderRadius: '6px',
+              border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+              color: 'var(--color-text)', fontSize: '13px'
+            }}
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              <option key={i} value={i}>{formatHour(i)}</option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SendNotificationSection({ leagueId, leagueName }) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -3880,6 +3966,7 @@ function SettingsPage({ onShowLeagueSelector }) {
               isAdmin={isAdmin}
             />
             {isAdmin && <CustomPlayerNotificationsSection players={players} leagueSettings={leagueSettings} onUpdate={setLeagueSettings} />}
+            {isAdmin && <QuietHoursSection leagueSettings={leagueSettings} onUpdate={setLeagueSettings} />}
             {isAdmin && <SendNotificationSection leagueId={leagueId} leagueName={leagueName} />}
           </>
         )

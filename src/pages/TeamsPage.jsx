@@ -908,7 +908,8 @@ function TeamsPage() {
 
     // Notify league members
     if (leagueId && !isCasualGame && !isTestLeague) {
-      import('../lib/notificationService').then(({ sendPushNotification }) => {
+      import('../lib/notificationService').then(({ sendPushNotification, isQuietHours }) => {
+        if (isQuietHours(leagueSettings)) return
         const teamCount = teams.length
         const playerCount = teams.reduce((sum, t) => sum + t.length, 0)
         sendPushNotification(leagueId, leagueName || 'Round Started!',
