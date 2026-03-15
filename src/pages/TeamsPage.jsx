@@ -739,6 +739,7 @@ function TeamsPage() {
     players,
     courseTees,
     isCasualGame,
+    isTestLeague,
     leagueSettings,
     leagueId,
     leagueName,
@@ -906,7 +907,7 @@ function TeamsPage() {
     setLiveRound(round)
 
     // Notify league members
-    if (leagueId && !isCasualGame) {
+    if (leagueId && !isCasualGame && !isTestLeague) {
       import('../lib/notificationService').then(({ sendPushNotification }) => {
         const teamCount = teams.length
         const playerCount = teams.reduce((sum, t) => sum + t.length, 0)

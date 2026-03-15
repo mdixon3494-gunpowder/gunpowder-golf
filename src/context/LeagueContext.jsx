@@ -979,6 +979,7 @@ export function LeagueProvider({ children }) {
     leagueName,
     isCasualGame,
     isIndividualRound,
+    isTestLeague,
     createNewLeague,
     joinExistingLeague,
     leaveLeague,

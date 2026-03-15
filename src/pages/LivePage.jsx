@@ -6592,6 +6592,7 @@ function LivePage() {
     leagueSettings,
     isCasualGame,
     isIndividualRound,
+    isTestLeague,
     saveCasualRoundHistory,
     saveIndividualRoundHistory,
     saveLeagueRoundHistory
@@ -6640,7 +6641,7 @@ function LivePage() {
 
   const updateScore = (teamId, playerId, hole, score) => {
     // Detect notable scores for push notifications (new entries only, not edits)
-    if (leagueId && !isCasualGame && score !== null && score !== 'X' && typeof score === 'number') {
+    if (leagueId && !isCasualGame && !isTestLeague && score !== null && score !== 'X' && typeof score === 'number') {
       const team = liveRound.teams.find(t => t.id === teamId)
       const player = team?.players.find(p => p.id === playerId)
       const prevScore = player?.scores[hole]
@@ -6763,7 +6764,7 @@ function LivePage() {
         }
 
         // Notify when greenie is marked final
-        if (isFinal && leagueId && !isCasualGame) {
+        if (isFinal && leagueId && !isCasualGame && !isTestLeague) {
           import('../lib/notificationService').then(({ sendPushNotification }) => {
             sendPushNotification(leagueId, leagueName || 'Greenie Won!',
               `${player.name} wins the greenie on hole ${hole}!`,
