@@ -6677,7 +6677,7 @@ function LivePage() {
       }
     }
 
-    setLiveRound({
+    const updatedRound = {
       ...liveRound,
       teams: liveRound.teams.map(team => {
         if (team.id !== teamId) return team
@@ -6692,7 +6692,31 @@ function LivePage() {
           })
         }
       })
-    })
+    }
+
+    // Check for lead change
+    if (leagueId && !isCasualGame && !isTestLeague && score !== null && liveRound.teams.length > 1) {
+      try {
+        const rules = leagueSettings?.teamScoringRules || null
+        const before = getLeaderboardData(liveRound, rules, courseTees)
+        const after = getLeaderboardData(updatedRound, rules, courseTees)
+        if (before.entries.length > 1 && after.entries.length > 1) {
+          const prevLeader = before.entries[0]
+          const newLeader = after.entries[0]
+          // Only notify if leader changed and new leader has a clear lead (not tied)
+          if (prevLeader.name !== newLeader.name && newLeader.total !== after.entries[1].total) {
+            import('../lib/notificationService').then(({ sendPushNotification }) => {
+              sendPushNotification(leagueId, leagueName || 'Gunpowder Golf',
+                `${newLeader.name} takes the lead!`,
+                { tag: 'lead-change', category: 'score_alerts' }
+              )
+            }).catch(() => {})
+          }
+        }
+      } catch (e) { /* leaderboard calc may not apply to all formats */ }
+    }
+
+    setLiveRound(updatedRound)
   }
 
   const updateManualTeamScore = (teamId, manualData) => {
