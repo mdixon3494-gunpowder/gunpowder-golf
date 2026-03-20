@@ -28,6 +28,7 @@ import ScorecardPage from './pages/ScorecardPage'
 import SettingsPage from './pages/SettingsPage'
 import GPSPage from './pages/GPSPage'
 import RoundHistoryPage from './pages/RoundHistoryPage'
+import HelpPage from './pages/HelpPage'
 
 function AppContent() {
   const { loading: authLoading, isAuthenticated, needsProfileClaim, needsPasswordUpdate, profile } = useAuth()
@@ -283,6 +284,7 @@ function AppContent() {
         <Route path="settings" element={
           <SettingsPage onShowLeagueSelector={() => setShowLeagueSelector(true)} />
         } />
+        <Route path="help" element={<HelpPage />} />
       </Route>
     </Routes>
   )

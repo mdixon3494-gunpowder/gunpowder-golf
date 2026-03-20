@@ -1,17 +1,5 @@
 import { getHoleInfo } from '../lib/courseData'
-
-// Calculate team score for a 9-hole range (stroke play)
-function calculateTeamStrokeScore(team, startHole, endHole) {
-  let total = 0
-  team.players.forEach(p => {
-    if (p.includeInTeamScore === false || p.isDNF) return
-    for (let h = startHole; h <= endHole; h++) {
-      const s = p.scores?.[h]
-      if (s && s !== 'X') total += parseInt(s) || 0
-    }
-  })
-  return total
-}
+import { getLeaderboardData } from './formatScoring'
 
 // Check if a 9-hole stretch is complete for all teams
 function check9Complete(round, startHole, endHole) {
@@ -28,7 +16,7 @@ function check9Complete(round, startHole, endHole) {
   })
 }
 
-export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings) {
+export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings, teamScoringRules, courseTees) {
   if (!round) return null
 
   const numTeams = round.teams.length
@@ -55,31 +43,32 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
   const back9Complete = check9Complete(round, 10, 18)
   const allComplete = front9Complete && back9Complete
 
-  // Determine winners (stroke play - lowest score wins)
-  let front9Winner = null
-  let back9Winner = null
-  let overallWinner = null
+  // Use format-aware leaderboard scoring to determine winners
+  const { entries, sortDirection } = getLeaderboardData(round, teamScoringRules || null, courseTees || null)
 
-  const teamScores = round.teams.map((team, idx) => {
-    const front = calculateTeamStrokeScore(team, 1, 9)
-    const back = calculateTeamStrokeScore(team, 10, 18)
-    return { idx, front, back, total: front + back }
+  // Build team index lookup from leaderboard entries
+  const entryByIdx = {}
+  entries.forEach(entry => {
+    const idx = round.teams.findIndex(t => t.id === entry.id)
+    if (idx !== -1) entryByIdx[idx] = entry
   })
 
-  if (front9Complete && teamScores.some(t => t.front > 0)) {
-    const minFront = Math.min(...teamScores.filter(t => t.front > 0).map(t => t.front))
-    front9Winner = teamScores.filter(t => t.front === minFront).map(t => t.idx)
+  // Find winner(s) for a given score accessor, respecting DQ and sort direction
+  function findWinners(getScore, isComplete, getDQ) {
+    if (!isComplete) return null
+    const eligible = Object.entries(entryByIdx)
+      .filter(([, e]) => !(getDQ && getDQ(e)))
+      .filter(([, e]) => typeof getScore(e) === 'number')
+    if (eligible.length === 0) return null
+    const scores = eligible.map(([, e]) => getScore(e))
+    const best = sortDirection === 'asc' ? Math.min(...scores) : Math.max(...scores)
+    const winners = eligible.filter(([, e]) => getScore(e) === best).map(([idx]) => parseInt(idx))
+    return winners.length > 0 ? winners : null
   }
 
-  if (back9Complete && teamScores.some(t => t.back > 0)) {
-    const minBack = Math.min(...teamScores.filter(t => t.back > 0).map(t => t.back))
-    back9Winner = teamScores.filter(t => t.back === minBack).map(t => t.idx)
-  }
-
-  if (allComplete && teamScores.some(t => t.total > 0)) {
-    const minTotal = Math.min(...teamScores.filter(t => t.total > 0).map(t => t.total))
-    overallWinner = teamScores.filter(t => t.total === minTotal).map(t => t.idx)
-  }
+  let front9Winner = findWinners(e => e.front9, front9Complete, e => e.dqFront9)
+  let back9Winner = findWinners(e => e.back9, back9Complete, e => e.dqBack9)
+  let overallWinner = findWinners(e => e.total, allComplete, e => e.dqTotal)
 
   // Calculate team settlements
   const teamSettlements = round.teams.map((team, idx) => {

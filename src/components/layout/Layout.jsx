@@ -63,6 +63,11 @@ const Icons = {
       <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
     </svg>
   ),
+  help: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
 }
 
 /* ================================
@@ -329,6 +334,7 @@ function BottomNav({ moreOpen, setMoreOpen, gpsEnabled }) {
     { to: '/history', label: 'History', icon: Icons.clock },
     { to: '/scorecard', label: 'Scorecard', icon: Icons.grid },
     { to: '/settings', label: 'Settings', icon: Icons.settings },
+    { to: '/help', label: 'Help', icon: Icons.help },
   ]
 
   const isMoreActive = morePages.some(p => location.pathname.startsWith(p.to))
@@ -480,6 +486,9 @@ function DesktopTabs({ gpsEnabled }) {
       </NavLink>
       <NavLink to="/settings" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
         Settings
+      </NavLink>
+      <NavLink to="/help" className={({ isActive }) => `tab ${isActive ? 'active' : ''}`}>
+        Help
       </NavLink>
     </nav>
   )
