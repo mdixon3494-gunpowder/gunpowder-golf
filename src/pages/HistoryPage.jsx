@@ -9,43 +9,48 @@ function formatRelativeToPar(score) {
   return score.toString()
 }
 
-// Calculate team score for a 9-hole range
-function calculateTeamScore(team, startHole, endHole) {
+// Get team score for a 9-hole range
+// Uses saved scores from round finish (correct for all formats + manual scoring),
+// falls back to Big Boys recalculation for legacy rounds without saved scores
+function getTeamScore(team, which) {
+  // Use saved scores computed at finish time (handles all formats + manual team scores)
+  if (which === 'front9' && team.front9Score != null) return team.front9Score
+  if (which === 'back9' && team.back9Score != null) return team.back9Score
+  if (which === 'total' && team.totalScore != null) return team.totalScore
+
+  // Fallback: recalculate using Big Boys logic (legacy rounds without saved scores)
+  const startHole = which === 'back9' ? 10 : 1
+  const endHole = which === 'front9' ? 9 : 18
   let totalScore = 0
   for (let hole = startHole; hole <= endHole; hole++) {
     const holeInfo = getHoleInfo(hole)
     const par = holeInfo?.par || 4
-
     const playerScores = team.players
       .filter(p => !p.isDNF && p.includeInTeamScore !== false)
       .map(p => p.scores?.[hole])
       .filter(s => s !== undefined && s !== null && s !== '' && s !== 'X')
       .map(s => parseInt(s))
-
     if (playerScores.length === 0) continue
-
     const underParScores = playerScores.filter(s => s < par)
-
     if (underParScores.length > 0) {
       totalScore += underParScores.reduce((sum, s) => sum + (s - par), 0)
     } else {
-      const bestScore = Math.min(...playerScores)
-      totalScore += (bestScore - par)
+      totalScore += (Math.min(...playerScores) - par)
     }
   }
   return totalScore
 }
 
-// Determine winners for a round
+// Determine winners for a round using saved scores
 function determineRoundWinners(round) {
   if (!round.teams || round.teams.length === 0) return { front9: [], back9: [], overall: [] }
 
   const teamScores = round.teams.map((team, idx) => ({
     idx,
     teamId: team.id,
-    front9: calculateTeamScore(team, 1, 9),
-    back9: calculateTeamScore(team, 10, 18),
-    total: calculateTeamScore(team, 1, 9) + calculateTeamScore(team, 10, 18)
+    front9: getTeamScore(team, 'front9'),
+    back9: getTeamScore(team, 'back9'),
+    total: getTeamScore(team, 'total')
   }))
 
   const minFront = Math.min(...teamScores.map(t => t.front9))
@@ -75,9 +80,9 @@ function RoundCard({ round, onView, onDelete, isAdmin }) {
   // Find overall winning team for header display
   const sortedTeams = [...(round.teams || [])].map(team => ({
     ...team,
-    front9Score: calculateTeamScore(team, 1, 9),
-    back9Score: calculateTeamScore(team, 10, 18),
-    totalScore: calculateTeamScore(team, 1, 9) + calculateTeamScore(team, 10, 18)
+    front9Score: getTeamScore(team, 'front9'),
+    back9Score: getTeamScore(team, 'back9'),
+    totalScore: getTeamScore(team, 'total')
   })).sort((a, b) => a.totalScore - b.totalScore)
   const winner = sortedTeams[0]
 
@@ -1162,9 +1167,9 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
             <>
               {/* Scorecard for each team */}
               {round.teams?.map((team, teamIdx) => {
-                const teamFront9 = calculateTeamScore(team, 1, 9)
-                const teamBack9 = calculateTeamScore(team, 10, 18)
-                const teamTotal = teamFront9 + teamBack9
+                const teamFront9 = getTeamScore(team, 'front9')
+                const teamBack9 = getTeamScore(team, 'back9')
+                const teamTotal = getTeamScore(team, 'total')
 
                 // Get badges for this team
                 const badges = []
