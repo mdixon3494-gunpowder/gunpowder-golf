@@ -57,6 +57,32 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
   let back9Winner = findWinners(e => e.back9, back9Complete, e => e.dqBack9)
   let overallWinner = findWinners(e => e.total, allComplete, e => e.dqTotal)
 
+  // Manual match play overrides (2-team rounds where admin declares winners)
+  const manual = round.manualMatchPlayResults
+  if (isMatchPlay && manual) {
+    if (manual.front9 != null) {
+      if (manual.front9 === 'push') {
+        front9Winner = [0, 1] // split
+      } else {
+        front9Winner = [manual.front9]
+      }
+    }
+    if (manual.back9 != null) {
+      if (manual.back9 === 'push') {
+        back9Winner = [0, 1]
+      } else {
+        back9Winner = [manual.back9]
+      }
+    }
+    if (manual.overall != null) {
+      if (manual.overall === 'push') {
+        overallWinner = [0, 1]
+      } else {
+        overallWinner = [manual.overall]
+      }
+    }
+  }
+
   // Calculate team settlements
   const teamSettlements = round.teams.map((team, idx) => {
     const teamSize = team.players.length

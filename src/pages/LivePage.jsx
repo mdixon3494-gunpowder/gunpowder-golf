@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
 import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore, calculateBigBoysScore, resolveManualTeamScore } from '../utils/formatScoring'
+import ManualMatchPlaySelector from '../components/ManualMatchPlaySelector'
 import NassauTracker from '../components/NassauTracker'
 import WolfTracker from '../components/WolfTracker'
 import { getDisplayName, getShortName } from '../utils/playerNames'
@@ -6620,6 +6621,7 @@ function LivePage() {
   const [individualSummaryData, setIndividualSummaryData] = useState(null)
   const [savingIndividualRound, setSavingIndividualRound] = useState(false)
   const [holeStats, setHoleStats] = useState({})
+  const [manualMatchPlayResults, setManualMatchPlayResults] = useState(liveRound?.manualMatchPlayResults || null)
 
   if (!liveRound) {
     return (
@@ -7049,7 +7051,8 @@ function LivePage() {
       }),
       skinsMatch: skinsMatch ? { ...skinsMatch } : null,
       nassauMatch: nassauMatch ? { ...nassauMatch } : null,
-      wolfMatch: wolfMatch ? { ...wolfMatch } : null
+      wolfMatch: wolfMatch ? { ...wolfMatch } : null,
+      ...(manualMatchPlayResults ? { manualMatchPlayResults } : {})
     }
 
     const updatedPlayers = players.map(player => {
@@ -7609,15 +7612,25 @@ function LivePage() {
         />
       )}
       {subTab === 'money' && (
-        <MoneyTracker
-          liveRound={liveRound}
-          payoutFormats={payoutFormats}
-          holeInOnePot={holeInOnePot}
-          skinsMatch={skinsMatch}
-          greenieCarryoverSettings={leagueSettings?.greenieCarryover}
-          teamScoringRules={leagueSettings?.teamScoringRules}
-          courseTees={courseTees}
-        />
+        <>
+          {liveRound.teams?.length === 2 && isAdmin && (
+            <ManualMatchPlaySelector
+              teams={liveRound.teams}
+              manualResults={manualMatchPlayResults}
+              onChange={setManualMatchPlayResults}
+              isAdmin={isAdmin}
+            />
+          )}
+          <MoneyTracker
+            liveRound={{ ...liveRound, manualMatchPlayResults }}
+            payoutFormats={payoutFormats}
+            holeInOnePot={holeInOnePot}
+            skinsMatch={skinsMatch}
+            greenieCarryoverSettings={leagueSettings?.greenieCarryover}
+            teamScoringRules={leagueSettings?.teamScoringRules}
+            courseTees={courseTees}
+          />
+        </>
       )}
       {subTab === 'manage' && (
         <div>

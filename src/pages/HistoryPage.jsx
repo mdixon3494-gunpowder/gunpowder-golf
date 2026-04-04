@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLeague } from '../context/LeagueContext'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
 import { GUNPOWDER_SCORECARD, getHoleInfo } from '../lib/courseData'
+import ManualMatchPlaySelector from '../components/ManualMatchPlaySelector'
 
 function formatRelativeToPar(score) {
   if (score === 0) return 'E'
@@ -53,15 +54,36 @@ function determineRoundWinners(round) {
     total: getTeamScore(team, 'total')
   }))
 
+  const isMatchPlay = round.teams.length === 2
+  const manual = round.manualMatchPlayResults
+
   const minFront = Math.min(...teamScores.map(t => t.front9))
   const minBack = Math.min(...teamScores.map(t => t.back9))
   const minTotal = Math.min(...teamScores.map(t => t.total))
 
+  let front9Winners = teamScores.filter(t => t.front9 === minFront).map(t => t.teamId)
+  let back9Winners = teamScores.filter(t => t.back9 === minBack).map(t => t.teamId)
+  let overallWinners = teamScores.filter(t => t.total === minTotal).map(t => t.teamId)
+
+  // Apply manual match play overrides
+  if (isMatchPlay && manual) {
+    const teamIds = round.teams.map(t => t.id)
+    if (manual.front9 != null) {
+      front9Winners = manual.front9 === 'push' ? [...teamIds] : [teamIds[manual.front9]]
+    }
+    if (manual.back9 != null) {
+      back9Winners = manual.back9 === 'push' ? [...teamIds] : [teamIds[manual.back9]]
+    }
+    if (manual.overall != null) {
+      overallWinners = manual.overall === 'push' ? [...teamIds] : [teamIds[manual.overall]]
+    }
+  }
+
   return {
-    front9: teamScores.filter(t => t.front9 === minFront).map(t => t.teamId),
-    back9: teamScores.filter(t => t.back9 === minBack).map(t => t.teamId),
-    overall: teamScores.filter(t => t.total === minTotal).map(t => t.teamId),
-    isMatchPlay: round.teams.length === 2
+    front9: front9Winners,
+    back9: back9Winners,
+    overall: overallWinners,
+    isMatchPlay
   }
 }
 
@@ -1071,7 +1093,7 @@ function SkinsResults({ round, onUpdatePaidSettlements }) {
   )
 }
 
-function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdatePaidSettlements }) {
+function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdatePaidSettlements, onUpdateRound, isAdmin }) {
   const [showMoney, setShowMoney] = useState(false)
   const [activeTab, setActiveTab] = useState('scorecard')
 
@@ -1432,7 +1454,17 @@ function RoundDetailModal({ round, onClose, payoutFormats, holeInOnePot, onUpdat
           )}
 
           {activeTab === 'money' && settlement && (
-            <MoneySettlement round={round} settlement={settlement} payoutFormats={payoutFormats} />
+            <>
+              {round.teams?.length === 2 && isAdmin && onUpdateRound && (
+                <ManualMatchPlaySelector
+                  teams={round.teams}
+                  manualResults={round.manualMatchPlayResults}
+                  onChange={(results) => onUpdateRound({ ...round, manualMatchPlayResults: results || undefined })}
+                  isAdmin={isAdmin}
+                />
+              )}
+              <MoneySettlement round={round} settlement={settlement} payoutFormats={payoutFormats} />
+            </>
           )}
 
           {activeTab === 'skins' && round.skinsMatch && (
@@ -1522,6 +1554,14 @@ function HistoryPage() {
         ...prev,
         skinsMatch: { ...prev.skinsMatch, paidSettlements }
       }))
+    }
+  }
+
+  // Update an entire round object (e.g. manual match play results)
+  const handleUpdateRound = (updatedRound) => {
+    setHistory(history.map(r => r.id === updatedRound.id ? updatedRound : r))
+    if (viewingRound?.id === updatedRound.id) {
+      setViewingRound(updatedRound)
     }
   }
 
@@ -1704,6 +1744,8 @@ function HistoryPage() {
           payoutFormats={payoutFormats}
           holeInOnePot={holeInOnePot}
           onUpdatePaidSettlements={(paidSettlements) => handleUpdateRoundPaidSettlements(viewingRound.id, paidSettlements)}
+          onUpdateRound={handleUpdateRound}
+          isAdmin={isAdmin}
         />
       )}
 
