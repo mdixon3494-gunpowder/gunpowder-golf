@@ -1,21 +1,6 @@
 import { getHoleInfo } from '../lib/courseData'
 import { getLeaderboardData } from './formatScoring'
 
-// Check if a 9-hole stretch is complete for all teams
-function check9Complete(round, startHole, endHole) {
-  return round.teams.every(team => {
-    return team.players.some(p => {
-      if (p.isDNF) return false
-      const holes = []
-      for (let h = startHole; h <= endHole; h++) holes.push(h)
-      return holes.every(h => {
-        const score = p.scores?.[h]
-        return score !== undefined && score !== '' && score !== null && score !== 'X'
-      })
-    })
-  })
-}
-
 export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings, teamScoringRules, courseTees) {
   if (!round) return null
 
@@ -38,13 +23,15 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
   const overallPool = isMatchPlay ? totalPlayers * format.overall : 0
   const hioContribution = hioEnabled ? hioEligiblePlayers.length * format.holeInOne : 0
 
-  // Check completion status
-  const front9Complete = check9Complete(round, 1, 9)
-  const back9Complete = check9Complete(round, 10, 18)
-  const allComplete = front9Complete && back9Complete
-
   // Use format-aware leaderboard scoring to determine winners
+  // holesCompleted from getLeaderboardData handles all scoring modes:
+  // normal hole-by-hole, manual team scores (by-9 or by-hole), and manual player totals
   const { entries, sortDirection } = getLeaderboardData(round, teamScoringRules || null, courseTees || null)
+
+  // Check completion using leaderboard-derived data (works for all scoring modes)
+  const front9Complete = entries.every(e => e.holesCompleted >= 9)
+  const back9Complete = entries.every(e => e.holesCompleted >= 18)
+  const allComplete = front9Complete && back9Complete
 
   // Build team index lookup from leaderboard entries
   const entryByIdx = {}
