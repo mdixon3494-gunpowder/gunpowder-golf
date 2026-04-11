@@ -433,14 +433,47 @@ function NassauOptInSection({ selectedPlayers, activePlayers, nassauMatch, setNa
 function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemove }) {
   const [player1, setPlayer1] = useState('')
   const [player2, setPlayer2] = useState('')
+  const [error, setError] = useState(null)
+
+  // Players already used in an existing pairing request (map id -> name of their current partner)
+  const alreadyPairedWith = {}
+  existingRequests.forEach(req => {
+    const p1Id = parseInt(req.player1)
+    const p2Id = parseInt(req.player2)
+    const p1 = availablePlayers.find(p => p.id === p1Id)
+    const p2 = availablePlayers.find(p => p.id === p2Id)
+    if (p1 && p2) {
+      alreadyPairedWith[p1Id] = p2.name
+      alreadyPairedWith[p2Id] = p1.name
+    }
+  })
+
+  const conflictPlayer = [player1, player2]
+    .map(id => parseInt(id))
+    .find(id => id && alreadyPairedWith[id])
 
   const handleAdd = () => {
-    if (player1 && player2 && player1 !== player2) {
-      onAdd({ player1, player2 })
-      setPlayer1('')
-      setPlayer2('')
+    if (!player1 || !player2 || player1 === player2) return
+    const id1 = parseInt(player1)
+    const id2 = parseInt(player2)
+    if (alreadyPairedWith[id1] || alreadyPairedWith[id2]) {
+      const dupeId = alreadyPairedWith[id1] ? id1 : id2
+      const dupeName = availablePlayers.find(p => p.id === dupeId)?.name || 'That player'
+      setError(
+        `${dupeName} is already in a pairing request with ${alreadyPairedWith[dupeId]}. ` +
+        `A player can only be in one pairing request. If all three need to play together, create a Manual Team instead.`
+      )
+      return
     }
+    setError(null)
+    onAdd({ player1, player2 })
+    setPlayer1('')
+    setPlayer2('')
   }
+
+  // Clear error when selection changes
+  const updatePlayer1 = (val) => { setPlayer1(val); setError(null) }
+  const updatePlayer2 = (val) => { setPlayer2(val); setError(null) }
 
   return (
     <div style={{ marginBottom: '30px' }}>
@@ -475,7 +508,7 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
           <select
             value={player1}
-            onChange={(e) => setPlayer1(e.target.value)}
+            onChange={(e) => updatePlayer1(e.target.value)}
             style={{
               padding: '10px',
               borderRadius: '6px',
@@ -484,13 +517,18 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
             }}
           >
             <option value="">Select Player 1</option>
-            {availablePlayers.map(player => (
-              <option key={player.id} value={player.id}>{player.name}</option>
-            ))}
+            {availablePlayers.map(player => {
+              const isPaired = alreadyPairedWith[player.id]
+              return (
+                <option key={player.id} value={player.id} disabled={!!isPaired}>
+                  {player.name}{isPaired ? ` (paired with ${isPaired})` : ''}
+                </option>
+              )
+            })}
           </select>
           <select
             value={player2}
-            onChange={(e) => setPlayer2(e.target.value)}
+            onChange={(e) => updatePlayer2(e.target.value)}
             style={{
               padding: '10px',
               borderRadius: '6px',
@@ -499,15 +537,34 @@ function PairingRequestForm({ availablePlayers, existingRequests, onAdd, onRemov
             }}
           >
             <option value="">Select Player 2</option>
-            {availablePlayers.map(player => (
-              <option key={player.id} value={player.id}>{player.name}</option>
-            ))}
+            {availablePlayers.map(player => {
+              const isPaired = alreadyPairedWith[player.id]
+              return (
+                <option key={player.id} value={player.id} disabled={!!isPaired}>
+                  {player.name}{isPaired ? ` (paired with ${isPaired})` : ''}
+                </option>
+              )
+            })}
           </select>
         </div>
+        {error && (
+          <div style={{
+            background: 'var(--color-danger-light)',
+            border: '1px solid var(--color-danger)',
+            color: 'var(--color-danger-dark)',
+            padding: '10px 12px',
+            borderRadius: '6px',
+            fontSize: '13px',
+            marginBottom: '10px',
+            lineHeight: '1.4'
+          }}>
+            {error}
+          </div>
+        )}
         <button
           className="btn btn-secondary"
           onClick={handleAdd}
-          disabled={!player1 || !player2 || player1 === player2}
+          disabled={!player1 || !player2 || player1 === player2 || !!conflictPlayer}
         >
           Add Pairing
         </button>
