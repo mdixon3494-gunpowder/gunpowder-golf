@@ -61,7 +61,7 @@ function AddLatePlayer({ availablePlayers, onAdd, courseTees }) {
   )
 }
 
-function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, courseTees, swapSelection, onPlayerTap, canSwap, onAddPlayer, availablePlayers }) {
+function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, courseTees, swapSelection, onPlayerTap, onMovePlayerHere, canSwap, onAddPlayer, availablePlayers, allTeams }) {
   const teamSkill = calculateTeamSkill(team)
   const avgSkill = team.length > 0 ? teamSkill / team.length : 0
 
@@ -138,6 +138,30 @@ function TeamCard({ team, index, totalTeams, onMoveUp, onMoveDown, isAdmin, cour
           ? ` - Team HCP: ${totalCourseHcp}`
           : ` - Avg Skill: ${avgSkill.toFixed(1)}`}
       </div>
+      {/* Move-here action when a player from another team is selected */}
+      {swapSelection && swapSelection.teamIndex !== index && onMovePlayerHere && (() => {
+        const selectedPlayer = allTeams?.[swapSelection.teamIndex]?.find(p => p.id === swapSelection.playerId)
+        const selectedName = selectedPlayer ? getDisplayName(selectedPlayer) : 'player'
+        return (
+          <button
+            onClick={() => onMovePlayerHere(index)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              margin: '6px 0',
+              background: 'var(--color-accent-blue)',
+              color: 'var(--color-text-on-primary)',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '600'
+            }}
+          >
+            ← Move {selectedName} to this team
+          </button>
+        )
+      })()}
       {team.map(player => {
         const playerCourseHcp = getCourseHandicapForTee(
           player.handicap,
@@ -808,6 +832,42 @@ function TeamsPage() {
     setSwapSelection(null)
   }
 
+  // Move the currently-selected player to the specified destination team (no swap)
+  const handleMovePlayerHere = (destTeamIndex) => {
+    if (!swapSelection) return
+    if (swapSelection.teamIndex === destTeamIndex) return
+    const srcTeamIndex = swapSelection.teamIndex
+    const playerId = swapSelection.playerId
+
+    // Update teams array
+    const newTeams = teams.map(t => [...t])
+    const srcIdx = newTeams[srcTeamIndex].findIndex(p => p.id === playerId)
+    if (srcIdx === -1) {
+      setSwapSelection(null)
+      return
+    }
+    const [movedPlayer] = newTeams[srcTeamIndex].splice(srcIdx, 1)
+    newTeams[destTeamIndex].push(movedPlayer)
+    setTeams(newTeams)
+
+    // Also update liveRound if active
+    if (liveRound) {
+      const newRound = { ...liveRound, teams: liveRound.teams.map(t => ({ ...t, players: [...t.players] })) }
+      const liveSrc = newRound.teams[srcTeamIndex]
+      const liveDest = newRound.teams[destTeamIndex]
+      const liveIdx = liveSrc.players.findIndex(p => p.id === playerId)
+      if (liveIdx !== -1) {
+        const [liveMoved] = liveSrc.players.splice(liveIdx, 1)
+        liveDest.players.push(liveMoved)
+        liveSrc.name = getTeamName(liveSrc.players)
+        liveDest.name = getTeamName(liveDest.players)
+        setLiveRound(newRound)
+      }
+    }
+
+    setSwapSelection(null)
+  }
+
   // Players not already on any team (available for late add) — includes all roster players
   const allTeamPlayers = liveRound
     ? liveRound.teams.flatMap(t => t.players)
@@ -995,7 +1055,7 @@ function TeamsPage() {
               fontSize: '13px'
             }}>
               <span>
-                <strong>{teams[swapSelection.teamIndex]?.find(p => p.id === swapSelection.playerId)?.name}</strong> selected — tap a player on another team to swap
+                <strong>{teams[swapSelection.teamIndex]?.find(p => p.id === swapSelection.playerId)?.name}</strong> selected — tap a player on another team to swap, or use "Move to this team"
               </span>
               <button
                 onClick={() => setSwapSelection(null)}
@@ -1026,9 +1086,11 @@ function TeamsPage() {
               courseTees={courseTees}
               swapSelection={swapSelection}
               onPlayerTap={handlePlayerTap}
+              onMovePlayerHere={handleMovePlayerHere}
               canSwap={canSwap}
               onAddPlayer={handleAddPlayer}
               availablePlayers={availablePlayers}
+              allTeams={teams}
             />
           ))}
 

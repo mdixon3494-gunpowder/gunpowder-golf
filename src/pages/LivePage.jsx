@@ -592,6 +592,14 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
     onUpdateManualTeamScore(team.id, { ...manual, [key]: value === '' ? null : parseInt(value) })
   }
 
+  const adjust9Score = (key, delta) => {
+    const current = manual[key] != null ? parseInt(manual[key]) : 0
+    onUpdateManualTeamScore(team.id, { ...manual, [key]: current + delta })
+  }
+
+  // Score options for hole-by-hole select (-4 to +5 relative to par)
+  const holeScoreOptions = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+
   const front9Par = GUNPOWDER_SCORECARD.front9.reduce((s, h) => s + h.par, 0)
   const back9Par = GUNPOWDER_SCORECARD.back9.reduce((s, h) => s + h.par, 0)
 
@@ -663,7 +671,7 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
       </div>
 
       <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginBottom: '8px', textAlign: 'center' }}>
-        Enter score relative to par (e.g. -1 = one under, 0 = even, 2 = two over)
+        Scores are relative to par (−1 = one under, E = even, +2 = two over). Use −/+ buttons or the dropdowns.
       </div>
 
       {entryMode === 'by9' ? (
@@ -673,48 +681,98 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
           gap: '12px',
           flexWrap: 'wrap'
         }}>
-          <div style={{ flex: 1, minWidth: '120px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
+          <div style={{ flex: 1, minWidth: '140px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>FRONT 9</div>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={manual.front9 != null ? manual.front9 : ''}
-              onChange={(e) => update9Score('front9', e.target.value)}
-              placeholder="0"
-              style={{
-                width: '80px',
-                padding: '10px',
-                fontSize: '24px',
-                fontWeight: 'bold',
-                textAlign: 'center',
-                border: '2px solid var(--color-border)',
-                borderRadius: '8px',
-                background: 'var(--color-surface-sunken)'
-              }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => adjust9Score('front9', -1)}
+                style={{
+                  width: '40px', height: '44px', fontSize: '22px', fontWeight: 'bold',
+                  border: '2px solid var(--color-border)', borderRadius: '8px',
+                  background: 'var(--color-surface-sunken)', cursor: 'pointer',
+                  color: 'var(--color-text-primary)'
+                }}
+                aria-label="Decrease front 9 score"
+              >−</button>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="-?[0-9]*"
+                value={manual.front9 != null ? manual.front9 : ''}
+                onChange={(e) => update9Score('front9', e.target.value.replace(/[^-0-9]/g, ''))}
+                placeholder="0"
+                style={{
+                  width: '60px',
+                  padding: '10px',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  border: '2px solid var(--color-border)',
+                  borderRadius: '8px',
+                  background: 'var(--color-surface-sunken)'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => adjust9Score('front9', 1)}
+                style={{
+                  width: '40px', height: '44px', fontSize: '22px', fontWeight: 'bold',
+                  border: '2px solid var(--color-border)', borderRadius: '8px',
+                  background: 'var(--color-surface-sunken)', cursor: 'pointer',
+                  color: 'var(--color-text-primary)'
+                }}
+                aria-label="Increase front 9 score"
+              >+</button>
+            </div>
             <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
               {formatRelative(manual.front9)}
             </div>
           </div>
-          <div style={{ flex: 1, minWidth: '120px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
+          <div style={{ flex: 1, minWidth: '140px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '15px', textAlign: 'center' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>BACK 9</div>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={manual.back9 != null ? manual.back9 : ''}
-              onChange={(e) => update9Score('back9', e.target.value)}
-              placeholder="0"
-              style={{
-                width: '80px',
-                padding: '10px',
-                fontSize: '24px',
-                fontWeight: 'bold',
-                textAlign: 'center',
-                border: '2px solid var(--color-border)',
-                borderRadius: '8px',
-                background: 'var(--color-surface-sunken)'
-              }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => adjust9Score('back9', -1)}
+                style={{
+                  width: '40px', height: '44px', fontSize: '22px', fontWeight: 'bold',
+                  border: '2px solid var(--color-border)', borderRadius: '8px',
+                  background: 'var(--color-surface-sunken)', cursor: 'pointer',
+                  color: 'var(--color-text-primary)'
+                }}
+                aria-label="Decrease back 9 score"
+              >−</button>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="-?[0-9]*"
+                value={manual.back9 != null ? manual.back9 : ''}
+                onChange={(e) => update9Score('back9', e.target.value.replace(/[^-0-9]/g, ''))}
+                placeholder="0"
+                style={{
+                  width: '60px',
+                  padding: '10px',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  border: '2px solid var(--color-border)',
+                  borderRadius: '8px',
+                  background: 'var(--color-surface-sunken)'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => adjust9Score('back9', 1)}
+                style={{
+                  width: '40px', height: '44px', fontSize: '22px', fontWeight: 'bold',
+                  border: '2px solid var(--color-border)', borderRadius: '8px',
+                  background: 'var(--color-surface-sunken)', cursor: 'pointer',
+                  color: 'var(--color-text-primary)'
+                }}
+                aria-label="Increase back 9 score"
+              >+</button>
+            </div>
             <div style={{ fontSize: '11px', color: 'var(--color-text-tertiary)', marginTop: '4px' }}>
               {formatRelative(manual.back9)}
             </div>
@@ -733,12 +791,12 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
         <div style={{ background: 'var(--color-surface)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
           {/* Front 9 */}
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '340px' }}>
+            <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '440px' }}>
               <thead>
                 <tr style={{ background: 'var(--color-primary)', color: 'white' }}>
                   <th style={{ padding: '6px 4px', textAlign: 'left', minWidth: '50px' }}>Front 9</th>
                   {GUNPOWDER_SCORECARD.front9.map(h => (
-                    <th key={h.hole} style={{ padding: '6px 3px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
+                    <th key={h.hole} style={{ padding: '6px 3px', textAlign: 'center', minWidth: '38px' }}>{h.hole}</th>
                   ))}
                   <th style={{ padding: '6px 4px', textAlign: 'center', background: 'var(--color-primary-dark)', minWidth: '32px' }}>OUT</th>
                 </tr>
@@ -755,23 +813,29 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                   <td style={{ padding: '4px', fontWeight: 'bold', fontSize: '10px' }}>+/-</td>
                   {GUNPOWDER_SCORECARD.front9.map(h => (
                     <td key={h.hole} style={{ padding: '2px 1px', textAlign: 'center' }}>
-                      <input
-                        type="number"
-                        inputMode="numeric"
+                      <select
                         value={holeScores[h.hole] != null ? holeScores[h.hole] : ''}
                         onChange={(e) => updateHoleScore(h.hole, e.target.value)}
-                        placeholder="0"
                         style={{
-                          width: '28px',
-                          padding: '4px 2px',
+                          width: '38px',
+                          padding: '4px 1px',
                           fontSize: '12px',
                           fontWeight: 'bold',
                           textAlign: 'center',
                           border: '1px solid var(--color-border)',
                           borderRadius: '4px',
-                          background: holeScores[h.hole] != null ? 'var(--color-info-light)' : 'var(--color-surface-sunken)'
+                          background: holeScores[h.hole] != null ? 'var(--color-info-light)' : 'var(--color-surface-sunken)',
+                          appearance: 'none',
+                          WebkitAppearance: 'none'
                         }}
-                      />
+                      >
+                        <option value="">-</option>
+                        {holeScoreOptions.map(opt => (
+                          <option key={opt} value={opt}>
+                            {opt === 0 ? 'E' : opt > 0 ? `+${opt}` : `${opt}`}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   ))}
                   <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: 'var(--color-skins-light)', fontSize: '12px' }}>
@@ -783,12 +847,12 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
           </div>
           {/* Back 9 */}
           <div style={{ overflowX: 'auto', borderTop: '2px solid var(--color-border)' }}>
-            <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '340px' }}>
+            <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse', minWidth: '440px' }}>
               <thead>
                 <tr style={{ background: 'var(--color-primary)', color: 'white' }}>
                   <th style={{ padding: '6px 4px', textAlign: 'left', minWidth: '50px' }}>Back 9</th>
                   {GUNPOWDER_SCORECARD.back9.map(h => (
-                    <th key={h.hole} style={{ padding: '6px 3px', textAlign: 'center', minWidth: '28px' }}>{h.hole}</th>
+                    <th key={h.hole} style={{ padding: '6px 3px', textAlign: 'center', minWidth: '38px' }}>{h.hole}</th>
                   ))}
                   <th style={{ padding: '6px 4px', textAlign: 'center', background: 'var(--color-primary-dark)', minWidth: '32px' }}>IN</th>
                 </tr>
@@ -805,23 +869,29 @@ function ManualTeamScoreEntry({ team, onUpdateManualTeamScore, onToggleManualMod
                   <td style={{ padding: '4px', fontWeight: 'bold', fontSize: '10px' }}>+/-</td>
                   {GUNPOWDER_SCORECARD.back9.map(h => (
                     <td key={h.hole} style={{ padding: '2px 1px', textAlign: 'center' }}>
-                      <input
-                        type="number"
-                        inputMode="numeric"
+                      <select
                         value={holeScores[h.hole] != null ? holeScores[h.hole] : ''}
                         onChange={(e) => updateHoleScore(h.hole, e.target.value)}
-                        placeholder="0"
                         style={{
-                          width: '28px',
-                          padding: '4px 2px',
+                          width: '38px',
+                          padding: '4px 1px',
                           fontSize: '12px',
                           fontWeight: 'bold',
                           textAlign: 'center',
                           border: '1px solid var(--color-border)',
                           borderRadius: '4px',
-                          background: holeScores[h.hole] != null ? 'var(--color-info-light)' : 'var(--color-surface-sunken)'
+                          background: holeScores[h.hole] != null ? 'var(--color-info-light)' : 'var(--color-surface-sunken)',
+                          appearance: 'none',
+                          WebkitAppearance: 'none'
                         }}
-                      />
+                      >
+                        <option value="">-</option>
+                        {holeScoreOptions.map(opt => (
+                          <option key={opt} value={opt}>
+                            {opt === 0 ? 'E' : opt > 0 ? `+${opt}` : `${opt}`}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   ))}
                   <td style={{ padding: '4px 3px', textAlign: 'center', fontWeight: 'bold', background: 'var(--color-skins-light)', fontSize: '12px' }}>
