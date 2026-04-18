@@ -979,7 +979,7 @@ function GeneratePage() {
                                 border: `1px solid ${isOverridden ? 'var(--color-warning)' : 'var(--color-border)'}`,
                                 borderRadius: '20px', padding: '5px 10px', fontSize: '13px'
                               }}>
-                                <span style={{ fontWeight: '500' }}>{p.name.split(' ')[0]}</span>
+                                <span style={{ fontWeight: '500' }}>{p.name}</span>
                                 <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>({hcp})</span>
                                 <select
                                   value={flightOverrides[p.id] != null ? flightOverrides[p.id] : ''}
