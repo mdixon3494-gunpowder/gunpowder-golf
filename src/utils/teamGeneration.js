@@ -301,7 +301,8 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
   }
 }
 
-export function generateTeams(activePlayers, pairingRequests = [], manualTeams = []) {
+export function generateTeams(activePlayers, pairingRequests = [], manualTeams = [], options = {}) {
+  const { allowFivesomes = false } = options
   // Separate complete and incomplete manual teams
   const completeManualTeams = manualTeams.filter(mt => mt.players.length >= 4)
   const incompleteManualTeams = manualTeams.filter(mt => mt.players.length > 0 && mt.players.length < 4)
@@ -418,6 +419,9 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
   // Determine total team count from ideal distribution
   let totalTeamCount
   if (remainder === 0) {
+    totalTeamCount = numFoursomes
+  } else if (allowFivesomes && numFoursomes > 0) {
+    // Absorb remainder into existing teams as fivesomes (fewer, larger teams)
     totalTeamCount = numFoursomes
   } else {
     // remainder 1, 2, or 3 all add one team (threesomes replace foursomes)
@@ -557,16 +561,17 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     }
   }
 
-  // === Phase 5: Upgrade weakest teams from 3 to 4 ===
+  // === Phase 5: Upgrade weakest teams from 3 to 4 (or 5 if fivesomes allowed) ===
   // Remaining players in flight pools are the "upgrade" pool
   const upgradePool = flightPools.flat()
+  const maxTeamSize = allowFivesomes ? 5 : 4
 
   // Distribute upgrades to the weakest teams (highest total handicap)
   for (const player of upgradePool) {
     let weakestIdx = -1
     let weakestHandicap = -Infinity
     for (let i = 0; i < finalTeams.length; i++) {
-      if (finalTeams[i].length < 4) {
+      if (finalTeams[i].length < maxTeamSize) {
         const teamHandicap = finalTeams[i].reduce((sum, p) => sum + getPlayerHandicap(p), 0)
         if (teamHandicap > weakestHandicap) {
           weakestHandicap = teamHandicap

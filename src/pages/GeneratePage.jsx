@@ -650,6 +650,7 @@ function GeneratePage() {
   } = useLeague()
 
   const [creatingManualTeam, setCreatingManualTeam] = useState(false)
+  const [allowFivesomes, setAllowFivesomes] = useState(false)
 
   // Use context state for checked-in players
   const selectedPlayers = checkedInPlayers
@@ -775,7 +776,7 @@ function GeneratePage() {
       }
     })
 
-    const generated = generateTeams(selectedPlayerObjects, pairingRequests, manualTeams)
+    const generated = generateTeams(selectedPlayerObjects, pairingRequests, manualTeams, { allowFivesomes })
 
     // Save teams to context and navigate to Teams page
     setTeams(generated)
@@ -1054,6 +1055,61 @@ function GeneratePage() {
           {leagueId && (
             <CheckInWarningButton leagueId={leagueId} leagueName={leagueName} />
           )}
+
+          {/* Fivesome toggle — show when player count doesn't divide evenly into foursomes */}
+          {(() => {
+            const manualPlayerCount = manualTeams.reduce((sum, mt) => sum + mt.players.length, 0)
+            const remaining = selectedPlayers.length - manualPlayerCount
+            const remainder = remaining % 4
+            if (remainder > 0 && remaining >= 5) {
+              const threesomeTeams = Math.floor(remaining / 4) + 1
+              const fivesomeTeams = Math.floor(remaining / 4)
+              return (
+                <div style={{
+                  background: 'var(--color-surface-sunken)',
+                  padding: '12px 15px',
+                  borderRadius: '8px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--color-text-primary)' }}>
+                      Allow fivesomes
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                      {allowFivesomes
+                        ? `${fivesomeTeams} teams (some with 5 players)`
+                        : `${threesomeTeams} teams (some with 3 players)`
+                      }
+                    </div>
+                  </div>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '26px', flexShrink: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={allowFivesomes}
+                      onChange={(e) => setAllowFivesomes(e.target.checked)}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
+                    <span style={{
+                      position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                      background: allowFivesomes ? 'var(--color-success)' : 'var(--color-border)',
+                      borderRadius: '13px', transition: 'background 0.2s'
+                    }}>
+                      <span style={{
+                        position: 'absolute', height: '20px', width: '20px',
+                        left: allowFivesomes ? '25px' : '3px', bottom: '3px',
+                        background: 'white', borderRadius: '50%', transition: 'left 0.2s'
+                      }} />
+                    </span>
+                  </label>
+                </div>
+              )
+            }
+            return null
+          })()}
 
           {/* Generate Button */}
           <button

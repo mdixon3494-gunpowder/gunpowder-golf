@@ -848,7 +848,9 @@ function TeamsPage() {
     }
     const [movedPlayer] = newTeams[srcTeamIndex].splice(srcIdx, 1)
     newTeams[destTeamIndex].push(movedPlayer)
-    setTeams(newTeams)
+    // Remove empty teams
+    const cleanedTeams = newTeams.filter(t => t.length > 0)
+    setTeams(cleanedTeams)
 
     // Also update liveRound if active
     if (liveRound) {
@@ -861,6 +863,8 @@ function TeamsPage() {
         liveDest.players.push(liveMoved)
         liveSrc.name = getTeamName(liveSrc.players)
         liveDest.name = getTeamName(liveDest.players)
+        // Remove empty liveRound teams
+        newRound.teams = newRound.teams.filter(t => t.players.length > 0)
         setLiveRound(newRound)
       }
     }
