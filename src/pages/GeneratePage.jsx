@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
-import { generateTeams } from '../utils/teamGeneration'
+import { generateTeams, getPlayerHandicap, getPlayerFlightByHandicap } from '../utils/teamGeneration'
 import { formatHandicap, formatCourseHandicap, getEffectiveHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
 import { FORMAT_CONFIGS } from '../utils/formatScoring'
 
@@ -651,6 +651,8 @@ function GeneratePage() {
 
   const [creatingManualTeam, setCreatingManualTeam] = useState(false)
   const [allowFivesomes, setAllowFivesomes] = useState(false)
+  const [flightOverrides, setFlightOverrides] = useState({})
+  const [showFlights, setShowFlights] = useState(false)
 
   // Use context state for checked-in players
   const selectedPlayers = checkedInPlayers
@@ -776,7 +778,8 @@ function GeneratePage() {
       }
     })
 
-    const generated = generateTeams(selectedPlayerObjects, pairingRequests, manualTeams, { allowFivesomes })
+    const overrides = Object.keys(flightOverrides).length > 0 ? flightOverrides : null
+    const generated = generateTeams(selectedPlayerObjects, pairingRequests, manualTeams, { allowFivesomes, flightOverrides: overrides })
 
     // Save teams to context and navigate to Teams page
     setTeams(generated)
@@ -916,6 +919,120 @@ function GeneratePage() {
       {/* Admin-only sections */}
       {isAdmin && (
         <>
+          {/* Flight Preview */}
+          {selectedPlayers.length >= 4 && (() => {
+            const flightLabels = ['A', 'B', 'C', 'D']
+            const flightColors = ['var(--color-danger)', 'var(--color-accent-blue)', 'var(--color-success)', 'var(--color-accent-purple)']
+            // Compute flights for checked-in, non-manual-team players
+            const flightPlayers = availableForPairing
+              .map(p => {
+                const effectiveIndex = getEffectiveHandicap(p, handicapSettings, leagueId, courseTees)
+                const playerTee = p.defaultTee || 'blue'
+                const effectiveHandicap = getCourseHandicapForTee(effectiveIndex, playerTee, courseTees)
+                return { ...p, handicap: effectiveIndex, effectiveHandicap }
+              })
+              .sort((a, b) => getPlayerHandicap(a) - getPlayerHandicap(b))
+            const numFlights = 4
+
+            // Compute flights
+            const flights = [[], [], [], []]
+            flightPlayers.forEach(p => {
+              const f = getPlayerFlightByHandicap(p, flightPlayers, numFlights, Object.keys(flightOverrides).length > 0 ? flightOverrides : null)
+              flights[f].push(p)
+            })
+
+            return (
+              <div style={{ marginBottom: '30px' }}>
+                <div
+                  onClick={() => setShowFlights(!showFlights)}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    cursor: 'pointer', marginBottom: showFlights ? '12px' : 0
+                  }}
+                >
+                  <h3 style={{ margin: 0 }}>Player Flights (A-B-C-D)</h3>
+                  <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    {showFlights ? '▼ Hide' : '▶ Show'}
+                  </span>
+                </div>
+                {showFlights && (
+                  <>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+                      Based on handicap. Tap a player's flight letter to override.
+                    </div>
+                    {flights.map((players, fi) => (
+                      <div key={fi} style={{ marginBottom: '10px' }}>
+                        <div style={{
+                          fontSize: '13px', fontWeight: '700', color: flightColors[fi],
+                          marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px'
+                        }}>
+                          Flight {flightLabels[fi]} ({players.length})
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {players.map(p => {
+                            const isOverridden = flightOverrides[p.id] != null
+                            const hcp = p.handicap != null ? Math.round(p.handicap) : '?'
+                            return (
+                              <div key={p.id} style={{
+                                display: 'flex', alignItems: 'center', gap: '4px',
+                                background: isOverridden ? 'var(--color-warning-light)' : 'var(--color-surface-sunken)',
+                                border: `1px solid ${isOverridden ? 'var(--color-warning)' : 'var(--color-border)'}`,
+                                borderRadius: '20px', padding: '5px 10px', fontSize: '13px'
+                              }}>
+                                <span style={{ fontWeight: '500' }}>{p.name.split(' ')[0]}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>({hcp})</span>
+                                <select
+                                  value={flightOverrides[p.id] != null ? flightOverrides[p.id] : ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value
+                                    setFlightOverrides(prev => {
+                                      const next = { ...prev }
+                                      if (val === '' || parseInt(val) === getPlayerFlightByHandicap(p, flightPlayers, numFlights, null)) {
+                                        delete next[p.id]
+                                      } else {
+                                        next[p.id] = parseInt(val)
+                                      }
+                                      return next
+                                    })
+                                  }}
+                                  style={{
+                                    padding: '2px 4px', fontSize: '12px', fontWeight: '700',
+                                    border: `1px solid ${isOverridden ? 'var(--color-warning)' : 'var(--color-border)'}`,
+                                    borderRadius: '4px',
+                                    background: isOverridden ? 'var(--color-warning-light)' : 'transparent',
+                                    cursor: 'pointer',
+                                    color: flightColors[flightOverrides[p.id] != null ? flightOverrides[p.id] : fi]
+                                  }}
+                                >
+                                  <option value="">{flightLabels[fi]}</option>
+                                  {flightLabels.map((label, idx) => idx !== fi && (
+                                    <option key={idx} value={idx}>→ {label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                    {Object.keys(flightOverrides).length > 0 && (
+                      <button
+                        onClick={() => setFlightOverrides({})}
+                        style={{
+                          marginTop: '8px', background: 'none', border: '1px solid var(--color-border)',
+                          borderRadius: '6px', padding: '6px 12px', fontSize: '12px',
+                          color: 'var(--color-text-secondary)', cursor: 'pointer'
+                        }}
+                      >
+                        Reset All Overrides
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )
+          })()}
+
           {/* Manual Teams */}
           <div style={{ marginBottom: '30px' }}>
             <h3 style={{ marginBottom: '15px' }}>Manual Teams (Optional)</h3>

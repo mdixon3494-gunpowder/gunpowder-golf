@@ -32,7 +32,11 @@ function getPlayerRating(player) {
  * Determine which flight (0-3 for A-D) a player belongs to
  * based on their handicap relative to all players
  */
-function getPlayerFlightByHandicap(player, allPlayersSorted, numFlights = 4) {
+function getPlayerFlightByHandicap(player, allPlayersSorted, numFlights = 4, flightOverrides = null) {
+  // Check for manual flight override first
+  if (flightOverrides && flightOverrides[player.id] != null) {
+    return Math.min(flightOverrides[player.id], numFlights - 1)
+  }
   const idx = allPlayersSorted.findIndex(p => p.id === player.id)
   if (idx === -1) {
     // Player not in sorted list (manual team member) - calculate based on handicap position
@@ -162,11 +166,11 @@ function selectFromFlight(flightPool, team) {
 /**
  * Analyze a team's flight composition and determine what's needed
  */
-function analyzeTeamFlights(team, allPlayersSorted, numFlights, targetSize) {
+function analyzeTeamFlights(team, allPlayersSorted, numFlights, targetSize, flightOverrides = null) {
   const flightCounts = new Array(numFlights).fill(0)
 
   for (const player of team) {
-    const flight = getPlayerFlightByHandicap(player, allPlayersSorted, numFlights)
+    const flight = getPlayerFlightByHandicap(player, allPlayersSorted, numFlights, flightOverrides)
     if (flight >= 0 && flight < numFlights) {
       flightCounts[flight]++
     }
@@ -228,7 +232,7 @@ function analyzeTeamFlights(team, allPlayersSorted, numFlights, targetSize) {
  * Post-fill swap: try to resolve recency conflicts by swapping same-flight players between teams.
  * Only swaps if the swap doesn't create a new conflict for the other team.
  */
-function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds) {
+function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds, flightOverrides = null) {
   let improved = true
   let iterations = 0
   const maxIterations = 50 // Safety limit
@@ -249,7 +253,7 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
         if (!hasRecencyConflict(player, teammateIds)) continue
 
         // This player has a conflict — try swapping with same-flight player on another team
-        const playerFlight = getPlayerFlightByHandicap(player, sortedPlayers, numFlights)
+        const playerFlight = getPlayerFlightByHandicap(player, sortedPlayers, numFlights, flightOverrides)
 
         let bestSwap = null
         let bestSwapScore = Infinity
@@ -263,7 +267,7 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
             // Skip paired/manual players
             if (pairedPlayerIds.has(candidate.id)) continue
             // Must be same flight
-            if (getPlayerFlightByHandicap(candidate, sortedPlayers, numFlights) !== playerFlight) continue
+            if (getPlayerFlightByHandicap(candidate, sortedPlayers, numFlights, flightOverrides) !== playerFlight) continue
 
             // Check if swap would be acceptable for both teams
             const newTeamI = [...team.slice(0, pi), candidate, ...team.slice(pi + 1)]
@@ -301,8 +305,10 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
   }
 }
 
+export { getPlayerHandicap, getPlayerFlightByHandicap }
+
 export function generateTeams(activePlayers, pairingRequests = [], manualTeams = [], options = {}) {
-  const { allowFivesomes = false } = options
+  const { allowFivesomes = false, flightOverrides = null } = options
   // Separate complete and incomplete manual teams
   const completeManualTeams = manualTeams.filter(mt => mt.players.length >= 4)
   const incompleteManualTeams = manualTeams.filter(mt => mt.players.length > 0 && mt.players.length < 4)
@@ -343,8 +349,8 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     const p2 = remainingPlayers.find(p => p.id === parseInt(request.player2))
 
     if (p1 && p2) {
-      const flight1 = getPlayerFlightByHandicap(p1, sortedPlayers, numFlights)
-      const flight2 = getPlayerFlightByHandicap(p2, sortedPlayers, numFlights)
+      const flight1 = getPlayerFlightByHandicap(p1, sortedPlayers, numFlights, flightOverrides)
+      const flight2 = getPlayerFlightByHandicap(p2, sortedPlayers, numFlights, flightOverrides)
 
       pairsWithFlightInfo.push({
         players: [p1, p2],
@@ -481,7 +487,15 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
 
   // Create flight pools — SHUFFLED for randomization within each flight
   const flightPools = []
-  if (unpairedPlayers.length > 0) {
+  if (unpairedPlayers.length > 0 && flightOverrides && Object.keys(flightOverrides).length > 0) {
+    // When flight overrides exist, assign each player to their overridden flight
+    for (let f = 0; f < numFlights; f++) flightPools.push([])
+    for (const player of unpairedPlayers) {
+      const flight = getPlayerFlightByHandicap(player, sortedPlayers, numFlights, flightOverrides)
+      flightPools[flight].push(player)
+    }
+    for (const pool of flightPools) shuffle(pool)
+  } else if (unpairedPlayers.length > 0) {
     const baseFlightSize = Math.floor(unpairedPlayers.length / numFlights)
     const extraPlayers = unpairedPlayers.length % numFlights
 
@@ -514,7 +528,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     if (spotsNeeded <= 0) continue
 
     // Analyze what this team needs
-    const analysis = analyzeTeamFlights(team.players, sortedPlayers, numFlights, team.targetSize)
+    const analysis = analyzeTeamFlights(team.players, sortedPlayers, numFlights, team.targetSize, flightOverrides)
 
     // If team has specific mirror needs, prioritize those
     if (team.needsMirror !== undefined && team.mirrorCount > 0) {
@@ -611,7 +625,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
   }
 
   // === Phase 6: Post-fill recency conflict resolution via same-flight swaps ===
-  resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds)
+  resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds, flightOverrides)
 
   // Sort teams: 4-person teams first, then by size descending
   finalTeams.sort((a, b) => b.length - a.length)

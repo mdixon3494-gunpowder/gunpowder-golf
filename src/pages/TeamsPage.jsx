@@ -993,11 +993,8 @@ function TeamsPage() {
   }
 
   const clearTeams = () => {
-    if (window.confirm('Clear all teams? This cannot be undone.')) {
+    if (window.confirm('Clear teams and go back to check-in? Your checked-in players, manual teams, and pairing requests will be kept.')) {
       setTeams([])
-      setCheckedInPlayers([])
-      setManualTeams([])
-      setPairingRequests([])
     }
   }
 
