@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { useAuth } from '../context/AuthContext'
-import { removeLeagueMember } from '../lib/leagueService'
+import { removeLeagueMember, updateLeagueMetadata } from '../lib/leagueService'
 import InviteSection from '../components/InviteSection'
 import PendingApprovalList from '../components/PendingApprovalList'
 import MemberManagement from '../components/MemberManagement'
@@ -337,13 +337,34 @@ function SiteOwnerAccessSection({
   )
 }
 
-function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin, isLeagueOwner, onSwitchLeague, isAuthenticated }) {
+function LeagueInfoSection({ leagueId, leagueName, leagueSettings, setLeagueSettings, onLeave, onDelete, onCloneToTest, isAdmin, isLeagueOwner, onSwitchLeague, isAuthenticated }) {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [showCloneForm, setShowCloneForm] = useState(false)
   const [testCode, setTestCode] = useState('')
   const [cloneStatus, setCloneStatus] = useState({ loading: false, error: '', success: '' })
+
+  const [editingName, setEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState(leagueName || leagueSettings?.leagueName || '')
+  const [nameSaving, setNameSaving] = useState(false)
+  const [nameError, setNameError] = useState('')
+
+  const saveName = async () => {
+    const next = nameInput.trim()
+    if (!next) { setNameError('Name cannot be empty'); return }
+    setNameSaving(true); setNameError('')
+    try {
+      await updateLeagueMetadata(leagueId, { name: next })
+      // Mirror into leagueSettings so the header updates immediately (it falls back to leagueSettings.leagueName)
+      setLeagueSettings({ ...(leagueSettings || {}), leagueName: next })
+      setEditingName(false)
+    } catch (err) {
+      setNameError(err.message || 'Save failed')
+    } finally {
+      setNameSaving(false)
+    }
+  }
 
   const copyLeagueCode = () => {
     navigator.clipboard.writeText(leagueId)
@@ -380,6 +401,44 @@ function LeagueInfoSection({ leagueId, onLeave, onDelete, onCloneToTest, isAdmin
       border: '1px solid var(--color-border)'
     }}>
       <h3 style={{ marginBottom: '15px' }}>League Information</h3>
+
+      {/* League Name */}
+      <div style={{
+        background: 'var(--color-surface-sunken)',
+        padding: '15px',
+        borderRadius: '8px',
+        marginBottom: '12px'
+      }}>
+        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>League Name</div>
+        {editingName && isAdmin ? (
+          <div>
+            <input
+              type="text"
+              value={nameInput}
+              onChange={(e) => { setNameInput(e.target.value); setNameError('') }}
+              maxLength={60}
+              style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid var(--color-border)', marginBottom: '8px' }}
+              autoFocus
+            />
+            {nameError && <div style={{ color: 'var(--color-danger)', fontSize: '12px', marginBottom: '8px' }}>{nameError}</div>}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn btn-primary" onClick={saveName} disabled={nameSaving} style={{ flex: 1 }}>{nameSaving ? 'Saving…' : 'Save'}</button>
+              <button className="btn btn-secondary" onClick={() => { setEditingName(false); setNameInput(leagueName || leagueSettings?.leagueName || ''); setNameError('') }} disabled={nameSaving} style={{ flex: 1 }}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '20px', fontWeight: '600' }}>
+              {leagueName || leagueSettings?.leagueName || <span style={{ color: 'var(--color-text-tertiary)', fontWeight: 'normal', fontStyle: 'italic' }}>(unnamed)</span>}
+            </div>
+            {isAdmin && (
+              <button className="btn btn-secondary" onClick={() => { setNameInput(leagueName || leagueSettings?.leagueName || ''); setEditingName(true) }}>
+                Rename
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       <div style={{
         background: 'var(--color-surface-sunken)',
@@ -4161,6 +4220,9 @@ function SettingsPage({ onShowLeagueSelector }) {
           <>
             <LeagueInfoSection
               leagueId={leagueId}
+              leagueName={leagueName}
+              leagueSettings={leagueSettings}
+              setLeagueSettings={setLeagueSettings}
               onLeave={() => {
                 if (profile?.id) {
                   removeLeagueMember(leagueId, profile.id).catch(err => {
