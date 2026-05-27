@@ -1516,6 +1516,182 @@ function TeamScoringRulesSection({ leagueSettings, onUpdate, isAdmin }) {
   )
 }
 
+function CourseSection({ leagueSettings, onUpdate, isAdmin }) {
+  const courseId = leagueSettings?.course || 'gunpowder'
+
+  const options = [
+    { id: 'gunpowder', label: 'Gunpowder', subtitle: 'Single 18 — current default' },
+    { id: 'shenvalee', label: 'Shenvalee Resort', subtitle: '27 holes (Olde / Creek / Miller) — pick nines per round' }
+  ]
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '4px' }}>Course</h3>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
+        Which course this league plays. Drives the scorecard used for scoring and skins.
+      </p>
+
+      {isAdmin ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {options.map(opt => (
+            <button
+              key={opt.id}
+              onClick={() => onUpdate({ ...leagueSettings, course: opt.id })}
+              style={{
+                textAlign: 'left',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: courseId === opt.id ? '2px solid var(--color-info)' : '1px solid var(--color-border)',
+                background: courseId === opt.id ? 'var(--color-info-light)' : 'var(--color-surface)',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{ fontWeight: '600', fontSize: '14px' }}>{opt.label}</div>
+              <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>{opt.subtitle}</div>
+            </button>
+          ))}
+          {courseId === 'shenvalee' && (
+            <div style={{ marginTop: '8px', padding: '10px', background: 'var(--color-surface-sunken)', borderRadius: '6px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+              You'll pick which nine plays as the front and which as the back on the Teams page before starting each round.
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ background: 'var(--color-surface-sunken)', padding: '12px 15px', borderRadius: '8px', fontSize: '14px' }}>
+          Course: <strong>{options.find(o => o.id === courseId)?.label || courseId}</strong>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TripModeSection({ leagueSettings, onUpdate, isAdmin }) {
+  const trip = leagueSettings?.tripMode || { enabled: false, totalRounds: 4, maxTimesTogether: 2, noConsecutive: true }
+
+  const update = (changes) => {
+    onUpdate({
+      ...leagueSettings,
+      tripMode: { ...trip, ...changes }
+    })
+  }
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '4px' }}>Trip Mode</h3>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
+        For multi-round golf trips with no preset handicaps. Flighting uses average trip scores; recency rules keep teammates fresh.
+      </p>
+
+      {isAdmin ? (
+        <>
+          <label style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
+            padding: '14px',
+            borderRadius: '8px',
+            border: trip.enabled ? '2px solid var(--color-success)' : '1px solid var(--color-border)',
+            background: trip.enabled ? 'var(--color-success-light)' : 'var(--color-surface)',
+            cursor: 'pointer',
+            marginBottom: '12px'
+          }}>
+            <input
+              type="checkbox"
+              checked={!!trip.enabled}
+              onChange={(e) => update({ enabled: e.target.checked })}
+              style={{ marginTop: '2px' }}
+            />
+            <div>
+              <div style={{ fontWeight: '600', fontSize: '14px' }}>Enable Trip Mode</div>
+              <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginTop: '2px' }}>
+                Round 1: build teams manually. Rounds 2+: flighting uses average gross score across trip rounds.
+              </div>
+            </div>
+          </label>
+
+          {trip.enabled && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>
+                    Total Trip Rounds
+                  </label>
+                  <input
+                    type="number"
+                    min="2"
+                    max="10"
+                    value={trip.totalRounds ?? 4}
+                    onChange={(e) => update({ totalRounds: Math.max(2, parseInt(e.target.value) || 4) })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '14px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px' }}>
+                    Max Times Together
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={trip.maxTimesTogether ?? 2}
+                    onChange={(e) => update({ maxTimesTogether: Math.max(1, parseInt(e.target.value) || 2) })}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '14px' }}
+                  />
+                </div>
+              </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={trip.noConsecutive !== false}
+                  onChange={(e) => update({ noConsecutive: e.target.checked })}
+                  style={{ width: '18px', height: '18px' }}
+                />
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: '600' }}>No back-to-back teammates</div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                    Players cannot be on the same team two rounds in a row (admin can still override manually).
+                  </div>
+                </div>
+              </label>
+
+              <div style={{
+                background: 'var(--color-surface-sunken)',
+                padding: '12px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: 'var(--color-text-secondary)',
+                lineHeight: '1.5'
+              }}>
+                <strong>Active rules:</strong><br />
+                &#x2022; No two players on the same team in consecutive rounds {trip.noConsecutive !== false ? '✓' : '— off'}<br />
+                &#x2022; No two players together more than <strong>{trip.maxTimesTogether ?? 2}</strong> times across <strong>{trip.totalRounds ?? 4}</strong> rounds<br />
+                &#x2022; Manual teams and pairing requests bypass these rules
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div style={{ background: 'var(--color-surface-sunken)', padding: '12px 15px', borderRadius: '8px', fontSize: '14px' }}>
+          Trip Mode: <strong>{trip.enabled ? `On (${trip.totalRounds}r, max ${trip.maxTimesTogether} together)` : 'Off'}</strong>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ScoringPermissionsSection({ leagueSettings, onUpdate, isAdmin }) {
   const permissions = leagueSettings?.scoringPermissions || { enabled: false }
 
@@ -3961,6 +4137,16 @@ function SettingsPage({ onShowLeagueSelector }) {
               isAdmin={isAdmin}
             />
             <ScoringPermissionsSection
+              leagueSettings={leagueSettings}
+              onUpdate={setLeagueSettings}
+              isAdmin={isAdmin}
+            />
+            <CourseSection
+              leagueSettings={leagueSettings}
+              onUpdate={setLeagueSettings}
+              isAdmin={isAdmin}
+            />
+            <TripModeSection
               leagueSettings={leagueSettings}
               onUpdate={setLeagueSettings}
               isAdmin={isAdmin}

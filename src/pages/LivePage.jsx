@@ -2,7 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
 import { useAuth } from '../context/AuthContext'
-import { GUNPOWDER_SCORECARD, getHoleInfo, PAR_3_HOLES, getAllHoles } from '../lib/courseData'
+import {
+  GUNPOWDER_SCORECARD as DEFAULT_SCORECARD,
+  PAR_3_HOLES as DEFAULT_PAR_3,
+  getHoleInfo,
+  getAllHoles,
+  getHolePar
+} from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
 import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore, calculateBigBoysScore, resolveManualTeamScore } from '../utils/formatScoring'
 import ManualMatchPlaySelector from '../components/ManualMatchPlaySelector'
@@ -25,6 +31,8 @@ function formatRelativeToPar(score) {
 
 // Leaderboard Component
 function Leaderboard({ liveRound, view, setView, teamScoringRules, courseTees }) {
+  const { activeScorecard } = useLeague()
+  const GUNPOWDER_SCORECARD = activeScorecard || DEFAULT_SCORECARD
 
   const { entries, displayMode, sortDirection, matchResult } = getLeaderboardData(liveRound, teamScoringRules, courseTees)
 
@@ -1022,6 +1030,9 @@ function ManualPlayerTotal({ team, onUpdatePlayerManualTotal }) {
 
 // Score Entry Component - Legacy Style
 function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeamId, players, onMarkTeamFinished, onUpdateGreenie, isQuickSkins, isIndividualRound, handicapSettings, leagueSettings, courseTees, onUpdateManualTeamScore, onToggleManualMode, onUpdatePlayerManualTotal, holeStats, onUpdateHoleStats, currentProfileId, isAdmin }) {
+  const { activeScorecard, activePar3Holes } = useLeague()
+  const GUNPOWDER_SCORECARD = activeScorecard || DEFAULT_SCORECARD
+  const PAR_3_HOLES = activePar3Holes || DEFAULT_PAR_3
   const [activeInput, setActiveInput] = useState(null)
   const [keypadValue, setKeypadValue] = useState('')
   const [isFirstKeypress, setIsFirstKeypress] = useState(true)
@@ -1672,10 +1683,11 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       const score = player.scores[hole.hole]
                       const hasScore = score !== undefined && score !== null && score !== ''
                       const numScore = parseInt(score)
-                      const maxScore = getMaxScore(player, hole.par, hole.hole)
+                      const playerPar = getHolePar(hole, player.tee) ?? hole.par
+                      const maxScore = getMaxScore(player, playerPar, hole.hole)
                       const isCapped = hasScore && !isNaN(numScore) && numScore > maxScore
                       const effectiveScore = hasScore && score !== 'X' ? Math.min(numScore, maxScore) : null
-                      const scoreToPar = effectiveScore !== null ? effectiveScore - hole.par : null
+                      const scoreToPar = effectiveScore !== null ? effectiveScore - playerPar : null
 
                       let bgColor = 'transparent'
                       let border = 'none'
@@ -1802,10 +1814,11 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
                       const score = player.scores[hole.hole]
                       const hasScore = score !== undefined && score !== null && score !== ''
                       const numScore = parseInt(score)
-                      const maxScore = getMaxScore(player, hole.par, hole.hole)
+                      const playerPar = getHolePar(hole, player.tee) ?? hole.par
+                      const maxScore = getMaxScore(player, playerPar, hole.hole)
                       const isCapped = hasScore && !isNaN(numScore) && numScore > maxScore
                       const effectiveScore = hasScore && score !== 'X' ? Math.min(numScore, maxScore) : null
-                      const scoreToPar = effectiveScore !== null ? effectiveScore - hole.par : null
+                      const scoreToPar = effectiveScore !== null ? effectiveScore - playerPar : null
 
                       let bgColor = 'transparent'
                       let border = 'none'
@@ -2113,6 +2126,9 @@ function ScoringGrid({ liveRound, onUpdateScore, selectedTeamId, setSelectedTeam
 
 // Greenies Component
 function GreeniesTracker({ liveRound, onUpdateGreenie, skinsMatch }) {
+  const { activeScorecard, activePar3Holes } = useLeague()
+  const GUNPOWDER_SCORECARD = activeScorecard || DEFAULT_SCORECARD
+  const PAR_3_HOLES = activePar3Holes || DEFAULT_PAR_3
   const [selectedHole, setSelectedHole] = useState(PAR_3_HOLES[0])
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [markAsFinal, setMarkAsFinal] = useState(false)
@@ -2966,6 +2982,9 @@ function LatePlayerManager({ liveRound, players, onAddLatePlayer, onAddGuestPlay
 
 // Skins Game Component
 function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAdmin, leaguePlayers, isCasualGame }) {
+  const { activeScorecard, activePar3Holes } = useLeague()
+  const GUNPOWDER_SCORECARD = activeScorecard || DEFAULT_SCORECARD
+  const PAR_3_HOLES = activePar3Holes || DEFAULT_PAR_3
   const [showSetup, setShowSetup] = useState(false)
   const [showEditSettings, setShowEditSettings] = useState(false)
   const [skinsView, setSkinsView] = useState('front')
@@ -3143,7 +3162,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       const activePlayerIds = activePlayers.map(p => String(p.id))
 
       // Get scores for active skins players on this hole
-      // Two-pass approach for smarter X score handling
+      // Two-pass approach for smarter X score handling.
+      // Each entry tracks BOTH raw score (for display) and scoreVsPar (used for ranking),
+      // so per-tee par differences (e.g. Shenvalee Miller #4) are handled correctly.
       const holeScores = []
       const xScorePlayers = []
       let allScored = true
@@ -3156,24 +3177,24 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
         } else if (rawScore === 'X') {
           xScorePlayers.push(player)
         } else {
-          holeScores.push({ playerId: player.id, playerName: player.name, score: parseInt(rawScore) })
+          const score = parseInt(rawScore)
+          const playerPar = getHolePar(holeInfo, player.tee) ?? holeInfo.par
+          holeScores.push({ playerId: player.id, playerName: player.name, score, playerPar, scoreVsPar: score - playerPar })
         }
       })
 
-      // Second pass: calculate X scores as double/triple bogey
+      // Second pass: calculate X scores as double/triple bogey (per player's own par)
       // X scores are marked with isXScore: true and cannot win outright
-      // This applies to both par-or-better and non-par-or-better modes
       if (xScorePlayers.length > 0) {
-        const par = holeInfo.par
-
         xScorePlayers.forEach(player => {
+          const playerPar = getHolePar(holeInfo, player.tee) ?? holeInfo.par
           // League player with handicap < 18: double bogey (par + 2)
           // League player with handicap >= 18 or guest: triple bogey (par + 3)
           const isGuest = String(player.id).startsWith('guest_')
           const handicap = player.handicap || 0
-          const xScore = (isGuest || handicap >= 18) ? par + 3 : par + 2
+          const xScore = (isGuest || handicap >= 18) ? playerPar + 3 : playerPar + 2
 
-          holeScores.push({ playerId: player.id, playerName: player.name, score: xScore, isXScore: true })
+          holeScores.push({ playerId: player.id, playerName: player.name, score: xScore, playerPar, scoreVsPar: xScore - playerPar, isXScore: true })
         })
       }
 
@@ -3194,8 +3215,11 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
         continue
       }
 
-      const minScore = Math.min(...holeScores.map(s => s.score))
-      const winners = holeScores.filter(s => s.score === minScore)
+      // Rank by score-vs-par (so a player on Red tees with par 3 doesn't beat a player on Blue tees
+      // with par 4 when both shoot a "3"). When all players share the same par this is equivalent
+      // to ranking by raw gross score.
+      const minScoreVsPar = Math.min(...holeScores.map(s => s.scoreVsPar))
+      const winners = holeScores.filter(s => s.scoreVsPar === minScoreVsPar)
 
       if (!allScored) {
         // Find current leader (must not be an X score)
@@ -3206,9 +3230,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
       }
 
       // All active players scored - determine winner
-      // Winner must not be an X score, and must meet par requirement if enabled
+      // Winner must not be an X score, and must meet par requirement if enabled (compare to own par)
       const isValidWin = winners.length === 1 && !winners[0].isXScore &&
-        (!skinsMatch.settings.parOrBetterRequired || winners[0].score <= holeInfo.par)
+        (!skinsMatch.settings.parOrBetterRequired || winners[0].scoreVsPar <= 0)
 
       let holeWinner = null
       if (!isValidWin) {
@@ -3227,10 +3251,10 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
         results[hole].winnerName = holeWinner.playerName
         results[hole].winningScore = holeWinner.score
 
-        // Calculate skin value with flexible multipliers
+        // Calculate skin value with flexible multipliers — use winner's own par.
         let skinValue = 1
         const score = holeWinner.score
-        const scoreToPar = score - holeInfo.par
+        const scoreToPar = holeWinner.scoreVsPar
         const s = skinsMatch.settings
 
         // Check for backwards compatibility with old birdieDoubleEagleTriple setting
@@ -3301,12 +3325,12 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
               return
             }
 
-            const eligibleMinScore = Math.min(...eligibleScores.map(s => s.score))
-            const eligibleWinners = eligibleScores.filter(s => s.score === eligibleMinScore)
+            const eligibleMinScoreVsPar = Math.min(...eligibleScores.map(s => s.scoreVsPar))
+            const eligibleWinners = eligibleScores.filter(s => s.scoreVsPar === eligibleMinScoreVsPar)
 
             // Check if there's a single winner among eligible players (must not be X score)
             const eligibleValidWin = eligibleWinners.length === 1 && !eligibleWinners[0].isXScore &&
-              (!skinsMatch.settings.parOrBetterRequired || eligibleWinners[0].score <= holeInfo.par)
+              (!skinsMatch.settings.parOrBetterRequired || eligibleWinners[0].scoreVsPar <= 0)
 
             if (eligibleValidWin) {
               const coWinner = eligibleWinners[0]
@@ -3418,23 +3442,26 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
               const rawScore = player.scores?.[hole]
               if (rawScore === undefined || rawScore === null || rawScore === '') return
 
+              const playerPar = getHolePar(holeInfo, player.tee) ?? holeInfo.par
+
               if (rawScore === 'X') {
                 // X = double bogey for low handicap, triple bogey for guests/high handicap
                 const isGuest = String(player.id).startsWith('guest_')
                 const handicap = player.handicap || 0
-                const xScore = (isGuest || handicap >= 18) ? holeInfo.par + 3 : holeInfo.par + 2
-                eligibleScores.push({ playerId: player.id, playerName: player.name, score: xScore, isXScore: true })
+                const xScore = (isGuest || handicap >= 18) ? playerPar + 3 : playerPar + 2
+                eligibleScores.push({ playerId: player.id, playerName: player.name, score: xScore, playerPar, scoreVsPar: xScore - playerPar, isXScore: true })
               } else {
-                eligibleScores.push({ playerId: player.id, playerName: player.name, score: parseInt(rawScore), isXScore: false })
+                const score = parseInt(rawScore)
+                eligibleScores.push({ playerId: player.id, playerName: player.name, score, playerPar, scoreVsPar: score - playerPar, isXScore: false })
               }
             })
 
             if (eligibleScores.length > 0) {
-              const minScore = Math.min(...eligibleScores.map(s => s.score))
-              const winners = eligibleScores.filter(s => s.score === minScore)
+              const minScoreVsPar = Math.min(...eligibleScores.map(s => s.scoreVsPar))
+              const winners = eligibleScores.filter(s => s.scoreVsPar === minScoreVsPar)
 
               if (winners.length === 1 && !winners[0].isXScore &&
-                  (!skinsMatch.settings.parOrBetterRequired || winners[0].score <= holeInfo.par)) {
+                  (!skinsMatch.settings.parOrBetterRequired || winners[0].scoreVsPar <= 0)) {
                 const coWinner = winners[0]
 
                 // Add as carryover winner
@@ -3597,7 +3624,7 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
   }
 
   // Calculate greenies for Quick Skins (with eligibility tracking)
-  const PAR_3_HOLES = [4, 8, 12, 17]
+  // PAR_3_HOLES already in scope from the SkinsTracker context destructure above.
 
   const calculateGreenies = () => {
     if (!greeniesEnabled || skinsPlayers.length < 2) return {}
@@ -6666,8 +6693,12 @@ function LivePage() {
     isTestLeague,
     saveCasualRoundHistory,
     saveIndividualRoundHistory,
-    saveLeagueRoundHistory
+    saveLeagueRoundHistory,
+    activeScorecard,
+    activePar3Holes
   } = useLeague()
+  const GUNPOWDER_SCORECARD = activeScorecard || DEFAULT_SCORECARD
+  const PAR_3_HOLES = activePar3Holes || DEFAULT_PAR_3
   const { profile } = useAuth()
 
   // Leaderboard view state - defaults based on starting hole (front if 1-9, back if 10-18)

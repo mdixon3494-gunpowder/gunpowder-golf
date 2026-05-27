@@ -4,6 +4,68 @@ import { useLeague } from '../context/LeagueContext'
 import { getTeamName, calculateTeamSkill, calculateTeamBalance } from '../utils/teamGeneration'
 import { formatHandicap, formatCourseHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
 import { getDisplayName } from '../utils/playerNames'
+import { SHENVALEE_COURSE } from '../lib/courseData'
+
+function NinePicker({ roundNines, setRoundNines }) {
+  const nineKeys = Object.keys(SHENVALEE_COURSE.nines)
+  const front = roundNines?.front || ''
+  const back = roundNines?.back || ''
+  const duplicate = front && back && front === back
+
+  const update = (which, val) => {
+    setRoundNines({ ...(roundNines || {}), [which]: val })
+  }
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      border: '2px solid var(--color-info)',
+      borderRadius: '10px',
+      padding: '15px',
+      marginBottom: '12px'
+    }}>
+      <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '6px' }}>
+        Shenvalee Nines for this Round
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '10px' }}>
+        Pick which nine plays as the front and which plays as the back.
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Front Nine</label>
+          <select
+            value={front}
+            onChange={(e) => update('front', e.target.value)}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '14px' }}
+          >
+            <option value="">— select —</option>
+            {nineKeys.map(k => (
+              <option key={k} value={k}>{SHENVALEE_COURSE.nines[k].name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Back Nine</label>
+          <select
+            value={back}
+            onChange={(e) => update('back', e.target.value)}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)', fontSize: '14px' }}
+          >
+            <option value="">— select —</option>
+            {nineKeys.map(k => (
+              <option key={k} value={k}>{SHENVALEE_COURSE.nines[k].name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {duplicate && (
+        <div style={{ marginTop: '10px', color: 'var(--color-danger)', fontSize: '12px' }}>
+          Front and back nines must be different.
+        </div>
+      )}
+    </div>
+  )
+}
 
 function AddLatePlayer({ availablePlayers, onAdd, courseTees }) {
   const [open, setOpen] = useState(false)
@@ -768,8 +830,14 @@ function TeamsPage() {
     leagueId,
     leagueName,
     roundFormatOverride,
-    setRoundFormatOverride
+    setRoundFormatOverride,
+    roundNines,
+    setRoundNines
   } = useLeague()
+
+  const courseId = leagueSettings?.course || 'gunpowder'
+  const isShenvalee = courseId === 'shenvalee'
+  const ninesReady = !isShenvalee || (roundNines?.front && roundNines?.back && roundNines.front !== roundNines.back)
 
   const [swapSelection, setSwapSelection] = useState(null) // { playerId, teamIndex }
 
@@ -939,10 +1007,16 @@ function TeamsPage() {
       return
     }
 
+    if (isShenvalee && !ninesReady) {
+      alert('Please pick a front nine and a different back nine before starting the round.')
+      return
+    }
+
     const round = {
       id: Date.now(),
       date: new Date().toISOString(),
       ...(roundFormatOverride ? { formatConfig: roundFormatOverride } : {}),
+      ...(isShenvalee && roundNines ? { course: 'shenvalee', nines: { ...roundNines } } : {}),
       teams: teams.map((team, idx) => ({
         id: idx,
         name: getTeamName(team),
@@ -1097,6 +1171,10 @@ function TeamsPage() {
 
           {/* Action buttons */}
           <div style={{ marginTop: '20px' }}>
+            {isShenvalee && !liveRound && isAdmin && (
+              <NinePicker roundNines={roundNines} setRoundNines={setRoundNines} />
+            )}
+
             {liveRound ? (
               <button
                 className="btn btn-primary"
@@ -1114,7 +1192,8 @@ function TeamsPage() {
               <button
                 className="btn btn-primary"
                 onClick={startLiveRound}
-                style={{ width: '100%', padding: '15px', fontSize: '16px' }}
+                disabled={!ninesReady}
+                style={{ width: '100%', padding: '15px', fontSize: '16px', opacity: ninesReady ? 1 : 0.5, cursor: ninesReady ? 'pointer' : 'not-allowed' }}
               >
                 Start Live Round
               </button>

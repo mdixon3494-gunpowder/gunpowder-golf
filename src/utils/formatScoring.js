@@ -295,9 +295,12 @@ export function getRetireesAdjustment(teamSize, settings = {}) {
 
 export function calculateRetireesScore(team, startHole, endHole, settings = {}, rules = null, courseTees = null) {
   const scoresToCount = settings.retireesScoresToCount || 2
+  // Default useHandicaps = true (legacy retirees behavior). When false, this becomes
+  // pure gross "N best balls" with no net adjustment and no short-team stroke bonus.
+  const useHandicaps = settings.useHandicaps !== false
   const activePlayers = team.players.filter(p => !p.isDNF && p.includeInTeamScore)
   const teamSize = activePlayers.length
-  const adj = getRetireesAdjustment(teamSize, settings)
+  const adj = useHandicaps ? getRetireesAdjustment(teamSize, settings) : { bonusPer9: 0, extraStrokes: 0 }
   const hasRules = rules && rules.maxScoreMode && rules.maxScoreMode !== 'none'
 
   let totalNet = 0
@@ -307,6 +310,7 @@ export function calculateRetireesScore(team, startHole, endHole, settings = {}, 
       // Cap gross scores before net calculation
       netScores = getTeamScoresForHole(team, hole, rules, courseTees)
         .map(e => {
+          if (!useHandicaps) return e.score
           const extraStrokes = adj.extraStrokes
           return e.score - getNetStrokes((e.handicap || 0) + extraStrokes, hole)
         })
@@ -316,6 +320,7 @@ export function calculateRetireesScore(team, startHole, endHole, settings = {}, 
         .map(p => {
           const s = p.scores[hole]
           if (s === undefined || s === null || s === '' || s === 'X') return null
+          if (!useHandicaps) return s
           const extraStrokes = adj.extraStrokes
           return s - getNetStrokes((p.handicap || 0) + extraStrokes, hole)
         })
@@ -323,7 +328,7 @@ export function calculateRetireesScore(team, startHole, endHole, settings = {}, 
         .sort((a, b) => a - b)
     }
 
-    // Take the N best net scores
+    // Take the N best scores (gross or net depending on useHandicaps)
     const best = netScores.slice(0, Math.min(scoresToCount, netScores.length))
     totalNet += best.reduce((sum, s) => sum + s, 0)
   }

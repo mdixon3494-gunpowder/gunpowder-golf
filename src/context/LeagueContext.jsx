@@ -6,6 +6,13 @@ import { useAuth } from './AuthContext'
 import { getTemplateById, getDefaultTemplate } from '../lib/formatTemplateService'
 import { saveRoundHistory, recalculateAndStoreHandicap, calculateCrossLeagueHandicap } from '../lib/roundHistoryService'
 import { createAuditEntry } from '../utils/auditLog'
+import {
+  GUNPOWDER_SCORECARD,
+  GUNPOWDER_PAR_3_HOLES,
+  buildShenvaleeScorecard,
+  par3HolesFromScorecard,
+  setActiveScorecard
+} from '../lib/courseData'
 
 const LeagueContext = createContext(null)
 
@@ -150,6 +157,28 @@ export function LeagueProvider({ children }) {
 
   // Per-round format override (ephemeral, not persisted)
   const [roundFormatOverride, setRoundFormatOverride] = useState(null)
+
+  // Per-round nine selection for multi-nine courses (Shenvalee). Ephemeral until baked into liveRound.
+  const [roundNines, setRoundNines] = useState(null) // { front: 'olde', back: 'creek' } or null
+
+  // Active scorecard for the current league/round — derived from leagueSettings.course + liveRound.nines (or roundNines)
+  const [activeScorecard, setActiveScorecardState] = useState(GUNPOWDER_SCORECARD)
+  const [activePar3Holes, setActivePar3HolesState] = useState(GUNPOWDER_PAR_3_HOLES)
+
+  useEffect(() => {
+    const courseId = leagueSettings?.course || 'gunpowder'
+    let sc = GUNPOWDER_SCORECARD
+    if (courseId === 'shenvalee') {
+      const nines = liveRound?.nines || roundNines
+      if (nines?.front && nines?.back) {
+        sc = buildShenvaleeScorecard(nines.front, nines.back) || GUNPOWDER_SCORECARD
+      }
+    }
+    const par3s = par3HolesFromScorecard(sc)
+    setActiveScorecard(sc, par3s) // module singleton
+    setActiveScorecardState(sc)
+    setActivePar3HolesState(par3s)
+  }, [leagueSettings?.course, liveRound?.nines?.front, liveRound?.nines?.back, roundNines?.front, roundNines?.back])
 
   // Admin state
   const [isAdminPIN, setIsAdminPIN] = useState(() => {
@@ -1062,6 +1091,10 @@ export function LeagueProvider({ children }) {
     // Round format override
     roundFormatOverride,
     setRoundFormatOverride,
+    roundNines,
+    setRoundNines,
+    activeScorecard,
+    activePar3Holes,
 
     // Handicap settings
     handicapSettings,

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLeague } from '../context/LeagueContext'
-import { generateTeams, getPlayerHandicap, getPlayerFlightByHandicap } from '../utils/teamGeneration'
+import { generateTeams, getPlayerHandicap, getPlayerFlightByHandicap, getPlayerSortKey, getPlayerTripAverage } from '../utils/teamGeneration'
 import { formatHandicap, formatCourseHandicap, getEffectiveHandicap, getCourseHandicapForTee } from '../utils/handicapCalculation'
 import { FORMAT_CONFIGS } from '../utils/formatScoring'
 
@@ -779,16 +779,53 @@ function GeneratePage() {
     })
 
     const overrides = Object.keys(flightOverrides).length > 0 ? flightOverrides : null
-    const generated = generateTeams(selectedPlayerObjects, pairingRequests, manualTeams, { allowFivesomes, flightOverrides: overrides })
+    const tripMode = leagueSettings?.tripMode?.enabled ? leagueSettings.tripMode : null
+    const generated = generateTeams(selectedPlayerObjects, pairingRequests, manualTeams, { allowFivesomes, flightOverrides: overrides, tripMode })
 
     // Save teams to context and navigate to Teams page
     setTeams(generated)
     navigate('/teams')
   }
 
+  const tripMode = leagueSettings?.tripMode?.enabled ? leagueSettings.tripMode : null
+  const tripRoundsCompleted = activePlayers.reduce((max, p) => {
+    const completed = (p.scoreHistory || []).filter(r => (r.totalScore || r.total) > 0 && r.isComplete !== false).length
+    return Math.max(max, completed)
+  }, 0)
+
+  // In trip mode, default the round format to "2 best gross balls" (Retirees, no handicap)
+  // so the admin doesn't have to set it every morning. They can still change it before generating.
+  useEffect(() => {
+    if (tripMode && !roundFormatOverride && isAdmin) {
+      setRoundFormatOverride({ format: 'retirees', retireesScoresToCount: 2, useHandicaps: false })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tripMode, isAdmin])
+
   return (
     <div>
       <h2 style={{ marginBottom: '20px' }}>Player Check-In</h2>
+
+      {tripMode && isAdmin && (
+        <div style={{
+          background: 'var(--color-success-light)',
+          border: '2px solid var(--color-success)',
+          padding: '12px 15px',
+          borderRadius: '10px',
+          marginBottom: '20px',
+          fontSize: '13px',
+          color: 'var(--color-success)'
+        }}>
+          <div style={{ fontWeight: '700', marginBottom: '4px' }}>
+            Trip Mode Active — Round {tripRoundsCompleted + 1} of {tripMode.totalRounds || 4}
+          </div>
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
+            {tripRoundsCompleted === 0
+              ? 'No trip scores yet — use Manual Teams or Flight Overrides to set Round 1 teams.'
+              : `Flighting uses average gross across ${tripRoundsCompleted} trip round${tripRoundsCompleted === 1 ? '' : 's'}. Max ${tripMode.maxTimesTogether ?? 2} teammate matchups; ${tripMode.noConsecutive !== false ? 'no back-to-back teammates.' : 'consecutive teammates allowed.'}`}
+          </div>
+        </div>
+      )}
 
       {/* Player Selection / Check-In */}
       <div style={{ marginBottom: '30px' }}>
@@ -923,6 +960,7 @@ function GeneratePage() {
           {selectedPlayers.length >= 4 && (() => {
             const flightLabels = ['A', 'B', 'C', 'D']
             const flightColors = ['var(--color-danger)', 'var(--color-accent-blue)', 'var(--color-success)', 'var(--color-accent-purple)']
+            const tripMode = leagueSettings?.tripMode?.enabled ? leagueSettings.tripMode : null
             // Compute flights for checked-in, non-manual-team players
             const flightPlayers = availableForPairing
               .map(p => {
@@ -931,13 +969,13 @@ function GeneratePage() {
                 const effectiveHandicap = getCourseHandicapForTee(effectiveIndex, playerTee, courseTees)
                 return { ...p, handicap: effectiveIndex, effectiveHandicap }
               })
-              .sort((a, b) => getPlayerHandicap(a) - getPlayerHandicap(b))
+              .sort((a, b) => getPlayerSortKey(a, tripMode) - getPlayerSortKey(b, tripMode))
             const numFlights = 4
 
             // Compute flights
             const flights = [[], [], [], []]
             flightPlayers.forEach(p => {
-              const f = getPlayerFlightByHandicap(p, flightPlayers, numFlights, Object.keys(flightOverrides).length > 0 ? flightOverrides : null)
+              const f = getPlayerFlightByHandicap(p, flightPlayers, numFlights, Object.keys(flightOverrides).length > 0 ? flightOverrides : null, tripMode)
               flights[f].push(p)
             })
 
@@ -958,7 +996,9 @@ function GeneratePage() {
                 {showFlights && (
                   <>
                     <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
-                      Based on handicap. Tap a player's flight letter to override.
+                      {tripMode
+                        ? 'Trip Mode: based on average trip score (lower = better). Round 1 players with no scores fall back to handicap. Tap a flight to override.'
+                        : 'Based on handicap. Tap a player\'s flight letter to override.'}
                     </div>
                     {flights.map((players, fi) => (
                       <div key={fi} style={{ marginBottom: '10px' }}>
@@ -971,7 +1011,10 @@ function GeneratePage() {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                           {players.map(p => {
                             const isOverridden = flightOverrides[p.id] != null
-                            const hcp = p.handicap != null ? Math.round(p.handicap) : '?'
+                            const tripAvg = tripMode ? getPlayerTripAverage(p) : null
+                            const metricLabel = tripAvg != null
+                              ? `avg ${tripAvg.toFixed(1)}`
+                              : (p.handicap != null ? Math.round(p.handicap) : '?')
                             return (
                               <div key={p.id} style={{
                                 display: 'flex', alignItems: 'center', gap: '4px',
@@ -980,14 +1023,14 @@ function GeneratePage() {
                                 borderRadius: '20px', padding: '5px 10px', fontSize: '13px'
                               }}>
                                 <span style={{ fontWeight: '500' }}>{p.name}</span>
-                                <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>({hcp})</span>
+                                <span style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>({metricLabel})</span>
                                 <select
                                   value={flightOverrides[p.id] != null ? flightOverrides[p.id] : ''}
                                   onChange={(e) => {
                                     const val = e.target.value
                                     setFlightOverrides(prev => {
                                       const next = { ...prev }
-                                      if (val === '' || parseInt(val) === getPlayerFlightByHandicap(p, flightPlayers, numFlights, null)) {
+                                      if (val === '' || parseInt(val) === getPlayerFlightByHandicap(p, flightPlayers, numFlights, null, tripMode)) {
                                         delete next[p.id]
                                       } else {
                                         next[p.id] = parseInt(val)
@@ -1081,7 +1124,13 @@ function GeneratePage() {
               marginBottom: '20px'
             }}>
               <div
-                onClick={() => setRoundFormatOverride(roundFormatOverride === null ? { format: 'bigboys' } : null)}
+                onClick={() => setRoundFormatOverride(
+                  roundFormatOverride === null
+                    ? (tripMode
+                        ? { format: 'retirees', retireesScoresToCount: 2, useHandicaps: false }
+                        : { format: 'bigboys' })
+                    : null
+                )}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -1138,17 +1187,28 @@ function GeneratePage() {
                   )}
 
                   {roundFormatOverride.format === 'retirees' && (
-                    <div style={{ marginTop: '10px' }}>
-                      <label style={{ fontSize: '13px', fontWeight: '600' }}>Scores to count per hole: </label>
-                      <select
-                        value={roundFormatOverride.retireesScoresToCount || 2}
-                        onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, retireesScoresToCount: parseInt(e.target.value) })}
-                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '13px' }}
-                      >
-                        <option value={1}>1</option>
-                        <option value={2}>2</option>
-                        <option value={3}>3</option>
-                      </select>
+                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '13px', fontWeight: '600' }}>Scores to count per hole: </label>
+                        <select
+                          value={roundFormatOverride.retireesScoresToCount || 2}
+                          onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, retireesScoresToCount: parseInt(e.target.value) })}
+                          style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--color-border)', fontSize: '13px' }}
+                        >
+                          <option value={1}>1</option>
+                          <option value={2}>2</option>
+                          <option value={3}>3</option>
+                        </select>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={roundFormatOverride.useHandicaps !== false}
+                          onChange={(e) => setRoundFormatOverride({ ...roundFormatOverride, useHandicaps: e.target.checked })}
+                          style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary)' }}
+                        />
+                        <span style={{ fontSize: '13px' }}>Use Handicaps (uncheck for pure gross 2-best)</span>
+                      </label>
                     </div>
                   )}
 

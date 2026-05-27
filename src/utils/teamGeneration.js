@@ -21,6 +21,30 @@ function getPlayerHandicap(player) {
 }
 
 /**
+ * Average gross score across player's scoreHistory.
+ * Returns null when no completed rounds (caller should fall back to handicap).
+ */
+function getPlayerTripAverage(player) {
+  const history = player.scoreHistory || []
+  const completed = history.filter(r => (r.totalScore || r.total) > 0 && r.isComplete !== false)
+  if (completed.length === 0) return null
+  const sum = completed.reduce((s, r) => s + (r.totalScore || r.total), 0)
+  return sum / completed.length
+}
+
+/**
+ * Sort key for flight assignment. Lower = better.
+ * Trip mode: use trip average when available, fall back to handicap (round 1).
+ */
+function getPlayerSortKey(player, tripMode) {
+  if (tripMode?.enabled) {
+    const avg = getPlayerTripAverage(player)
+    if (avg !== null) return avg
+  }
+  return getPlayerHandicap(player)
+}
+
+/**
  * Get rating for team skill calculations (higher = better)
  */
 function getPlayerRating(player) {
@@ -32,18 +56,18 @@ function getPlayerRating(player) {
  * Determine which flight (0-3 for A-D) a player belongs to
  * based on their handicap relative to all players
  */
-function getPlayerFlightByHandicap(player, allPlayersSorted, numFlights = 4, flightOverrides = null) {
+function getPlayerFlightByHandicap(player, allPlayersSorted, numFlights = 4, flightOverrides = null, tripMode = null) {
   // Check for manual flight override first
   if (flightOverrides && flightOverrides[player.id] != null) {
     return Math.min(flightOverrides[player.id], numFlights - 1)
   }
   const idx = allPlayersSorted.findIndex(p => p.id === player.id)
   if (idx === -1) {
-    // Player not in sorted list (manual team member) - calculate based on handicap position
-    const handicap = getPlayerHandicap(player)
+    // Player not in sorted list (manual team member) - calculate based on sort-key position
+    const key = getPlayerSortKey(player, tripMode)
     let position = 0
     for (const p of allPlayersSorted) {
-      if (getPlayerHandicap(p) < handicap) position++
+      if (getPlayerSortKey(p, tripMode) < key) position++
       else break
     }
     const flightSize = Math.ceil(allPlayersSorted.length / numFlights) || 1
@@ -74,13 +98,35 @@ function shuffle(arr) {
 
 /**
  * Check if placing a player on a team violates recency rules.
- * Returns true if there's a conflict:
+ * Default rules:
  *   - Played with any teammate 2+ rounds in a row (consecutive)
  *   - Played with any teammate 3+ of the last 5 rounds
+ * Trip mode (when tripMode.enabled):
+ *   - noConsecutive: any teammate appearing in the LAST round is a conflict
+ *   - maxTimesTogether: teammate appearing >= max times across the trip is a conflict
  */
-function hasRecencyConflict(player, teamPlayerIds) {
+function hasRecencyConflict(player, teamPlayerIds, tripMode = null) {
   const history = player.teammateHistory || []
   if (history.length === 0) return false
+
+  if (tripMode?.enabled) {
+    const max = tripMode.maxTimesTogether ?? 2
+    const noConsecutive = tripMode.noConsecutive !== false
+    const window = tripMode.totalRounds || history.length
+
+    for (const teammateId of teamPlayerIds) {
+      // Block back-to-back (teammate in the most recent round)
+      if (noConsecutive && history[0]?.teammates.includes(teammateId)) return true
+
+      // Block when trip max already reached
+      let count = 0
+      for (let i = 0; i < Math.min(history.length, window); i++) {
+        if (history[i].teammates.includes(teammateId)) count++
+      }
+      if (count >= max) return true
+    }
+    return false
+  }
 
   for (const teammateId of teamPlayerIds) {
     // Check consecutive rounds (last 2)
@@ -108,11 +154,29 @@ function hasRecencyConflict(player, teamPlayerIds) {
 /**
  * Count recency violations for a player with a team (for scoring, not binary)
  */
-function recencyScore(player, teamPlayerIds) {
+function recencyScore(player, teamPlayerIds, tripMode = null) {
   const history = player.teammateHistory || []
   if (history.length === 0) return 0
 
   let score = 0
+
+  if (tripMode?.enabled) {
+    const max = tripMode.maxTimesTogether ?? 2
+    const noConsecutive = tripMode.noConsecutive !== false
+    const window = tripMode.totalRounds || history.length
+
+    for (const teammateId of teamPlayerIds) {
+      if (noConsecutive && history[0]?.teammates.includes(teammateId)) score += 10
+      let count = 0
+      for (let i = 0; i < Math.min(history.length, window); i++) {
+        if (history[i].teammates.includes(teammateId)) count++
+      }
+      if (count >= max) score += 5 * (count - max + 1)
+      else if (count >= 1) score += 1
+    }
+    return score
+  }
+
   for (const teammateId of teamPlayerIds) {
     // Consecutive penalty (heavier)
     let consecutive = 0
@@ -137,7 +201,7 @@ function recencyScore(player, teamPlayerIds) {
  * Select best player from a shuffled flight pool for a specific team.
  * Picks first player with no recency conflict; falls back to lowest-conflict player.
  */
-function selectFromFlight(flightPool, team) {
+function selectFromFlight(flightPool, team, tripMode = null) {
   if (flightPool.length === 0) return null
   if (flightPool.length === 1) return flightPool.shift()
 
@@ -145,7 +209,7 @@ function selectFromFlight(flightPool, team) {
 
   // Try to find a player with no recency conflict
   for (let i = 0; i < flightPool.length; i++) {
-    if (!hasRecencyConflict(flightPool[i], teamIds)) {
+    if (!hasRecencyConflict(flightPool[i], teamIds, tripMode)) {
       return flightPool.splice(i, 1)[0]
     }
   }
@@ -154,7 +218,7 @@ function selectFromFlight(flightPool, team) {
   let bestIdx = 0
   let bestScore = Infinity
   for (let i = 0; i < flightPool.length; i++) {
-    const s = recencyScore(flightPool[i], teamIds)
+    const s = recencyScore(flightPool[i], teamIds, tripMode)
     if (s < bestScore) {
       bestScore = s
       bestIdx = i
@@ -166,11 +230,11 @@ function selectFromFlight(flightPool, team) {
 /**
  * Analyze a team's flight composition and determine what's needed
  */
-function analyzeTeamFlights(team, allPlayersSorted, numFlights, targetSize, flightOverrides = null) {
+function analyzeTeamFlights(team, allPlayersSorted, numFlights, targetSize, flightOverrides = null, tripMode = null) {
   const flightCounts = new Array(numFlights).fill(0)
 
   for (const player of team) {
-    const flight = getPlayerFlightByHandicap(player, allPlayersSorted, numFlights, flightOverrides)
+    const flight = getPlayerFlightByHandicap(player, allPlayersSorted, numFlights, flightOverrides, tripMode)
     if (flight >= 0 && flight < numFlights) {
       flightCounts[flight]++
     }
@@ -232,7 +296,7 @@ function analyzeTeamFlights(team, allPlayersSorted, numFlights, targetSize, flig
  * Post-fill swap: try to resolve recency conflicts by swapping same-flight players between teams.
  * Only swaps if the swap doesn't create a new conflict for the other team.
  */
-function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds, flightOverrides = null) {
+function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds, flightOverrides = null, tripMode = null) {
   let improved = true
   let iterations = 0
   const maxIterations = 50 // Safety limit
@@ -250,10 +314,10 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
         if (pairedPlayerIds.has(player.id)) continue
 
         const teammateIds = team.filter((_, idx) => idx !== pi).map(p => p.id)
-        if (!hasRecencyConflict(player, teammateIds)) continue
+        if (!hasRecencyConflict(player, teammateIds, tripMode)) continue
 
         // This player has a conflict — try swapping with same-flight player on another team
-        const playerFlight = getPlayerFlightByHandicap(player, sortedPlayers, numFlights, flightOverrides)
+        const playerFlight = getPlayerFlightByHandicap(player, sortedPlayers, numFlights, flightOverrides, tripMode)
 
         let bestSwap = null
         let bestSwapScore = Infinity
@@ -267,7 +331,7 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
             // Skip paired/manual players
             if (pairedPlayerIds.has(candidate.id)) continue
             // Must be same flight
-            if (getPlayerFlightByHandicap(candidate, sortedPlayers, numFlights, flightOverrides) !== playerFlight) continue
+            if (getPlayerFlightByHandicap(candidate, sortedPlayers, numFlights, flightOverrides, tripMode) !== playerFlight) continue
 
             // Check if swap would be acceptable for both teams
             const newTeamI = [...team.slice(0, pi), candidate, ...team.slice(pi + 1)]
@@ -277,8 +341,8 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
             const newTeamJIds = newTeamJ.filter(p => p.id !== player.id).map(p => p.id)
 
             // Don't create new conflicts for the candidate
-            const candidateScore = recencyScore(candidate, newTeamIIds)
-            const playerNewScore = recencyScore(player, newTeamJIds)
+            const candidateScore = recencyScore(candidate, newTeamIIds, tripMode)
+            const playerNewScore = recencyScore(player, newTeamJIds, tripMode)
             const totalScore = candidateScore + playerNewScore
 
             if (totalScore < bestSwapScore) {
@@ -290,7 +354,7 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
 
         // Execute the best swap if it improves things
         if (bestSwap) {
-          const currentScore = recencyScore(player, teammateIds)
+          const currentScore = recencyScore(player, teammateIds, tripMode)
           if (bestSwapScore < currentScore) {
             const temp = finalTeams[bestSwap.ti][bestSwap.pi]
             finalTeams[bestSwap.ti][bestSwap.pi] = finalTeams[bestSwap.tj][bestSwap.pj]
@@ -305,10 +369,10 @@ function resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPl
   }
 }
 
-export { getPlayerHandicap, getPlayerFlightByHandicap }
+export { getPlayerHandicap, getPlayerFlightByHandicap, getPlayerSortKey, getPlayerTripAverage }
 
 export function generateTeams(activePlayers, pairingRequests = [], manualTeams = [], options = {}) {
-  const { allowFivesomes = false, flightOverrides = null } = options
+  const { allowFivesomes = false, flightOverrides = null, tripMode = null } = options
   // Separate complete and incomplete manual teams
   const completeManualTeams = manualTeams.filter(mt => mt.players.length >= 4)
   const incompleteManualTeams = manualTeams.filter(mt => mt.players.length > 0 && mt.players.length < 4)
@@ -336,8 +400,8 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     return finalTeams
   }
 
-  // Sort all remaining players by handicap for flight assignment
-  const sortedPlayers = [...remainingPlayers].sort((a, b) => getPlayerHandicap(a) - getPlayerHandicap(b))
+  // Sort all remaining players for flight assignment (trip-avg in trip mode, else handicap)
+  const sortedPlayers = [...remainingPlayers].sort((a, b) => getPlayerSortKey(a, tripMode) - getPlayerSortKey(b, tripMode))
   const numFlights = 4 // Always 4 flights for A-B-C-D system
 
   // === Phase 1: Process pairing requests (before team size calculation) ===
@@ -349,8 +413,8 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     const p2 = remainingPlayers.find(p => p.id === parseInt(request.player2))
 
     if (p1 && p2) {
-      const flight1 = getPlayerFlightByHandicap(p1, sortedPlayers, numFlights, flightOverrides)
-      const flight2 = getPlayerFlightByHandicap(p2, sortedPlayers, numFlights, flightOverrides)
+      const flight1 = getPlayerFlightByHandicap(p1, sortedPlayers, numFlights, flightOverrides, tripMode)
+      const flight2 = getPlayerFlightByHandicap(p2, sortedPlayers, numFlights, flightOverrides, tripMode)
 
       pairsWithFlightInfo.push({
         players: [p1, p2],
@@ -491,7 +555,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     // When flight overrides exist, assign each player to their overridden flight
     for (let f = 0; f < numFlights; f++) flightPools.push([])
     for (const player of unpairedPlayers) {
-      const flight = getPlayerFlightByHandicap(player, sortedPlayers, numFlights, flightOverrides)
+      const flight = getPlayerFlightByHandicap(player, sortedPlayers, numFlights, flightOverrides, tripMode)
       flightPools[flight].push(player)
     }
     for (const pool of flightPools) shuffle(pool)
@@ -528,12 +592,12 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     if (spotsNeeded <= 0) continue
 
     // Analyze what this team needs
-    const analysis = analyzeTeamFlights(team.players, sortedPlayers, numFlights, team.targetSize, flightOverrides)
+    const analysis = analyzeTeamFlights(team.players, sortedPlayers, numFlights, team.targetSize, flightOverrides, tripMode)
 
     // If team has specific mirror needs, prioritize those
     if (team.needsMirror !== undefined && team.mirrorCount > 0) {
       for (let i = 0; i < team.mirrorCount && flightPools[team.needsMirror]?.length > 0; i++) {
-        const player = selectFromFlight(flightPools[team.needsMirror], team.players)
+        const player = selectFromFlight(flightPools[team.needsMirror], team.players, tripMode)
         if (player) {
           team.players.push(player)
         }
@@ -544,7 +608,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
     for (const need of analysis.flightsNeeded) {
       if (team.players.length >= team.targetSize) break
       if (flightPools[need.flight]?.length > 0) {
-        const player = selectFromFlight(flightPools[need.flight], team.players)
+        const player = selectFromFlight(flightPools[need.flight], team.players, tripMode)
         if (player) {
           team.players.push(player)
         }
@@ -556,7 +620,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
       let added = false
       for (let f = 0; f < numFlights; f++) {
         if (flightPools[f]?.length > 0) {
-          const player = selectFromFlight(flightPools[f], team.players)
+          const player = selectFromFlight(flightPools[f], team.players, tripMode)
           if (player) {
             team.players.push(player)
             added = true
@@ -625,7 +689,7 @@ export function generateTeams(activePlayers, pairingRequests = [], manualTeams =
   }
 
   // === Phase 6: Post-fill recency conflict resolution via same-flight swaps ===
-  resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds, flightOverrides)
+  resolveConflictsViaSwap(finalTeams, sortedPlayers, numFlights, pairedPlayerIds, flightOverrides, tripMode)
 
   // Sort teams: 4-person teams first, then by size descending
   finalTeams.sort((a, b) => b.length - a.length)
