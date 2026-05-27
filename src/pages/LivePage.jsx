@@ -4114,9 +4114,9 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
                   <input
                     type="number"
                     value={settings.costPerSkin}
-                    onChange={e => setSettings({ ...settings, costPerSkin: parseFloat(e.target.value) || 1 })}
-                    min="0.5"
-                    step="0.5"
+                    onChange={e => setSettings({ ...settings, costPerSkin: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                    min="0.25"
+                    step="0.25"
                   />
                 </div>
                 <div style={{ marginBottom: '15px' }}>
