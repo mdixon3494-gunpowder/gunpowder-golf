@@ -802,12 +802,17 @@ function GreenieCarryoverSection({ leagueSettings, onUpdate, isAdmin }) {
   )
 }
 
+const PAYOUT_FORMAT_DEFAULTS = {
+  matchPlay: { name: "Match Play (2 Teams)", greeniePerHole: 1, front9: 5, back9: 5, overall: 5, holeInOne: 1 },
+  standard:  { name: "Standard (3+ Teams)",  greeniePerHole: 1, front9: 7, back9: 7, overall: 0, holeInOne: 1 }
+}
+
 function PayoutSettingsSection({ payoutFormats, onUpdate, isAdmin }) {
   const [editing, setEditing] = useState(null)
   const [formData, setFormData] = useState({})
 
   const startEditing = (key) => {
-    setFormData({ ...payoutFormats[key] })
+    setFormData({ ...PAYOUT_FORMAT_DEFAULTS[key], ...payoutFormats[key] })
     setEditing(key)
   }
 
@@ -819,6 +824,23 @@ function PayoutSettingsSection({ payoutFormats, onUpdate, isAdmin }) {
     setEditing(null)
   }
 
+  const resetToDefaults = () => {
+    if (!confirm('Reset payout formats to the default Match Play and Standard rows? Any custom values will be overwritten.')) return
+    onUpdate({ ...PAYOUT_FORMAT_DEFAULTS })
+  }
+
+  // Render against a defaults-merged view so a missing or partially-saved row still shows full values.
+  const displayFormats = (() => {
+    const out = {}
+    for (const key of Object.keys(PAYOUT_FORMAT_DEFAULTS)) {
+      out[key] = { ...PAYOUT_FORMAT_DEFAULTS[key], ...(payoutFormats?.[key] || {}) }
+    }
+    for (const [key, val] of Object.entries(payoutFormats || {})) {
+      if (!out[key]) out[key] = val
+    }
+    return out
+  })()
+
   return (
     <div style={{
       background: 'var(--color-surface)',
@@ -827,9 +849,16 @@ function PayoutSettingsSection({ payoutFormats, onUpdate, isAdmin }) {
       marginBottom: '20px',
       border: '1px solid var(--color-border)'
     }}>
-      <h3 style={{ marginBottom: '15px' }}>Payout Formats</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <h3 style={{ margin: 0 }}>Payout Formats</h3>
+        {isAdmin && (
+          <button className="btn btn-small btn-secondary" onClick={resetToDefaults} style={{ fontSize: '12px' }}>
+            Reset to Defaults
+          </button>
+        )}
+      </div>
 
-      {Object.entries(payoutFormats).map(([key, format]) => (
+      {Object.entries(displayFormats).map(([key, format]) => (
         <div key={key} style={{
           background: 'var(--color-surface-sunken)',
           padding: '15px',

@@ -281,8 +281,19 @@ export function LeagueProvider({ children }) {
     setSkinsMatch(data.skinsMatch || null)
     setNassauMatch(data.nassauMatch || null)
     setWolfMatch(data.wolfMatch || null)
-    // Merge stored payout formats over defaults so older leagues missing keys (or with {}) still render rows
-    setPayoutFormats({ ...DEFAULT_PAYOUT_FORMATS, ...(data.payoutFormats || {}) })
+    // Deep-merge stored payout formats with defaults so older leagues missing keys, empty
+    // payoutFormats {}, or partially-saved entries (e.g. {matchPlay: {}}) still render full rows.
+    {
+      const stored = data.payoutFormats || {}
+      const merged = {}
+      for (const key of Object.keys(DEFAULT_PAYOUT_FORMATS)) {
+        merged[key] = { ...DEFAULT_PAYOUT_FORMATS[key], ...(stored[key] || {}) }
+      }
+      for (const key of Object.keys(stored)) {
+        if (!merged[key]) merged[key] = stored[key]
+      }
+      setPayoutFormats(merged)
+    }
     if (data.holeInOnePot) setHoleInOnePot(data.holeInOnePot)
     if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
     if (data.defaultStartingHole) setDefaultStartingHole(data.defaultStartingHole)
