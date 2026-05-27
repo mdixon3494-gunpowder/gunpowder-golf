@@ -6687,23 +6687,24 @@ function EditNinesPanel({ liveRound, setLiveRound }) {
     if (!current.front || !current.back) return
     let nextRound = { ...liveRound, nines: { front: current.back, back: current.front } }
     if (hasAnyScores) {
-      const ok = confirm('Swap front ↔ back AND move every player\'s scores from holes 1-9 to 10-18 (and vice versa)? Use this when the starter sent the group out the wrong way.')
+      const ok = confirm('Swap front ↔ back AND move every player\'s scores AND any recorded greenies from holes 1-9 to 10-18 (and vice versa)? Use this when the starter sent the group out the wrong way.')
       if (!ok) return
+      const swapHole = (h) => (h >= 1 && h <= 9) ? h + 9 : (h >= 10 && h <= 18) ? h - 9 : h
+      const swapByHoleKey = (obj) => {
+        if (!obj) return obj
+        const out = {}
+        for (const [k, v] of Object.entries(obj)) {
+          const n = parseInt(k)
+          out[Number.isFinite(n) ? swapHole(n) : k] = v
+        }
+        return out
+      }
       nextRound = {
         ...nextRound,
         teams: nextRound.teams.map(team => ({
           ...team,
-          players: team.players.map(p => {
-            const oldScores = p.scores || {}
-            const newScores = {}
-            for (const [holeStr, score] of Object.entries(oldScores)) {
-              const hole = parseInt(holeStr)
-              if (hole >= 1 && hole <= 9) newScores[hole + 9] = score
-              else if (hole >= 10 && hole <= 18) newScores[hole - 9] = score
-              else newScores[hole] = score
-            }
-            return { ...p, scores: newScores }
-          })
+          greenies: swapByHoleKey(team.greenies),
+          players: team.players.map(p => ({ ...p, scores: swapByHoleKey(p.scores) }))
         }))
       }
     }
