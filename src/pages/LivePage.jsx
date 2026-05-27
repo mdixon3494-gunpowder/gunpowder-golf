@@ -6411,7 +6411,12 @@ function SkinsTracker({ liveRound, setLiveRound, skinsMatch, setSkinsMatch, isAd
 
 // Money Tracker Component
 function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings, teamScoringRules, courseTees }) {
-  const settlement = calculateRoundSettlement(liveRound, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings, teamScoringRules, courseTees)
+  const { activePar3Holes, leagueSettings: ls } = useLeague()
+  const settlement = calculateRoundSettlement(
+    liveRound, payoutFormats, holeInOnePot, skinsMatch,
+    greenieCarryoverSettings, teamScoringRules, courseTees,
+    { par3Holes: activePar3Holes, teamGreenies: !!ls?.teamGreenies }
+  )
 
   if (!settlement) {
     return (

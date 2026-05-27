@@ -1630,6 +1630,55 @@ function CourseSection({ leagueSettings, onUpdate, isAdmin }) {
   )
 }
 
+function TeamGreeniesSection({ leagueSettings, onUpdate, isAdmin }) {
+  const enabled = !!leagueSettings?.teamGreenies
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      padding: '20px',
+      borderRadius: 'var(--radius-md)',
+      marginBottom: '20px',
+      border: '1px solid var(--color-border)'
+    }}>
+      <h3 style={{ marginBottom: '4px' }}>Team Greenies</h3>
+      <p style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginBottom: '15px' }}>
+        When on, the greenie pot from each par-3 goes to the whole team of the closest-to-pin player (split among teammates), instead of going to the individual.
+      </p>
+
+      {isAdmin ? (
+        <label style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '10px',
+          padding: '14px',
+          borderRadius: '8px',
+          border: enabled ? '2px solid var(--color-success)' : '1px solid var(--color-border)',
+          background: enabled ? 'var(--color-success-light)' : 'var(--color-surface)',
+          cursor: 'pointer'
+        }}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onUpdate({ ...leagueSettings, teamGreenies: e.target.checked })}
+            style={{ marginTop: '2px' }}
+          />
+          <div>
+            <div style={{ fontWeight: '600', fontSize: '14px' }}>Greenies pay the team, not the player</div>
+            <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px', marginTop: '2px' }}>
+              Closest-to-pin is still tracked per player. Payout flows to that player's team.
+            </div>
+          </div>
+        </label>
+      ) : (
+        <div style={{ background: 'var(--color-surface-sunken)', padding: '12px 15px', borderRadius: '8px', fontSize: '14px' }}>
+          Team Greenies: <strong>{enabled ? 'On' : 'Off'}</strong>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TripModeSection({ leagueSettings, onUpdate, isAdmin }) {
   const trip = leagueSettings?.tripMode || { enabled: false, totalRounds: 4, maxTimesTogether: 2, noConsecutive: true }
 
@@ -4206,6 +4255,11 @@ function SettingsPage({ onShowLeagueSelector }) {
               isAdmin={isAdmin}
             />
             <TripModeSection
+              leagueSettings={leagueSettings}
+              onUpdate={setLeagueSettings}
+              isAdmin={isAdmin}
+            />
+            <TeamGreeniesSection
               leagueSettings={leagueSettings}
               onUpdate={setLeagueSettings}
               isAdmin={isAdmin}

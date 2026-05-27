@@ -1,8 +1,15 @@
-import { getHoleInfo } from '../lib/courseData'
+import { getHoleInfo, getActivePar3Holes } from '../lib/courseData'
 import { getLeaderboardData } from './formatScoring'
 
-export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings, teamScoringRules, courseTees) {
+export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, skinsMatch, greenieCarryoverSettings, teamScoringRules, courseTees, options = {}) {
   if (!round) return null
+  // Par-3 holes come from the active scorecard (e.g. Shenvalee's vary by nine selection).
+  // Default to whatever's currently active; tests/back-compat callers can override via options.par3Holes.
+  const par3Holes = options.par3Holes || getActivePar3Holes() || [4, 8, 12, 17]
+  const par3Count = par3Holes.length
+  // Team Greenies mode: greenie pot flows to the team of the closest-to-pin player,
+  // then is split among that team's members for per-player display. Same buy-in either way.
+  const teamGreenies = !!options.teamGreenies
 
   const numTeams = round.teams.length
   const isMatchPlay = numTeams === 2
@@ -90,8 +97,8 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
     // Team competition entry (front 9, back 9, overall for match play)
     const teamCompEntry = teamSize * (format.front9 + format.back9 + (isMatchPlay ? format.overall : 0))
 
-    // Greenies entry (4 par 3 holes per player)
-    const greeniesEntry = teamSize * 4 * format.greeniePerHole
+    // Greenies entry — one buy-in per player per par-3 hole on this course's active layout
+    const greeniesEntry = teamSize * par3Count * format.greeniePerHole
 
     // HIO entry (per eligible player on this team)
     const teamHioEligible = team.players.filter(p => holeInOnePot?.playerEligibility?.[p.id] !== false).length
@@ -148,7 +155,6 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
   })
 
   // Calculate greenie results
-  const par3Holes = [4, 8, 12, 17]
   const greenieResults = {}
 
   par3Holes.forEach(hole => {
@@ -231,13 +237,26 @@ export function calculateRoundSettlement(round, payoutFormats, holeInOnePot, ski
     }
   }
 
+  // Team greenies: aggregate each team's greenie payouts (sum of its players' greenie wins),
+  // then split evenly across that team's roster for per-player display.
+  const teamGreenieTotals = {}
+  if (teamGreenies) {
+    for (const team of round.teams) {
+      let sum = 0
+      for (const p of team.players) sum += (greeniePayouts[p.id] || 0)
+      teamGreenieTotals[team.id] = sum
+    }
+  }
+
   // Calculate player settlements
   const playerSettlements = allPlayers.map(player => {
     const team = round.teams.find(t => t.players.some(p => p.id === player.id))
     const teamSettlement = teamSettlements.find(ts => ts.teamId === team.id)
 
-    const greeniesPaid = 4 * format.greeniePerHole // All 4 par 3s
-    const greeniesWon = greeniePayouts[player.id] || 0
+    const greeniesPaid = par3Count * format.greeniePerHole // One buy-in per par-3 hole on the active layout
+    const greeniesWon = teamGreenies
+      ? (teamGreenieTotals[team.id] || 0) / team.players.length
+      : (greeniePayouts[player.id] || 0)
 
     let teamEntryShare = teamSettlement.perPlayerEntry
     let teamWinningsShare = teamSettlement.perPlayerWinnings
