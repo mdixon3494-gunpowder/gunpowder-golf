@@ -17,6 +17,14 @@ import {
 
 const LeagueContext = createContext(null)
 
+// Default payout formats — used as a baseline so a freshly-created league always
+// has both match-play and standard rows showing in the Payout Formats section
+// (and so older leagues with an empty payoutFormats JSONB get backfilled on load).
+const DEFAULT_PAYOUT_FORMATS = {
+  matchPlay: { name: "Match Play (2 Teams)", greeniePerHole: 1, front9: 5, back9: 5, overall: 5, holeInOne: 1 },
+  standard:  { name: "Standard (3+ Teams)",  greeniePerHole: 1, front9: 7, back9: 7, overall: 0, holeInOne: 1 }
+}
+
 // Cloud storage utilities
 const CloudStorage = {
   getLeagueId: () => localStorage.getItem('leagueId'),
@@ -115,10 +123,7 @@ export function LeagueProvider({ children }) {
     nextRoundMessage: '',
     sideGames: { enabled: false, allowSkins: true, allowNassau: true }
   })
-  const [payoutFormats, setPayoutFormats] = useState({
-    matchPlay: { name: "Match Play (2 Teams)", greeniePerHole: 1, front9: 5, back9: 5, overall: 5, holeInOne: 1 },
-    standard: { name: "Standard (3+ Teams)", greeniePerHole: 1, front9: 7, back9: 7, overall: 0, holeInOne: 1 }
-  })
+  const [payoutFormats, setPayoutFormats] = useState(DEFAULT_PAYOUT_FORMATS)
   const [holeInOnePot, setHoleInOnePot] = useState({
     balance: 0,
     payoutMethod: 'percentage',
@@ -276,7 +281,8 @@ export function LeagueProvider({ children }) {
     setSkinsMatch(data.skinsMatch || null)
     setNassauMatch(data.nassauMatch || null)
     setWolfMatch(data.wolfMatch || null)
-    if (data.payoutFormats) setPayoutFormats(data.payoutFormats)
+    // Merge stored payout formats over defaults so older leagues missing keys (or with {}) still render rows
+    setPayoutFormats({ ...DEFAULT_PAYOUT_FORMATS, ...(data.payoutFormats || {}) })
     if (data.holeInOnePot) setHoleInOnePot(data.holeInOnePot)
     if (data.moneyVisibility) setMoneyVisibility(data.moneyVisibility)
     if (data.defaultStartingHole) setDefaultStartingHole(data.defaultStartingHole)
@@ -561,7 +567,7 @@ export function LeagueProvider({ children }) {
       sideGames: { enabled: false, allowSkins: true, allowNassau: true }
     })
     setPendingPlayerRequests([])
-    setPayoutFormats({})
+    setPayoutFormats(DEFAULT_PAYOUT_FORMATS)
     setHoleInOnePot({ amount: 0, history: [] })
     setMoneyVisibility('admin')
     setDefaultStartingHole(1)
