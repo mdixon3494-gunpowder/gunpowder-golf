@@ -7,7 +7,8 @@ import {
   PAR_3_HOLES as DEFAULT_PAR_3,
   getHoleInfo,
   getAllHoles,
-  getHolePar
+  getHolePar,
+  SHENVALEE_COURSE
 } from '../lib/courseData'
 import { calculateRoundSettlement, formatMoney } from '../utils/moneyCalculations'
 import { getLeaderboardData, FORMAT_CONFIGS, calculateFormatScore, calculateBigBoysScore, resolveManualTeamScore } from '../utils/formatScoring'
@@ -6660,6 +6661,143 @@ function MoneyTracker({ liveRound, payoutFormats, holeInOnePot, skinsMatch, gree
   )
 }
 
+// Shenvalee mid-round nine editor — admin can correct the front/back assignment
+// when the starter sends the group to a different nine than planned.
+function EditNinesPanel({ liveRound, setLiveRound }) {
+  const [open, setOpen] = useState(false)
+  const nineKeys = Object.keys(SHENVALEE_COURSE.nines)
+  const current = liveRound?.nines || {}
+
+  const hasAnyScores = (liveRound?.teams || []).some(t =>
+    (t.players || []).some(p => Object.values(p.scores || {}).some(s => s !== undefined && s !== null && s !== ''))
+  )
+
+  const updateNines = (front, back) => {
+    if (!front || !back || front === back) return
+    if (front === current.front && back === current.back) return
+    if (hasAnyScores) {
+      const ok = confirm('Scores have already been entered. Existing scores will remain on their hole numbers (1-18). Continue?')
+      if (!ok) return
+    }
+    setLiveRound({ ...liveRound, nines: { front, back } })
+    setOpen(false)
+  }
+
+  const swapFrontBack = () => {
+    if (!current.front || !current.back) return
+    let nextRound = { ...liveRound, nines: { front: current.back, back: current.front } }
+    if (hasAnyScores) {
+      const ok = confirm('Swap front ↔ back AND move every player\'s scores from holes 1-9 to 10-18 (and vice versa)? Use this when the starter sent the group out the wrong way.')
+      if (!ok) return
+      nextRound = {
+        ...nextRound,
+        teams: nextRound.teams.map(team => ({
+          ...team,
+          players: team.players.map(p => {
+            const oldScores = p.scores || {}
+            const newScores = {}
+            for (const [holeStr, score] of Object.entries(oldScores)) {
+              const hole = parseInt(holeStr)
+              if (hole >= 1 && hole <= 9) newScores[hole + 9] = score
+              else if (hole >= 10 && hole <= 18) newScores[hole - 9] = score
+              else newScores[hole] = score
+            }
+            return { ...p, scores: newScores }
+          })
+        }))
+      }
+    }
+    setLiveRound(nextRound)
+    setOpen(false)
+  }
+
+  if (!open) {
+    return (
+      <div style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: '8px',
+        padding: '10px 14px',
+        marginBottom: '12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: '10px'
+      }}>
+        <div style={{ fontSize: '13px' }}>
+          <strong>Nines:</strong> Front = <strong>{SHENVALEE_COURSE.nines[current.front]?.name || '—'}</strong>, Back = <strong>{SHENVALEE_COURSE.nines[current.back]?.name || '—'}</strong>
+        </div>
+        <button
+          onClick={() => setOpen(true)}
+          style={{ background: 'var(--color-surface-sunken)', border: '1px solid var(--color-border)', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}
+        >
+          Edit
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      border: '2px solid var(--color-info)',
+      borderRadius: '10px',
+      padding: '15px',
+      marginBottom: '12px'
+    }}>
+      <div style={{ fontWeight: '700', marginBottom: '8px' }}>Edit Nines</div>
+      <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+        Use this if the starter changed which nines you're playing or sent the group out the wrong way.
+      </p>
+
+      <button
+        onClick={swapFrontBack}
+        disabled={!current.front || !current.back}
+        style={{ width: '100%', padding: '10px', background: 'var(--color-warning-light)', border: '2px solid var(--color-warning)', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', marginBottom: '12px' }}
+      >
+        Swap Front ↔ Back ({SHENVALEE_COURSE.nines[current.front]?.name || '?'} → {SHENVALEE_COURSE.nines[current.back]?.name || '?'})
+      </button>
+
+      <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>
+        Or pick a different combination:
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Front</label>
+          <select
+            value={current.front || ''}
+            onChange={(e) => updateNines(e.target.value, current.back)}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+          >
+            {nineKeys.map(k => (
+              <option key={k} value={k}>{SHENVALEE_COURSE.nines[k].name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>Back</label>
+          <select
+            value={current.back || ''}
+            onChange={(e) => updateNines(current.front, e.target.value)}
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--color-border)' }}
+          >
+            {nineKeys.map(k => (
+              <option key={k} value={k}>{SHENVALEE_COURSE.nines[k].name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <button
+        onClick={() => setOpen(false)}
+        style={{ background: 'none', border: 'none', color: 'var(--color-text-secondary)', cursor: 'pointer', fontSize: '13px' }}
+      >
+        Close
+      </button>
+    </div>
+  )
+}
+
 // Main LivePage Component
 function LivePage() {
   const navigate = useNavigate()
@@ -7618,6 +7756,10 @@ function LivePage() {
   return (
     <div>
       <h2 style={{ marginBottom: '20px' }}>Live Round Scoring</h2>
+
+      {isAdmin && leagueSettings?.course === 'shenvalee' && liveRound?.nines && (
+        <EditNinesPanel liveRound={liveRound} setLiveRound={setLiveRound} />
+      )}
 
       <div style={{
         display: 'flex',
