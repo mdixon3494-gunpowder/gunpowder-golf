@@ -9,6 +9,7 @@ import { createAuditEntry } from '../utils/auditLog'
 import {
   GUNPOWDER_SCORECARD,
   GUNPOWDER_PAR_3_HOLES,
+  SHENVALEE_COURSE_TEES,
   buildShenvaleeScorecard,
   par3HolesFromScorecard,
   setActiveScorecard
@@ -179,6 +180,18 @@ export function LeagueProvider({ children }) {
     setActiveScorecardState(sc)
     setActivePar3HolesState(par3s)
   }, [leagueSettings?.course, liveRound?.nines?.front, liveRound?.nines?.back, roundNines?.front, roundNines?.back])
+
+  // When the league is on Shenvalee, ensure courseTees has all 5 tees (blue/white/gold/red/green).
+  // Only backfills missing keys — preserves any custom ratings the admin has set.
+  useEffect(() => {
+    if (leagueSettings?.course !== 'shenvalee') return
+    const missing = Object.keys(SHENVALEE_COURSE_TEES).filter(k => !courseTees?.[k])
+    if (missing.length === 0) return
+    const additions = {}
+    for (const k of missing) additions[k] = SHENVALEE_COURSE_TEES[k]
+    setCourseTees(prev => ({ ...prev, ...additions }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagueSettings?.course])
 
   // Admin state
   const [isAdminPIN, setIsAdminPIN] = useState(() => {

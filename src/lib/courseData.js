@@ -39,6 +39,18 @@ export const GUNPOWDER_SCORECARD = {
 export const GUNPOWDER_PAR_3_HOLES = [4, 8, 12, 17]
 export const PAR_3_HOLES = GUNPOWDER_PAR_3_HOLES // legacy export
 
+// Shenvalee tee set. Ratings shown are from the Creek + Miller 18-hole combo (the
+// most commonly played pairing). Per-nine ratings aren't published; these are
+// used only for display / handicap reference and are not load-bearing in trip mode
+// (which doesn't use handicaps). Admin can edit slope/rating in SettingsPage.
+export const SHENVALEE_COURSE_TEES = {
+  blue:  { name: 'Blue',  courseRating: 70.1, slopeRating: 125 },
+  white: { name: 'White', courseRating: 65.7, slopeRating: 116 },
+  gold:  { name: 'Gold',  courseRating: 64.0, slopeRating: 113 },
+  red:   { name: 'Red',   courseRating: 61.9, slopeRating: 108 },
+  green: { name: 'Green', courseRating: 58.0, slopeRating: 100 }
+}
+
 // Shenvalee Golf Resort — New Market, VA. 27-hole layout.
 // Tee colors per official scorecard: Blue (back), White, Gold, Red, Green (forward).
 // Sources: shenvalee.com (official per-nine pages) + GolfPass cross-check.
